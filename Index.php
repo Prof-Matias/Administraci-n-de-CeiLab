@@ -1,7 +1,7 @@
 <?php ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,7 +17,7 @@
         <label for="Contraseña" class="form-label">Cedula</label>
         <input type="password" class="form-control" id="Contraseña" placeholder="Ingrese su contraseña" name="Pass">
         <button type="submit" class="btn btn-primary" id="Verificar">Verificar Cedula</button>     
-         <button type="submit" class="btn btn-primary" id="Iniciar">Iniciar Sesion</button>   
+        <button type="submit" class="btn btn-primary" id="Iniciar">Iniciar Sesion</button>   
   </div>
   <?php if (isset($_GET['error']) && $_GET['error'] == 1): ?>
       <div class="alert alert-danger mt-2" role="alert">
