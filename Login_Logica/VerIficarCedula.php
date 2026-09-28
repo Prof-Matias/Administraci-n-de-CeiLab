@@ -2,6 +2,18 @@
 include "../Config/Conexion.php";
 session_start();
 
+
+if (isset($_GET['error'])) {
+    $_SESSION['error'] = $_GET['error'];
+
+    header("Location: ../Index.php");
+    exit;}
+
+    $error = $_SESSION['error'] ?? null;
+unset($_SESSION['error']);
+
+
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $cedula = isset($_POST["Cedula"]) ? trim($_POST["Cedula"]) : '';
 
@@ -35,7 +47,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 header("Location: ../Contraseña.php");
                 exit();
             } else {
-                header("Location: ../Index1.php?error=1");
+                header("Location: ../Index.php?error=1");
                 exit();
             }
 
@@ -43,7 +55,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             echo "Error en la base de datos: " . $e->getMessage();
         }
     } else {
-        header("Location: ../Index1.php?error=empty");
+        header("Location: ../Index.php?error=empty");
         exit();
     }
 }

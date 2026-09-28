@@ -50,14 +50,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 exit();
             }
 
-            header("Location: ../Index1.php?error=rol");
+            header("Location: ../Index.php?error=rol");
             exit();
 
         } else {
             // Contraseña o usuario incorrecto: permanece en el paso 2
             header("Location: ../Contraseña.php?error=contraseña");
             exit();
-        }
+    }
 
     } catch (PDOException $e) {
         echo "Error: " . $e->getMessage();
