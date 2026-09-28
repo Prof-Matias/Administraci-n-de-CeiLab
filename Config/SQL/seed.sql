@@ -3,10 +3,41 @@
 -- seed.sql — Fase 1: Datos de prueba
 -- Contraseña real de TODOS los usuarios de prueba: 123456
 -- (hash bcrypt real, compatible con password_verify() de PHP)
+--
+-- CORRECCIONES (fix seed): ver README del repo / historial de git
+--  1. Se corrigieron referencias huérfanas que las claves foráneas
+--     rechazan (error #1452):
+--       - solicitud #5-#8 apuntaban a clientes 20000005-20000008, que
+--         no existen -> ahora usan los 4 clientes reales (20000001-4).
+--       - historial_solicitud #1 apuntaba al administrador 10000001,
+--         que no existe -> ahora usa 11111111.
+--       - reserva_material #5 y #6 apuntaban al material 9, que no
+--         existe (la Impresora 3D es el 8) -> ahora usan el 8.
+--  2. Se quitó SET FOREIGN_KEY_CHECKS = 0/1: con las FK apagadas
+--     el script "pasaba" aunque los datos estuvieran rotos. El orden
+--     de los INSERT ya respeta las dependencias, así que no hace falta.
+--  3. Se agregó un bloque de limpieza (DELETE) al inicio para poder
+--     volver a ejecutar el seed sin el error #1062 (clave duplicada).
+--     OJO: borra TODO el contenido de las tablas. Solo para pruebas.
 -- ============================================================
 
 SET NAMES utf8mb4;
-SET FOREIGN_KEY_CHECKS = 0;
+
+-- ------------------------------------------------------------
+-- LIMPIEZA (orden inverso a las dependencias: hijas primero)
+-- Permite re-ejecutar el seed sin duplicar claves primarias.
+-- ------------------------------------------------------------
+DELETE FROM `historial_solicitud`;
+DELETE FROM `reserva_material`;
+DELETE FROM `prestamo_material`;
+DELETE FROM `reserva`;
+DELETE FROM `prestamo`;
+DELETE FROM `solicitud`;
+DELETE FROM `telefono`;
+DELETE FROM `cliente`;
+DELETE FROM `administrador`;
+DELETE FROM `material`;
+DELETE FROM `usuario`;
 
 -- ------------------------------------------------------------
 -- USUARIO
@@ -68,10 +99,10 @@ INSERT INTO `solicitud` (`ID_Solicitud`, `Estado`, `Fecha_Solicitud`, `Fecha_Val
 (2, 'Aprobado',  '2026-09-08 08:30:00', '2026-09-08 09:00:00', NULL,                                  '20000002', '11111111'),
 (3, 'Rechazado', '2026-09-20 10:00:00', '2026-09-20 11:00:00', 'Cédula con préstamos vencidos',       '20000003', '11111111'),
 (4, 'Pendiente', '2026-09-26 15:00:00', NULL,                  NULL,                                  '20000004', NULL),
-(5, 'Aprobado',  '2026-09-24 09:00:00', '2026-09-24 10:00:00', NULL,                                  '20000005', '11111111'),
-(6, 'Pendiente', '2026-09-26 16:00:00', NULL,                  NULL,                                  '20000006', NULL),
-(7, 'Rechazado', '2026-09-22 09:00:00', '2026-09-22 12:00:00', 'Horario en conflicto con otra reserva','20000007', '11111111'),
-(8, 'Aprobado',  '2026-09-14 08:00:00', '2026-09-14 08:30:00', NULL,                                  '20000008', '11111111');
+(5, 'Aprobado',  '2026-09-24 09:00:00', '2026-09-24 10:00:00', NULL,                                  '20000001', '11111111'),
+(6, 'Pendiente', '2026-09-26 16:00:00', NULL,                  NULL,                                  '20000002', NULL),
+(7, 'Rechazado', '2026-09-22 09:00:00', '2026-09-22 12:00:00', 'Horario en conflicto con otra reserva','20000003', '11111111'),
+(8, 'Aprobado',  '2026-09-14 08:00:00', '2026-09-14 08:30:00', NULL,                                  '20000004', '11111111');
 
 -- ------------------------------------------------------------
 -- PRESTAMO (subtipo: solicitudes 1, 2, 3, 8)
@@ -107,12 +138,12 @@ INSERT INTO `prestamo_material` (`ID_Solicitud`, `ID_Material`, `Cantidad`) VALU
 
 -- ------------------------------------------------------------
 -- RESERVA_MATERIAL
--- #5 y #6 reservan el mismo material (9 = Impresora 3D)
+-- #5 y #6 reservan el mismo material (8 = Impresora 3D)
 -- ------------------------------------------------------------
 INSERT INTO `reserva_material` (`ID_Solicitud`, `ID_Material`, `Cantidad`) VALUES
 (4, 7, 2),
-(5, 9, 1),
-(6, 9, 1),
+(5, 8, 1),
+(6, 8, 1),
 (7, 8, 1);
 
 -- ------------------------------------------------------------
@@ -121,7 +152,6 @@ INSERT INTO `reserva_material` (`ID_Solicitud`, `ID_Material`, `Cantidad`) VALUE
 -- de `solicitud`, simulan préstamos/reservas de meses anteriores)
 -- ------------------------------------------------------------
 INSERT INTO `historial_solicitud` (`ID_Historial`, `Tipo`, `Fecha_Archivo`, `Estado`, `Fecha_Solicitud`, `Fecha_Validacion`, `Motivo_Rechazo`, `CI_Cliente`, `CI_Administrador`) VALUES
-(1, 'Prestamo', '2026-08-20 16:00:00', 'Aprobado', '2026-08-10 09:00:00', '2026-08-10 10:00:00', NULL, '20000001', '10000001'),
+(1, 'Prestamo', '2026-08-20 16:00:00', 'Aprobado', '2026-08-10 09:00:00', '2026-08-10 10:00:00', NULL, '20000001', '11111111'),
 (2, 'Reserva',  '2026-08-25 12:00:00', 'Aprobado', '2026-08-15 09:00:00', '2026-08-15 09:30:00', NULL, '20000003', '10000002');
 
-SET FOREIGN_KEY_CHECKS = 1;
