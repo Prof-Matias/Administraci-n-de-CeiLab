@@ -1,6 +1,6 @@
 // Conexion con la Base de datos
 <?php
-$servidor="mtysql:dbname=ceilab;host=localhost";
+$servidor="mysql:dbname=ceilab;host=localhost";
 $usuario="root";
 $contraseña="";
 
