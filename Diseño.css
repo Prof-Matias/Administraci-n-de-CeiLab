@@ -1,0 +1,385 @@
+/* RESET BÁSICO Y CENTRADO DE PÁGINA */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  width: 100%;
+  min-height: 100%;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: left;
+  justify-content: left;
+  padding: 20px;
+  overflow-x: hidden;
+
+  background-color: #0079a8;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 121, 168, 1) 0%,
+    rgba(0, 90, 125, 1) 50%,
+    rgba(0, 48, 66, 1) 100%
+  );
+
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: fixed;
+
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: #1e293b;
+}
+
+
+/* CONTENEDOR PRINCIPAL (.mb-3) TARJETA ESTILO CEIBAL */
+.mb-3 {
+  width: min(100%, 400px);
+  max-width: 400px;
+
+  background-color: #ffffff;
+  position: relative;
+
+  padding: 2.5rem 2rem;
+
+  border-radius: 12px;
+  box-shadow: 10px 20px 25px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+
+  margin: 1rem auto;
+}
+
+
+/* TÍTULO VISUAL GENERADO VÍA CSS */
+.mb-3::before {
+  content: "Ingreso CeiLab";
+
+  display: block;
+  width: 100%;
+
+  text-align: center;
+
+  font-size: 1.5rem;
+  font-weight: 700;
+
+  color: #0f172a;
+
+  margin-bottom: 1.5rem;
+}
+
+
+/* FORMULARIO */
+form {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+
+/* ETIQUETA / LABEL */
+.form-label {
+  display: block;
+  width: 100%;
+
+  font-size: 0.9rem;
+  font-weight: 700;
+
+  color: #475569;
+
+  margin-bottom: 0.5rem;
+}
+
+
+/* CAMPO DE ENTRADA / INPUT */
+.form-control {
+  display: block;
+
+  width: 100%;
+  max-width: 100%;
+
+  padding: 0.75rem 1rem;
+
+  font-size: 1rem;
+  color: #1e293b;
+
+  background-color: #ffffff;
+
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+
+  outline: none;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.form-control:focus {
+  border-color: #0056b3;
+
+  box-shadow:
+    0 0 0 3px rgba(0, 86, 179, 0.15);
+}
+
+
+/* BOTÓN DE VERIFICACIÓN */
+.btn-primary,
+#Verificar {
+  display: block;
+
+  width: 100%;
+  max-width: 100%;
+
+  margin-top: 1.25rem;
+
+  padding: 0.75rem;
+
+  font-size: 1rem;
+  font-weight: 600;
+
+  color: #ffffff;
+
+  background-color: #001bb3;
+
+  border: none;
+  border-radius: 8px;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.2s ease,
+    transform 0.1s ease;
+}
+
+.btn-primary:hover,
+#Verificar:hover {
+  background-color: #02178a;
+}
+
+.btn-primary:active,
+#Verificar:active {
+  transform: scale(0.98);
+}
+
+
+/* CUADRO DE ERROR PHP (.alert-danger) */
+.alert-danger {
+  display: block;
+
+  width: 100%;
+  max-width: 100%;
+
+  margin-top: 1rem;
+
+  padding: 0.75rem;
+
+  background-color: #fef2f2;
+
+  border: 1px solid #fecaca;
+
+  color: #991b1b;
+
+  border-radius: 8px;
+
+  font-size: 0.875rem;
+  font-weight: 500;
+
+  text-align: center;
+}
+
+
+/* LOGO RESPONSIVE */
+.Logo {
+  display: block;
+
+  width: 100%;
+  max-width: 500px;
+
+  height: auto;
+
+  object-fit: contain;
+
+  margin: 1rem auto 0;
+}
+
+
+/* =========================================================
+   CELULARES
+   ========================================================= */
+
+@media screen and (max-width: 480px) {
+
+  body {
+    width: 100%;
+    min-height: 100vh;
+
+    padding: 12px;
+
+    justify-content: center;
+
+    overflow-x: hidden;
+  }
+
+  .mb-3 {
+    width: 100%;
+    max-width: 100%;
+
+    padding: 2rem 1.25rem;
+
+    margin: 0.5rem auto;
+
+    border-radius: 10px;
+  }
+
+  .mb-3::before {
+    font-size: 1.3rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .form-label {
+    font-size: 0.875rem;
+  }
+
+  .form-control {
+    width: 100%;
+    max-width: 100%;
+
+    padding: 0.75rem 0.85rem;
+
+    font-size: 1rem;
+  }
+
+  .btn-primary,
+  #Verificar {
+    width: 100%;
+    max-width: 100%;
+
+    padding: 0.75rem;
+
+    font-size: 1rem;
+  }
+
+  .alert-danger {
+    width: 100%;
+    max-width: 100%;
+
+    font-size: 0.8rem;
+
+    padding: 0.7rem;
+  }
+
+  .Logo {
+    width: 100%;
+    max-width: 100%;
+
+    height: auto;
+
+    margin: 0.75rem auto 0;
+  }
+}
+
+
+/* =========================================================
+   TABLETS
+   ========================================================= */
+
+@media screen and (min-width: 481px) and (max-width: 1024px) {
+
+  body {
+    width: 100%;
+    min-height: 100vh;
+
+    padding: 20px;
+
+    justify-content: center;
+
+    overflow-x: hidden;
+  }
+
+  .mb-3 {
+    width: min(90%, 450px);
+    max-width: 450px;
+
+    padding: 2.5rem 2rem;
+
+    margin: 1rem auto;
+  }
+
+  .Logo {
+    width: min(90vw, 450px);
+    max-width: 450px;
+
+    height: auto;
+
+    margin: 1rem auto 0;
+  }
+}
+
+
+/* =========================================================
+   COMPUTADORAS
+   ========================================================= */
+
+@media screen and (min-width: 1025px) {
+
+  body {
+    width: 100%;
+    min-height: 100vh;
+
+    padding: 30px;
+
+    justify-content: left;
+
+    overflow-x: hidden;
+  }
+
+  .mb-3 {
+    width: 400px;
+    max-width: 400px;
+  }
+
+  .Logo {
+    width: min(500px, 80vw);
+    max-width: 500px;
+
+    height: auto;
+
+    margin: 1rem auto 0;
+  }
+}
+
+
+/* =========================================================
+   PANTALLAS CON POCA ALTURA
+   ========================================================= */
+
+@media screen and (max-height: 650px) {
+
+  body {
+    justify-content: flex-start;
+
+    padding-top: 15px;
+    padding-bottom: 15px;
+  }
+
+  .mb-3 {
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+  }
+
+  .mb-3::before {
+    margin-bottom: 1rem;
+  }
+
+  .Logo {
+    margin-top: 0.5rem;
+  }
+}

@@ -6,6 +6,6 @@
     <title>Document</title>
 </head>
 <body>
-    <h1>Cliente</h1>
+    
 </body>
 </html>
