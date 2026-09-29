@@ -11,9 +11,9 @@ if (!isset($_SESSION['cedula_temp'])) {
 $cedula = $_SESSION['cedula_temp'];
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $contraseña = $_POST["Contraseña"] ?? '';
-
-    try {
+    $contrasena = $_POST["Contraseña"] ?? '';
+    
+    if(!empty($contrasena)){try {
         // Se reutiliza $pdo de Conexion.php
         $query = "SELECT * FROM usuario WHERE CI = :cedula";
         $stmt = $pdo->prepare($query);
@@ -23,44 +23,31 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         //Toma la cedula ingresada anteriormente
         $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        //Verifica si la contraseña ingresada con la contraseña del usuario guardada
-        if ($usuario && password_verify($contraseña, $usuario['Contraseña'])) {
-            // Login correcto
-            $_SESSION['cedula'] = $usuario['CI'];
-            
-            // Comprobar rol de Administrador
-            $stmtAdmin = $pdo->prepare("SELECT * FROM administrador WHERE CI_Administrador = :cedula");
-            $stmtAdmin->bindParam(":cedula", $cedula, PDO::PARAM_STR);
-            $stmtAdmin->execute();
+        if($usuario && password_verify($contrasena,$usuario['Contraseña'])){
+            $_SESSION['Nombre'] = $usuario; 
+            $_SESSION['Apellido'] = $usuario;
+            $_SESSION['Email'] = $usuario;
+            $_SESSION['Rol'] = $usuario;
+            $_SESSION['Especialidad'] = $usuario;
 
-            if ($stmtAdmin->fetch()) {
-                header("Location: ../CRUD_Usuarios/Controlador/Controlador_Usuarios.php");
-                //unset($_SESSION['cedula_temp']); // Limpia el dato temporal
-                exit();
+            if($usuario['Rol'] == "ADMINISTRADOR"){
+                header("Location: ../Paginas_Principales/Administador.php");
+            }elseif($usuario['Rol'] == "CLIENTE"){
+                header("Location: ../Paginas_Principales/Cliente.php");
             }
+        }else{
+            header("Location: ../Contraseña.php?error=1");
+        }
 
-            // Comprobar rol de Cliente
-            $stmtCliente = $pdo->prepare("SELECT * FROM cliente WHERE CI_Cliente = :cedula");
-            $stmtCliente->bindParam(":cedula", $cedula, PDO::PARAM_STR);
-            $stmtCliente->execute();
-
-            if ($stmtCliente->fetch()) {
-                header("Location: ../CRUD_Usuarios/Vista/Vista_Usuario.php");
-                //unset($_SESSION['cedula_temp']); // Limpia el dato temporal
-                exit();
-            }
-
-            header("Location: ../Index.php?error=rol");
-            exit();
-
-        } else {
-            // Contraseña o usuario incorrecto: permanece en el paso 2
-            header("Location: ../Contraseña.php?error=contraseña");
-            exit();
-    }
-
+        
     } catch (PDOException $e) {
         echo "Error: " . $e->getMessage();
+    
+        
+    }
+    
+}else{
+        header("Location: ../Contraseña.php?error=empty");
     }
 }
 ?>

@@ -29,9 +29,15 @@ $cedula = $_SESSION['cedula_temp'];
         <label for="Contraseña" class="form-label">Contraseña</label>
         <input type="password" class="form-control" id="Contraseña" placeholder="Ingrese su contraseña" name="Contraseña">
         <button type="submit" class="btn btn-primary" id="iniciar">Iniciar Sesión</button>     
-           <?php if (isset($_GET['error']) && $_GET['error'] == "contraseña"): ?>
+           <?php if (isset($_GET['error']) && $_GET['error'] == 1): ?>
       <div class="alert alert-danger mt-2" role="alert">
         Contraseña invalida
+      </div>
+    <?php endif; ?>
+
+     <?php if (isset($_GET['error']) && $_GET['error'] == "empty"): ?>
+      <div class="alert alert-danger mt-2" role="alert">
+        Campo vacio
       </div>
     <?php endif; ?>
   </form>
