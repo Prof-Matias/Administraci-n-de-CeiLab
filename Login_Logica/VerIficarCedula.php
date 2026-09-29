@@ -1,5 +1,5 @@
 <?php 
-include "../Config/Conexion.php";
+require_once "../Config/Conexion.php";
 session_start();
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {

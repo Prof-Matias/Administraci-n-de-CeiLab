@@ -1,5 +1,5 @@
 <?php 
-include "../Config/Conexion.php";
+require_once "../Config/Conexion.php";
 session_start();
 
 // Verifica que exista la cédula temporal
@@ -31,9 +31,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $_SESSION['Especialidad'] = $usuario;
 
             if($usuario['Rol'] == "ADMINISTRADOR"){
-                header("Location: ../Paginas_Principales/Administador.php");
+                header("Location: ../Paginas_Principales/Pagina_Principal.php");
             }elseif($usuario['Rol'] == "CLIENTE"){
-                header("Location: ../Paginas_Principales/Cliente.php");
+                header("Location: ../Paginas_Principales/Pagina_Principal.php");
             }
         }else{
             header("Location: ../Contraseña.php?error=1");
