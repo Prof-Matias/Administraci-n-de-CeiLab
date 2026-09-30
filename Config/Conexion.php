@@ -1,5 +1,5 @@
-// Conexion con la Base de datos
 <?php
+// Conexion con la Base de datos
 $servidor="mysql:dbname=ceilab;host=localhost";
 $usuario="root";
 $contraseña="";

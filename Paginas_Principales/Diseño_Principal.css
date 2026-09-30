@@ -1,0 +1,140 @@
+
+@font-face {
+    font-family: 'Lobster';
+    /* Ruta al archivo dentro de tu carpeta Material_Visual/fuentes/ */
+    src: url('Material_Visual/fuentes/Lobster 1.4.otf') format('opentype'); 
+    font-weight: normal;
+    font-style: normal;
+}
+
+h1 {
+    margin-bottom: 10px;
+    margin-top: 0;
+    font-size: 80px;
+    font-weight: normal;
+    text-align: center;
+    color: #ffffff; /* Texto en blanco */
+}
+
+h2 {
+    margin-bottom: 10px;
+    margin-top: 0;
+    font-size: 40px; /* Corregido espacio entre 40 y px */
+    font-weight: normal;
+    text-align: center;
+    color: #000000; 
+}
+
+h1, h2 {
+    font-family: 'Lobster', cursive, sans-serif;
+}
+
+/* Contenedor principal del menú */
+        .dropdown {
+            position: relative;
+            display: inline-block;
+
+        }
+
+        .Barra{
+            background-color: rgb(0, 0, 0);
+
+
+        }
+
+        /* Botón que activa el menú */
+        .dropbtn {
+            background-color: transparent;
+            color: rgb(10, 1, 90);
+            padding: 8px 15px;
+            font-size: 1rem;
+            border: 2px solid white;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            position: absolute;
+            left: 1000px;
+            bottom: -3px;
+            width: 100px;
+        }
+
+        /* Efecto hover en el botón principal */
+        .dropbtn:hover, .dropdown:hover .dropbtn {
+            background-color: white;
+            color: var(--primary-color);
+        }
+
+        /* Contenedor de las opciones (oculto por defecto) */
+        .dropdown-content {
+            display: none; /* Oculta el menú */
+            position: absolute;
+            right: -1100px; /* Alinea el menú a la derecha */
+            background-color: var(--card-bg);
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1000;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 5px;
+            
+        }
+
+        /* Estilo de los enlaces dentro del menú */
+        .dropdown-content a {
+            color: var(--text-color);
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            font-size: 0.95rem;
+            transition: background 0.3s;
+        }
+
+        /* Efecto al pasar el mouse por las opciones */
+        .dropdown-content a:hover {
+            background-color: #f1f1f1;
+            color: var(--primary-color);
+        }
+
+        /* Línea separadora */
+        .divider {
+            height: 1px;
+            background-color: #ddd;
+            margin: 0;
+        }
+
+        /* Estilo especial para Cerrar Sesión */
+        .dropdown-content a.logout-link {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .dropdown-content a.logout-link:hover {
+            background-color: #ffe6e6;
+            color: #c82333;
+        }
+
+        /* Muestra el menú cuando pasas el mouse por el contenedor */
+        .dropdown:hover .dropdown-content {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        /* Animación suave para que aparezca */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        img{
+            width: 100%;
+            height: 100%;
+            max-width: 100px;
+
+        }
+        .bienvenida-container {
+        text-align: center;
+        color: #ffffff;
+        /* Usa la primera fuente disponible en la computadora del usuario */
+        font-family: "Trebuchet MS", "Lucida Sans Unicode", "Segoe UI", Arial, sans-serif;
+    }

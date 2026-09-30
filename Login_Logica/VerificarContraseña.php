@@ -24,16 +24,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if($usuario && password_verify($contrasena,$usuario['Contraseña'])){
-            $_SESSION['Nombre'] = $usuario; 
-            $_SESSION['Apellido'] = $usuario;
-            $_SESSION['Email'] = $usuario;
-            $_SESSION['Rol'] = $usuario;
-            $_SESSION['Especialidad'] = $usuario;
+            $_SESSION['Nombre'] = $usuario['Nombre']; 
+            $_SESSION['Apellido'] = $usuario['Apellido'];
+            $_SESSION['Email'] = $usuario['Email'];
+            $_SESSION['Rol'] = $usuario['Rol'];
+            $_SESSION['Especialidad'] = $usuario['Especialidad'];
 
             if($usuario['Rol'] == "ADMINISTRADOR"){
                 header("Location: ../Paginas_Principales/Pagina_Principal.php");
+                exit();
             }elseif($usuario['Rol'] == "CLIENTE"){
                 header("Location: ../Paginas_Principales/Pagina_Principal.php");
+                exit();
             }
         }else{
             header("Location: ../Contraseña.php?error=1");
