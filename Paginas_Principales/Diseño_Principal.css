@@ -16,6 +16,7 @@
     font-style: normal;
 }
 
+/* Aca se le especifica a cada texto cual fuente y color lleva cada head */
 h1 {
     font-family: 'MonimerSerif', sans-serif;
     color: #070606;
@@ -26,6 +27,7 @@ h2 {
     color: #070606;
     text-align: center;
 }
+/* Tamaños que manejan los h1 y h2 */
 h1 {
     font-size: 80px;
     margin-bottom: 10px;
