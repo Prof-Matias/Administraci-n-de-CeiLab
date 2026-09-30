@@ -1,32 +1,41 @@
 
 @font-face {
-    font-family: 'Lobster';
-    /* Ruta al archivo dentro de tu carpeta Material_Visual/fuentes/ */
-    src: url('Material_Visual/fuentes/Lobster 1.4.otf') format('opentype'); 
+    font-family: 'RelaxStudy'; /* Nombre de la fuente h2 */
+    /* Dirección donde está almacenada la fuente */
+    src: url('/Administraci-n-de-CeiLab/Material_Visual/fuentes/RelaxStudy.otf') format('OpenType');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'MonimerSerif'; /* Nombre de la fuente h1 */
+    /* Dirección donde está almacenada la fuente */
+    src: url('/Administraci-n-de-CeiLab/Material_Visual/fuentes/MonimerSerif.otf') format('OpenType');
+    /* El format depende del tipo del tipo que sea el archivo, ambos al ser Otf (OpenType)
+        le corresponde ese formato*/
     font-weight: normal;
     font-style: normal;
 }
 
 h1 {
+    font-family: 'MonimerSerif', sans-serif;
+    color: #070606;
+    text-align: center;
+}
+h2 {
+    font-family: 'RelaxStudy', sans-serif;
+    color: #070606;
+    text-align: center;
+}
+h1 {
+    font-size: 80px;
     margin-bottom: 10px;
     margin-top: 0;
-    font-size: 80px;
-    font-weight: normal;
-    text-align: center;
-    color: #ffffff; /* Texto en blanco */
 }
 
 h2 {
+    font-size: 40px;
     margin-bottom: 10px;
     margin-top: 0;
-    font-size: 40px; /* Corregido espacio entre 40 y px */
-    font-weight: normal;
-    text-align: center;
-    color: #000000; 
-}
-
-h1, h2 {
-    font-family: 'Lobster', cursive, sans-serif;
 }
 
 /* Contenedor principal del menú */
