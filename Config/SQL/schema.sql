@@ -172,8 +172,5 @@ ALTER TABLE `reserva_material`
   ADD CONSTRAINT `reserva_material_ibfk_1` FOREIGN KEY (`ID_Solicitud`) REFERENCES `reserva` (`ID_Solicitud`),
   ADD CONSTRAINT `reserva_material_ibfk_2` FOREIGN KEY (`ID_Material`) REFERENCES `material` (`ID_Material`);
 
-ALTER TABLE `historial_solicitud`
-  ADD CONSTRAINT `historial_solicitud_ibfk_1` FOREIGN KEY (`CI_Cliente`) REFERENCES `usuario` (`CI`),
-  ADD CONSTRAINT `historial_solicitud_ibfk_2` FOREIGN KEY (`CI_Administrador`) REFERENCES `usuario` (`CI`);
 
 SET FOREIGN_KEY_CHECKS = 1;
