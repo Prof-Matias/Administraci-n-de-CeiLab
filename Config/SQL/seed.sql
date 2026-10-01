@@ -1,6 +1,6 @@
 -- ============================================================
 -- Sistema de Gestión de Préstamos del CeiLab - CeRP del Este
--- seed.sql v2 — Datos de prueba (esquema con Usuario fusionado)
+-- seed.sql v3 (Adaptado) — Datos de prueba para esquema con Usuario fusionado
 -- Contraseña real de TODOS los usuarios de prueba: 123456
 -- ============================================================
 
@@ -9,9 +9,8 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 -- ------------------------------------------------------------
 -- USUARIO
--- 2 administradores (DOT) + 4 clientes
--- Especialidad solo cargada en algunos clientes (a propósito,
--- para simular el caso en que el usuario no la completó)
+-- 2 administradores + 4 clientes
+-- Especialidad solo cargada en algunos clientes
 -- ------------------------------------------------------------
 INSERT INTO `usuario` (`CI`, `Nombre`, `Apellido`, `Contraseña`, `Email`, `Rol`, `Especialidad`) VALUES
 ('10000001', 'Lucía',     'Fernández', '$2b$10$iz6RuhQBbEtjKcuEA8BP8uSqv.5VSVZIvpo2BK4HvuAl.AZTgJomq', 'lucia.fernandez@cerpdeleste.edu.uy',   'ADMINISTRADOR', NULL),
@@ -31,29 +30,29 @@ INSERT INTO `telefono` (`CI_Usuario`, `Telefono`) VALUES
 ('20000002', '099333333');
 
 -- ------------------------------------------------------------
--- MATERIAL
+-- MATERIAL (incluye campo Foto_Material)
 -- ------------------------------------------------------------
-INSERT INTO `material` (`ID_Material`, `Nombre`, `Descripcion`, `Categoria`, `Cantidad_Total`, `Cantidad_Disponible`, `Estado`) VALUES
-(1, 'Ceibalita',              'Notebook educativa Ceibal',               'Equipos',                   10, 7, 'Disponible'),
-(2, 'Micro:bit',              'Placa programable micro:bit',             'Robótica y Programación',   6,  4, 'Disponible'),
-(3, 'Dron',                   'Dron para programación de vuelo',         'Robótica y Programación',   2,  0, 'Reservado'),
-(4, 'LEGO SPIKE',             'Kit de robótica LEGO SPIKE',              'Robótica y Programación',   4,  4, 'Disponible'),
-(5, 'Impresora 3D',           'Impresora 3D del laboratorio',            'Robótica y Programación',   1,  1, 'Disponible'),
-(6, 'Cable pinza cocodrilo',  'Cable con pinzas cocodrilo',              'Gadgets',                   20, 18, 'Disponible'),
-(7, 'Buzzer',                 'Buzzer para prácticas con micro:bit',     'Gadgets',                   15, 15, 'Disponible');
+INSERT INTO `material` (`ID_Material`, `Nombre`, `Descripcion`, `Categoria`, `Cantidad_Total`, `Cantidad_Disponible`, `Estado`, `Foto_Material`) VALUES
+(1, 'Ceibalita',              'Notebook educativa Ceibal',              'Equipos',                 10, 7,  'Disponible', '/uploads/ceibalita.jpg'),
+(2, 'Micro:bit',              'Placa programable micro:bit',            'Robótica y Programación', 6,  4,  'Disponible', '/uploads/microbit.jpg'),
+(3, 'Dron',                   'Dron para programación de vuelo',        'Robótica y Programación', 2,  0,  'Reservado',  '/uploads/dron.jpg'),
+(4, 'LEGO SPIKE',             'Kit de robótica LEGO SPIKE',             'Robótica y Programación', 4,  4,  'Disponible', '/uploads/lego_spike.jpg'),
+(5, 'Impresora 3D',           'Impresora 3D del laboratorio',           'Robótica y Programación', 1,  1,  'Disponible', '/uploads/impresora3d.jpg'),
+(6, 'Cable pinza cocodrilo',  'Cable con pinzas cocodrilo',             'Gadgets',                 20, 18, 'Disponible', '/uploads/cocodrilo.jpg'),
+(7, 'Buzzer',                 'Buzzer para prácticas con micro:bit',    'Gadgets',                 15, 15, 'Disponible', '/uploads/buzzer.jpg');
 
 -- ------------------------------------------------------------
 -- SOLICITUD
 -- ------------------------------------------------------------
 INSERT INTO `solicitud` (`ID_Solicitud`, `Estado`, `Fecha_Solicitud`, `Fecha_Validacion`, `Motivo_Rechazo`, `CI_Cliente`, `CI_Administrador`) VALUES
-(1, 'Pendiente', '2026-09-25 09:00:00', NULL,                  NULL,                                  '20000001', NULL),
-(2, 'Aprobado',  '2026-09-08 08:30:00', '2026-09-08 09:00:00', NULL,                                  '20000002', '10000001'),
-(3, 'Rechazado', '2026-09-20 10:00:00', '2026-09-20 11:00:00', 'Cédula con préstamos vencidos',       '20000003', '10000002'),
-(4, 'Pendiente', '2026-09-26 15:00:00', NULL,                  NULL,                                  '20000004', NULL),
-(5, 'Aprobado',  '2026-09-24 09:00:00', '2026-09-24 10:00:00', NULL,                                  '20000001', '10000001'),
-(6, 'Pendiente', '2026-09-26 16:00:00', NULL,                  NULL,                                  '20000002', NULL),
-(7, 'Rechazado', '2026-09-22 09:00:00', '2026-09-22 12:00:00', 'Horario en conflicto con otra reserva','20000003', '10000002'),
-(8, 'Aprobado',  '2026-09-14 08:00:00', '2026-09-14 08:30:00', NULL,                                  '20000004', '10000001');
+(1, 'Pendiente', '2026-09-25 09:00:00', NULL,                  NULL,                                    '20000001', NULL),
+(2, 'Aprobado',  '2026-09-08 08:30:00', '2026-09-08 09:00:00', NULL,                                    '20000002', '10000001'),
+(3, 'Rechazado', '2026-09-20 10:00:00', '2026-09-20 11:00:00', 'Cédula con préstamos vencidos',        '20000003', '10000002'),
+(4, 'Pendiente', '2026-09-26 15:00:00', NULL,                  NULL,                                    '20000004', NULL),
+(5, 'Aprobado',  '2026-09-24 09:00:00', '2026-09-24 10:00:00', NULL,                                    '20000001', '10000001'),
+(6, 'Pendiente', '2026-09-26 16:00:00', NULL,                  NULL,                                    '20000002', NULL),
+(7, 'Rechazado', '2026-09-22 09:00:00', '2026-09-22 12:00:00', 'Horario en conflicto con otra reserva', '20000003', '10000002'),
+(8, 'Aprobado',  '2026-09-14 08:00:00', '2026-09-14 08:30:00', NULL,                                    '20000004', '10000001');
 
 -- ------------------------------------------------------------
 -- PRESTAMO
