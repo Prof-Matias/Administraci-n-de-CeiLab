@@ -43,7 +43,8 @@ CREATE TABLE `material` (
   `Categoria`           varchar(50) DEFAULT NULL,
   `Cantidad_Total`      int(11) NOT NULL,
   `Cantidad_Disponible` int(11) NOT NULL,
-  `Estado`              varchar(30) DEFAULT NULL
+  `Estado`              varchar(30) DEFAULT NULL,
+  `Foto_Material` varchar(900) COLLATE utf8mb4_general_ci NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- ------------------------------------------------------------
@@ -108,9 +109,7 @@ CREATE TABLE `historial_solicitud` (
   `Estado`           varchar(30) DEFAULT NULL,
   `Fecha_Solicitud`  datetime DEFAULT NULL,
   `Fecha_Validacion` datetime DEFAULT NULL,
-  `Motivo_Rechazo`   text DEFAULT NULL,
-  `CI_Cliente`       varchar(8) DEFAULT NULL,
-  `CI_Administrador` varchar(8) DEFAULT NULL
+  `Motivo_Rechazo`   text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- ============================================================
