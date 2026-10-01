@@ -113,7 +113,7 @@ if (!isset($_SESSION['Rol'])) {
             <button class="dropbtn" id="menuBtn">Mi Perfil</button>
             <div class="dropdown-content" id="menuContent">
                 <a href="">Ver Perfil</a>
-                <a href="../Config/Logout.php" class="logout-link">Cerrar Sesión</a>
+                <a href="../Index.php" class="logout-link">Cerrar Sesión</a>
             </div>
         </div>
     </header>
