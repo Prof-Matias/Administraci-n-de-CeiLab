@@ -7,6 +7,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     if(!empty($cedula)){
          try{
+            $pdo = Conexion::conectar(); // <-- Se obtiene la instancia PDO desde la clase Conexion
             $query = "SELECT * FROM usuario WHERE CI = :Cedula";
             $stmt = $pdo->prepare($query);
             $stmt->bindParam(":Cedula", $cedula);
@@ -15,21 +16,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $verificar = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if($verificar){
-            $_SESSION['cedula_temp'] = $cedula;
+                $_SESSION['cedula_temp'] = $cedula;
 
-            header("Location: ../Contraseña.php");
+                header("Location: ../Contraseña.php");
             }elseif(!$verificar){
-            header("Location: ../Index.php?error=1");
+                header("Location: ../Index.php?error=1");
             }      
     
          } catch (PDOException $e) {
-        // Manejo de excepciones en caso de error.
-        echo "Error: " . $e->getMessage();
-        }   
+            // Manejo de excepciones en caso de error.
+            echo "Error: " . $e->getMessage();
+         }   
     }else{
           header("Location: ../Index.php?error=empty");
     }
-    
-
 }
 ?>

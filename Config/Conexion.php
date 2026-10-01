@@ -1,13 +1,18 @@
 <?php
-// Conexion con la Base de datos
-$servidor="mysql:dbname=ceilab;host=localhost";
-$usuario="root";
-$contraseña="";
+class Conexion {
+    public static function conectar() {
+        $servidor = "mysql:dbname=ceilab;host=localhost";
+        $usuario = "root";
+        $contrasena = "";
 
-// Try para capturar errores
-try {
-    $pdo = new PDO($servidor, $usuario, $contraseña, array(PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8"));
-} catch (PDOException $error) {
-    echo "Error en la conexión: " . $error->getMessage(); //Mostrar el error en caso de que falle la conexión
+        try {
+            $pdo = new PDO($servidor, $usuario, $contrasena, array(
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8"
+            ));
+            return $pdo;
+        } catch (PDOException $error) {
+            die("Error en la conexión: " . $error->getMessage());
+        }
+    }
 }
-?>

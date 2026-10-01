@@ -1,71 +1,38 @@
-<?php 
-    class UsuarioModel {
-    private $pdo;
+<?php
+// Utilizar ruta basada en la ubicación del archivo
+require_once __DIR__ . '/../../Config/Conexion.php';
 
-    public function __construct($pdo) {
-        $this->pdo = $pdo;
+class Modelo_Usuario {
+    private $conexion;
+
+    public function __construct() {
+        $this->conexion = Conexion::conectar();
     }
 
-    // Obtener todos los usuarios de la base de datos
     public function obtenerUsuarios() {
-        $query = "SELECT * FROM usuario";
-        $statement = $this->pdo->prepare($query);
-        $statement->execute();
-        return $statement->fetchAll(PDO::FETCH_ASSOC);
+        $stmt = $this->conexion->prepare("SELECT CI, Nombre, Apellido, Email, Rol, Especialidad FROM usuario");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // Agregar un nuevo usuario a la base de datos
-    public function agregarUsuario($nombre, $apellido, $correo,, $contrasena, $rol, $especialidad) {
-        $query = "INSERT INTO usuario (Nombre, Apellido, Contraseña , Email, Rol, Especialidad) VALUES (?, ?, ?, ?, ?, ?)";
-        $statement = $this->pdo->prepare($query);
-        $statement->execute([$nombre, $apellido, $correo, $especialidad, $contrasena, $rol]);
+    public function obtenerUsuarioPorCI($cedula) {
+        $stmt = $this->conexion->prepare("SELECT CI, Nombre, Apellido, Email, Rol, Especialidad, Contraseña FROM usuario WHERE CI = ?");
+        $stmt->execute([$cedula]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    // Obtener información de un usuario por su ID
-    public function obtenerUsuarioPorID($cedula) {
-        $query = "SELECT * FROM usuario WHERE CI = ?";
-        $statement = $this->pdo->prepare($query);
-        $statement->execute([$cedula]);
-        return $statement->fetch(PDO::FETCH_ASSOC);
+    public function guardarUsuario($cedula, $nombre, $apellido, $correo, $contrasena, $rol, $especialidad) {
+        $stmt = $this->conexion->prepare("INSERT INTO usuario (CI, Nombre, Apellido, Email, Contraseña, Rol, Especialidad) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        return $stmt->execute([$cedula, $nombre, $apellido, $correo, $contrasena, $rol, $especialidad]);
     }
 
-    // Actualizar la información de un usuario en la base de datos
-    public function actualizarUsuario($cedula, $nombre, $apellido, $correo, $especialidad, $contrasena, $rol,) {
-        try {
-            $query = "UPDATE usuario SET Nombre = ?, Apellido = ?,  Contraseña  = ?, Email = ?, Rol = ?, Especialidad = ?  WHERE CI = ?";
-            $statement = $this->pdo->prepare($query);
-            $success = $statement->execute([$nombre, $apellido, $correo,, $contrasena, $rol,  $especialidad]);
-    
-            return $success;
-        } catch (PDOException $e) {
-            // Manejo de errores aquí (puedes registrar el error o devolver false)
-            return false;
-        }
+    public function actualizarUsuario($cedula, $nombre, $apellido, $correo, $contrasena, $rol, $especialidad) {
+        $stmt = $this->conexion->prepare("UPDATE usuario SET Nombre = ?, Apellido = ?, Email = ?, Contraseña = ?, Rol = ?, Especialidad = ? WHERE CI = ?");
+        return $stmt->execute([$nombre, $apellido, $correo, $contrasena, $rol, $especialidad, $cedula]);
     }
-    
-    // Eliminar un usuario de la base de datos
+
     public function eliminarUsuario($cedula) {
-        // Ahora, eliminar al usuario
-        $query = "DELETE FROM usuario WHERE CI = :Cedula";
-        $stmt = $this->pdo->prepare($query);
-        $stmt->bindParam(':Cedula', $cedula);
-        if ($stmt->execute()) {
-            return true;
-        } else {
-            return false; 
-        }
+        $stmt = $this->conexion->prepare("DELETE FROM usuario WHERE CI = ?");
+        return $stmt->execute([$cedula]);
     }
-    
 }
-
-
-
-
-
-
-
-
-
-
-
-?>
