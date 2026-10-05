@@ -5,6 +5,14 @@ header('Content-Type: application/json; charset=utf-8');
 
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
+require_once __DIR__ . '/../../Config/Guardia.php';
+$accionesParaTodos = ['listar', 'ver'];
+if (in_array($action, $accionesParaTodos, true)) {
+    exigirSesion();
+} else {
+    exigirRol('ADMINISTRADOR');
+}
+
 try {
     $modelo = new Modelo_Producto();
 
