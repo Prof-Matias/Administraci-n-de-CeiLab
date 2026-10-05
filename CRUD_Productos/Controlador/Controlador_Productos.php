@@ -21,7 +21,7 @@ try {
             $nombreOriginal = $_FILES[$fileInputName]['name'];
             $extension = pathinfo($nombreOriginal, PATHINFO_EXTENSION);
             
-            // Genera un nombre único conservando la extensión original (funciona para jpg, png, webp, gif, svg, etc.)
+            // Genera un nombre único conservando la extensión original
             $nombreArchivo = 'prod_' . uniqid() . '.' . strtolower($extension);
             $destino = $directorioAbsoluto . $nombreArchivo;
 
@@ -45,6 +45,19 @@ try {
 
         case 'guardar':
             $nombre = $_POST['nombre'] ?? '';
+            $cantidadTotal = (int)($_POST['cantidad_total'] ?? 0);
+            $cantidadDisponible = (int)($_POST['cantidad_disponible'] ?? 0);
+
+            // VALIDACIONES DE CANTIDAD
+            if ($cantidadTotal < 0 || $cantidadDisponible < 0) {
+                echo json_encode(['success' => false, 'message' => 'Las cantidades no pueden ser números negativos.']);
+                break;
+            }
+
+            if ($cantidadDisponible > $cantidadTotal) {
+                echo json_encode(['success' => false, 'message' => 'La cantidad disponible no puede ser mayor a la cantidad total.']);
+                break;
+            }
 
             // 1. Verificación de duplicado por nombre
             if ($modelo->obtenerProductoPorNombre($nombre)) {
@@ -63,8 +76,8 @@ try {
                 $nombre,
                 $_POST['descripcion'] ?? '',
                 $_POST['categoria'] ?? '',
-                $_POST['cantidad_total'] ?? 0,
-                $_POST['cantidad_disponible'] ?? 0,
+                $cantidadTotal,
+                $cantidadDisponible,
                 $_POST['estado'] ?? 'Disponible',
                 $rutaImagen
             );
@@ -75,6 +88,19 @@ try {
         case 'actualizar':
             $id = $_POST['id_material'] ?? 0;
             $fotoActual = $_POST['foto_actual'] ?? 'uploads/default.png';
+            $cantidadTotal = (int)($_POST['cantidad_total'] ?? 0);
+            $cantidadDisponible = (int)($_POST['cantidad_disponible'] ?? 0);
+
+            // VALIDACIONES DE CANTIDAD
+            if ($cantidadTotal < 0 || $cantidadDisponible < 0) {
+                echo json_encode(['success' => false, 'message' => 'Las cantidades no pueden ser números negativos.']);
+                break;
+            }
+
+            if ($cantidadDisponible > $cantidadTotal) {
+                echo json_encode(['success' => false, 'message' => 'La cantidad disponible no puede ser mayor a la cantidad total.']);
+                break;
+            }
 
             // Si se subió una nueva imagen, se usa la nueva; de lo contrario, conserva la anterior
             $nuevaFoto = procesarImagen('foto_material');
@@ -85,8 +111,8 @@ try {
                 $_POST['nombre'] ?? '',
                 $_POST['descripcion'] ?? '',
                 $_POST['categoria'] ?? '',
-                $_POST['cantidad_total'] ?? 0,
-                $_POST['cantidad_disponible'] ?? 0,
+                $cantidadTotal,
+                $cantidadDisponible,
                 $_POST['estado'] ?? 'Disponible',
                 $fotoFinal
             );

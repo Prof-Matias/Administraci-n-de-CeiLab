@@ -444,12 +444,12 @@ if (!isset($_SESSION['Rol'])) {
                 
                 <div class="form-group">
                     <label>Descripción</label>
-                    <textarea id="prod_descripcion" name="descripcion" rows="3"></textarea>
+                    <textarea id="prod_descripcion" name="descripcion" rows="3" required></textarea>
                 </div>
                 
                 <div class="form-group">
                     <label>Categoría</label>
-                    <input type="text" id="prod_categoria" name="categoria">
+                    <input type="text" id="prod_categoria" name="categoria" required>
                 </div>
                 
                 <div class="form-group">
@@ -464,7 +464,7 @@ if (!isset($_SESSION['Rol'])) {
                 
                 <div class="form-group">
                     <label>Estado</label>
-                    <select id="prod_estado" name="estado">
+                    <select id="prod_estado" name="estado" required>
                         <option value="Disponible">Disponible</option>
                         <option value="En Mantenimiento">En Mantenimiento</option>
                         <option value="Agotado">Agotado</option>
