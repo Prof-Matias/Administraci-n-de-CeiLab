@@ -1,6 +1,6 @@
 -- ============================================================
 -- Sistema de Gestión de Préstamos del CeiLab - CeRP del Este
--- seed.sql v3 (Adaptado) — Datos de prueba para esquema con Usuario fusionado
+-- seed.sql v4 (Adaptado: minúsculas y sin caracteres especiales en columnas)
 -- Contraseña real de TODOS los usuarios de prueba: 123456
 -- ============================================================
 
@@ -10,9 +10,8 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- ------------------------------------------------------------
 -- USUARIO
 -- 2 administradores + 4 clientes
--- Especialidad solo cargada en algunos clientes
 -- ------------------------------------------------------------
-INSERT INTO `usuario` (`CI`, `Nombre`, `Apellido`, `Contraseña`, `Email`, `Rol`, `Especialidad`) VALUES
+INSERT INTO `usuario` (`ci`, `nombre`, `apellido`, `contrasenia`, `email`, `rol`, `especialidad`) VALUES
 ('10000001', 'Lucía',     'Fernández', '$2b$10$iz6RuhQBbEtjKcuEA8BP8uSqv.5VSVZIvpo2BK4HvuAl.AZTgJomq', 'lucia.fernandez@cerpdeleste.edu.uy',   'ADMINISTRADOR', NULL),
 ('10000002', 'Martín',    'Rodríguez', '$2b$10$iz6RuhQBbEtjKcuEA8BP8uSqv.5VSVZIvpo2BK4HvuAl.AZTgJomq', 'martin.rodriguez@cerpdeleste.edu.uy',  'ADMINISTRADOR', NULL),
 ('20000001', 'Ana',       'Pereira',   '$2b$10$iz6RuhQBbEtjKcuEA8BP8uSqv.5VSVZIvpo2BK4HvuAl.AZTgJomq', 'ana.pereira@cerpdeleste.edu.uy',       'CLIENTE',       NULL),
@@ -21,18 +20,18 @@ INSERT INTO `usuario` (`CI`, `Nombre`, `Apellido`, `Contraseña`, `Email`, `Rol`
 ('20000004', 'Diego',     'Martínez',  '$2b$10$iz6RuhQBbEtjKcuEA8BP8uSqv.5VSVZIvpo2BK4HvuAl.AZTgJomq', 'diego.martinez@cerpdeleste.edu.uy',    'CLIENTE',       'Informática');
 
 -- ------------------------------------------------------------
--- TELEFONO (multivaluado: Ana tiene 2 teléfonos cargados)
+-- TELEFONO
 -- ------------------------------------------------------------
-INSERT INTO `telefono` (`CI_Usuario`, `Telefono`) VALUES
+INSERT INTO `telefono` (`ci_usuario`, `telefono`) VALUES
 ('10000001', '099111111'),
 ('20000001', '099222222'),
 ('20000001', '099222233'),
 ('20000002', '099333333');
 
 -- ------------------------------------------------------------
--- MATERIAL (incluye campo Foto_Material)
+-- MATERIAL
 -- ------------------------------------------------------------
-INSERT INTO `material` (`ID_Material`, `Nombre`, `Descripcion`, `Categoria`, `Cantidad_Total`, `Cantidad_Disponible`, `Estado`, `Foto_Material`) VALUES
+INSERT INTO `material` (`id_material`, `nombre`, `descripcion`, `categoria`, `cantidad_total`, `cantidad_disponible`, `estado`, `foto_material`) VALUES
 (1, 'Ceibalita',              'Notebook educativa Ceibal',              'Equipos',                 10, 7,  'Disponible', '/uploads/ceibalita.jpg'),
 (2, 'Micro:bit',              'Placa programable micro:bit',            'Robótica y Programación', 6,  4,  'Disponible', '/uploads/microbit.jpg'),
 (3, 'Dron',                   'Dron para programación de vuelo',        'Robótica y Programación', 2,  0,  'Reservado',  '/uploads/dron.jpg'),
@@ -44,7 +43,7 @@ INSERT INTO `material` (`ID_Material`, `Nombre`, `Descripcion`, `Categoria`, `Ca
 -- ------------------------------------------------------------
 -- SOLICITUD
 -- ------------------------------------------------------------
-INSERT INTO `solicitud` (`ID_Solicitud`, `Estado`, `Fecha_Solicitud`, `Fecha_Validacion`, `Motivo_Rechazo`, `CI_Cliente`, `CI_Administrador`) VALUES
+INSERT INTO `solicitud` (`id_solicitud`, `estado`, `fecha_solicitud`, `fecha_validacion`, `motivo_rechazo`, `ci_cliente`, `ci_administrador`) VALUES
 (1, 'Pendiente', '2026-09-25 09:00:00', NULL,                  NULL,                                    '20000001', NULL),
 (2, 'Aprobado',  '2026-09-08 08:30:00', '2026-09-08 09:00:00', NULL,                                    '20000002', '10000001'),
 (3, 'Rechazado', '2026-09-20 10:00:00', '2026-09-20 11:00:00', 'Cédula con préstamos vencidos',        '20000003', '10000002'),
@@ -57,7 +56,7 @@ INSERT INTO `solicitud` (`ID_Solicitud`, `Estado`, `Fecha_Solicitud`, `Fecha_Val
 -- ------------------------------------------------------------
 -- PRESTAMO
 -- ------------------------------------------------------------
-INSERT INTO `prestamo` (`ID_Solicitud`, `Materia`, `Horas_Solicitadas`, `Fecha_Entrega`, `Fecha_Devolucion`) VALUES
+INSERT INTO `prestamo` (`id_solicitud`, `materia`, `horas_solicitadas`, `fecha_entrega`, `fecha_devolucion`) VALUES
 (1, 'Física',       4, NULL,                  NULL),
 (2, 'Matemática',   8, '2026-09-10 09:00:00', NULL),
 (3, 'Química',      2, NULL,                  NULL),
@@ -66,7 +65,7 @@ INSERT INTO `prestamo` (`ID_Solicitud`, `Materia`, `Horas_Solicitadas`, `Fecha_E
 -- ------------------------------------------------------------
 -- RESERVA
 -- ------------------------------------------------------------
-INSERT INTO `reserva` (`ID_Solicitud`, `Fecha`, `Hora_Inicio`, `Hora_Fin`) VALUES
+INSERT INTO `reserva` (`id_solicitud`, `fecha`, `hora_inicio`, `hora_fin`) VALUES
 (4, '2026-10-05', '14:00:00', '16:00:00'),
 (5, '2026-10-03', '10:00:00', '12:00:00'),
 (6, '2026-10-03', '11:00:00', '13:00:00'),
@@ -75,7 +74,7 @@ INSERT INTO `reserva` (`ID_Solicitud`, `Fecha`, `Hora_Inicio`, `Hora_Fin`) VALUE
 -- ------------------------------------------------------------
 -- PRESTAMO_MATERIAL
 -- ------------------------------------------------------------
-INSERT INTO `prestamo_material` (`ID_Solicitud`, `ID_Material`, `Cantidad`) VALUES
+INSERT INTO `prestamo_material` (`id_solicitud`, `id_material`, `cantidad`) VALUES
 (1, 1, 1),
 (1, 6, 2),
 (2, 1, 1),
@@ -85,7 +84,7 @@ INSERT INTO `prestamo_material` (`ID_Solicitud`, `ID_Material`, `Cantidad`) VALU
 -- ------------------------------------------------------------
 -- RESERVA_MATERIAL
 -- ------------------------------------------------------------
-INSERT INTO `reserva_material` (`ID_Solicitud`, `ID_Material`, `Cantidad`) VALUES
+INSERT INTO `reserva_material` (`id_solicitud`, `id_material`, `cantidad`) VALUES
 (4, 4, 2),
 (5, 5, 1),
 (6, 5, 1),
@@ -94,7 +93,7 @@ INSERT INTO `reserva_material` (`ID_Solicitud`, `ID_Material`, `Cantidad`) VALUE
 -- ------------------------------------------------------------
 -- HISTORIAL_SOLICITUD
 -- ------------------------------------------------------------
-INSERT INTO `historial_solicitud` (`ID_Historial`, `Tipo`, `Fecha_Archivo`, `Estado`, `Fecha_Solicitud`, `Fecha_Validacion`, `Motivo_Rechazo`, `CI_Cliente`, `CI_Administrador`) VALUES
+INSERT INTO `historial_solicitud` (`id_historial`, `tipo`, `fecha_archivo`, `estado`, `fecha_solicitud`, `fecha_validacion`, `motivo_rechazo`, `ci_cliente`, `ci_administrador`) VALUES
 (1, 'Prestamo', '2026-08-20 16:00:00', 'Aprobado', '2026-08-10 09:00:00', '2026-08-10 10:00:00', NULL, '20000001', '10000001'),
 (2, 'Reserva',  '2026-08-25 12:00:00', 'Aprobado', '2026-08-15 09:00:00', '2026-08-15 09:30:00', NULL, '20000003', '10000002');
 
