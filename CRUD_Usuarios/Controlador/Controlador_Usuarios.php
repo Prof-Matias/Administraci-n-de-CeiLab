@@ -10,6 +10,9 @@
 // Se incluye la definición de la clase Modelo_Usuario para interactuar con la base de datos
 require_once __DIR__ . '/../Modelo/Modelo_Usuario.php';
 
+require_once __DIR__ . '/../../Config/Guardia.php';
+exigirRol('ADMINISTRADOR');
+
 // Se establece la cabecera de respuesta como JSON con codificación UTF-8
 header('Content-Type: application/json; charset=utf-8');
 
