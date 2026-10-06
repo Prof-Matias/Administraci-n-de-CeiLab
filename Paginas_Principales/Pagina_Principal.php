@@ -233,7 +233,7 @@ if (!isset($_SESSION['Rol'])) {
     <header class="Barra">
         <a href="Pagina_Principal.php"><img src="../Material_Visual/Logo2.png" alt="Logo CeiLab"></a>
         <div class="dropdown">
-            <button class="dropbtn" id="menuBtn">Mi Perfil</button>
+            <button class="dropbtn" id="menuBtn"><?php echo htmlspecialchars($_SESSION['Nombre']); ?></button>
             <div class="dropdown-content" id="menuContent">
                 <a href="">Ver Perfil</a>
                 <a href="../Index.php" class="logout-link">Cerrar Sesión</a>
@@ -243,7 +243,6 @@ if (!isset($_SESSION['Rol'])) {
 
     <!-- Mensaje de Bienvenida personalizado -->
     <div>
-        <h1><?php echo htmlspecialchars($_SESSION['Nombre']); ?></h1>
         <h2>Bienvenido al sistema de prestaciones del CeiLab del Cerp del Este</h2>
     </div>
 
