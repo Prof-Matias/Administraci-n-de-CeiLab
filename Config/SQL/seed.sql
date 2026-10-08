@@ -15,7 +15,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 INSERT INTO `usuario` (`ci`, `nombre`, `apellido`, `contrasenia`, `email`, `rol`, `especialidad`) VALUES
 ('10000001', 'Lucía',     'Fernández', '$2b$10$iz6RuhQBbEtjKcuEA8BP8uSqv.5VSVZIvpo2BK4HvuAl.AZTgJomq', 'lucia.fernandez@cerpdeleste.edu.uy',   'ADMINISTRADOR', NULL),
 ('10000002', 'Martín',    'Rodríguez', '$2b$10$iz6RuhQBbEtjKcuEA8BP8uSqv.5VSVZIvpo2BK4HvuAl.AZTgJomq', 'martin.rodriguez@cerpdeleste.edu.uy',  'ADMINISTRADOR', NULL),
-('20000001', 'Ana',       'Pereira',   '$2b$10$iz6RuhQBbEtjKcuEA8BP8uSqv.5VSVZIvpo2BK4HvuAl.AZTgJomq', 'ana.pereira@cerpdeleste.edu.uy',       'CLIENTE',       NULL),
+('20000001', 'Ana',       'Pereira',   '$2b$10$iz6RuhQBbEtjKcuEA8BP8uSqv.5VSVZIvpo2BK4HvuAl.AZTgJomq', 'ana.pereira@cerpdeleste.edu.uy',       'CLIENTE',       'Física'),
 ('20000002', 'Carlos',    'Gómez',     '$2b$10$iz6RuhQBbEtjKcuEA8BP8uSqv.5VSVZIvpo2BK4HvuAl.AZTgJomq', 'carlos.gomez@cerpdeleste.edu.uy',      'CLIENTE',       'Matemática'),
 ('20000003', 'Valentina', 'Silva',     '$2b$10$iz6RuhQBbEtjKcuEA8BP8uSqv.5VSVZIvpo2BK4HvuAl.AZTgJomq', 'valentina.silva@cerpdeleste.edu.uy',   'CLIENTE',       'Informática'),
 ('20000004', 'Diego',     'Martínez',  '$2b$10$iz6RuhQBbEtjKcuEA8BP8uSqv.5VSVZIvpo2BK4HvuAl.AZTgJomq', 'diego.martinez@cerpdeleste.edu.uy',    'CLIENTE',       'Informática');
@@ -62,7 +62,7 @@ INSERT INTO `solicitud` (`id_solicitud`, `estado`, `fecha_solicitud`, `fecha_val
 INSERT INTO `prestamo` (`id_solicitud`, `materia`, `horas_solicitadas`, `fecha_entrega`, `fecha_devolucion`) VALUES
 (1, 'Física',       4, NULL,                  NULL),
 (2, 'Matemática',   8, '2026-09-10 09:00:00', NULL),
-(3, 'Química',      2, NULL,                  NULL),
+(3, 'Informática',      2, NULL,                  NULL),
 (8, 'Informática',  6, '2026-09-15 09:00:00', '2026-09-15 15:00:00');
 
 -- ------------------------------------------------------------
