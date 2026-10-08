@@ -1,210 +1,102 @@
 <?php
 /**
  * Controlador_Usuarios.php
- * 
- * Controlador principal para la gestión de usuarios.
- * Recibe las peticiones HTTP (GET, POST o JSON via fetch), valida los datos de entrada,
- * interactúa con el modelo (Modelo_Usuario.php) y responde siempre en formato JSON.
  */
 
-// Se incluye la definición de la clase Modelo_Usuario para interactuar con la base de datos
+header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/../Modelo/Modelo_Usuario.php';
 
-require_once __DIR__ . '/../../Config/Guardia.php';
-exigirRol('ADMINISTRADOR');
+$action = $_GET['action'] ?? '';
 
-// Se establece la cabecera de respuesta como JSON con codificación UTF-8
-header('Content-Type: application/json; charset=utf-8');
+switch ($action) {
 
-/* ==============================================================================
- * 1. CAPTURA Y FUSIÓN DE DATOS DE LA PETICIÓN
- * ==============================================================================
- * Permite recibir parámetros enviado tanto por GET, POST (FormData) o payloads JSON (fetch raw).
- */
-$inputJSON = json_decode(file_get_contents('php://input'), true) ?? [];
-$request   = array_merge($_GET, $_POST, $inputJSON);
+    case 'listar':
+        $modelo = new Modelo_Usuario();
+        echo json_encode($modelo->obtenerUsuarios());
+        break;
 
-// Capturamos la acción a ejecutar enviada desde el cliente
-$action = $request['action'] ?? '';
+    case 'ver':
+        $cedula = $_GET['cedula'] ?? $_GET['CI'] ?? '';
+        $modelo = new Modelo_Usuario();
+        $usuario = $modelo->obtenerUsuarioPorCI($cedula);
+        echo json_encode($usuario ?: []);
+        break;
 
-try {
-    // Instanciamos el modelo de datos de usuarios
-    $modelo = new Modelo_Usuario();
+    case 'guardar':
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $cedula      = trim($_POST['cedula'] ?? $_POST['CI'] ?? '');
+            $nombre      = trim($_POST['nombre'] ?? $_POST['Nombre'] ?? '');
+            $apellido    = trim($_POST['apellido'] ?? $_POST['Apellido'] ?? '');
+            $email       = trim($_POST['correo'] ?? $_POST['email'] ?? $_POST['Email'] ?? '');
+            $contrasenia = $_POST['contrasena'] ?? $_POST['contrasenia'] ?? $_POST['Contraseña'] ?? '';
+            $rol         = trim($_POST['rol'] ?? $_POST['Rol'] ?? 'CLIENTE');
+            $especialidad= trim($_POST['especialidad'] ?? $_POST['Especialidad'] ?? '');
 
-    // Evaluamos la acción requerida
-    switch ($action) {
-
-        /* ----------------------------------------------------------------------
-         * CASO: LISTAR USUARIOS
-         * Retorna el arreglo directo de usuarios para renderizar la grilla en JS.
-         * ---------------------------------------------------------------------- */
-        case 'listar':
-            $usuarios = $modelo->obtenerUsuarios();
-            
-            // Retornamos directamente el listado (o array vacío) que espera la grilla
-            echo json_encode($usuarios ?: []);
-            break;
-
-        /* ----------------------------------------------------------------------
-         * CASO: VER USUARIO INDIVIDUAL
-         * Busca un usuario por Cédula y retorna su objeto directamente para completar modales.
-         * ---------------------------------------------------------------------- */
-        case 'ver':
-            $cedula = trim($request['cedula'] ?? '');
-
-            // Validación: Si no se especifica la cédula, devolvemos objeto/array vacío
-            if (empty($cedula)) {
-                echo json_encode([]);
-                break;
-            }
-
-            $usuario = $modelo->obtenerUsuarioPorCI($cedula);
-            echo json_encode($usuario ?: []);
-            break;
-
-        /* ----------------------------------------------------------------------
-         * CASO: GUARDAR / REGISTRAR UN NUEVO USUARIO
-         * Valida campos obligatorios, duplicados y aplica hash a la contraseña.
-         * ---------------------------------------------------------------------- */
-        case 'guardar':
-            // Lectura y saneamiento de entradas
-            $cedula       = trim($request['cedula'] ?? '');
-            $nombre       = trim($request['nombre'] ?? '');
-            $apellido     = trim($request['apellido'] ?? '');
-            $correo       = trim($request['correo'] ?? '');
-            $passRaw      = $request['contrasena'] ?? '';
-            $rol          = trim($request['rol'] ?? '');
-            $especialidad = trim($request['especialidad'] ?? '');
-
-            // 1. Validar que los campos obligatorios contengan información
-            if (empty($cedula) || empty($nombre) || empty($apellido) || empty($passRaw)) {
+            if (empty($cedula) || empty($nombre) || empty($apellido) || empty($contrasenia)) {
                 echo json_encode([
                     'success' => false, 
-                    'message' => 'Cédula, nombre, apellido y contraseña son campos obligatorios'
+                    'message' => 'Cédula, nombre, apellido y contraseña son campos obligatorios.'
                 ]);
-                break;
+                exit();
             }
 
-            // 2. Verificar que no exista un usuario registrado con la misma Cédula
-            $existe = $modelo->obtenerUsuarioPorCI($cedula);
-            if ($existe) {
-                echo json_encode([
-                    'success' => false, 
-                    'message' => 'El usuario con esta cédula ya se encuentra registrado'
-                ]);
-                break;
-            }
+            $modelo = new Modelo_Usuario();
+            $resultado = $modelo->guardarUsuario($cedula, $nombre, $apellido, $email, $contrasenia, $rol, $especialidad);
 
-            // 3. Generar hash seguro para la contraseña
-            $passHash = password_hash($passRaw, PASSWORD_DEFAULT);
-
-            // 4. Guardar mediante el modelo
-            $exito = $modelo->guardarUsuario(
-                $cedula,
-                $nombre,
-                $apellido,
-                $correo,
-                $passHash,
-                $rol,
-                $especialidad
-            );
-
-            echo json_encode([
-                'success' => (bool)$exito,
-                'message' => $exito ? 'Usuario registrado correctamente' : 'Error al registrar el usuario'
-            ]);
-            break;
-
-        /* ----------------------------------------------------------------------
-         * CASO: ACTUALIZAR DATOS DE UN USUARIO EXISTENTE
-         * Permite modificar datos del usuario incluyendo la propia cédula (Clave Primaria).
-         * ---------------------------------------------------------------------- */
-        case 'actualizar':
-            // Capturamos la cédula original (para el WHERE de la consulta) y la cédula nueva
-            $cedulaOriginal = trim($request['cedula_original'] ?? $request['cedula'] ?? '');
-            $cedulaNueva    = trim($request['cedula'] ?? '');
-            $passInput      = $request['contrasena'] ?? '';
-            $passActual     = $request['contrasena_actual'] ?? '';
-
-            // Validar la presencia de la clave de identificación
-            if (empty($cedulaOriginal) || empty($cedulaNueva)) {
-                echo json_encode([
-                    'success' => false, 
-                    'message' => 'La cédula es requerida para actualizar los datos'
-                ]);
-                break;
-            }
-
-            /*
-             * Manejo de la Contraseña:
-             * Si el usuario escribió una clave nueva se encripta de nuevo.
-             * Si el campo quedó vacío se conserva el hash que ya poseía.
-             */
-            if (!empty($passInput)) {
-                $passFinal = password_hash($passInput, PASSWORD_DEFAULT);
+            if ($resultado) {
+                echo json_encode(['success' => true, 'message' => 'Usuario guardado con éxito.']);
             } else {
-                $passFinal = $passActual;
+                echo json_encode(['success' => false, 'message' => 'Error al guardar. La cédula o el email ya podrían estar registrados.']);
             }
+        }
+        break;
 
-            // Enviamos tanto la Cédula Original como la Nueva al Modelo para procesar el UPDATE
-            $exito = $modelo->actualizarUsuario(
-                $cedulaOriginal,
-                $cedulaNueva,
-                trim($request['nombre'] ?? ''),
-                trim($request['apellido'] ?? ''),
-                trim($request['correo'] ?? ''),
-                $passFinal,
-                trim($request['rol'] ?? ''),
-                trim($request['especialidad'] ?? '')
-            );
+    case 'actualizar':
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $cedulaOriginal = trim($_POST['cedula_original'] ?? $_POST['cedula'] ?? '');
+            $cedula         = trim($_POST['cedula'] ?? '');
+            $nombre         = trim($_POST['nombre'] ?? '');
+            $apellido       = trim($_POST['apellido'] ?? '');
+            $email          = trim($_POST['correo'] ?? $_POST['email'] ?? '');
+            $contrasenia    = $_POST['contrasena'] ?? $_POST['contrasenia'] ?? '';
+            $contraseniaAct = $_POST['contrasena_actual'] ?? '';
+            $rol            = trim($_POST['rol'] ?? 'CLIENTE');
+            $especialidad   = trim($_POST['especialidad'] ?? '');
 
-            echo json_encode([
-                'success' => (bool)$exito,
-                'message' => $exito ? 'Usuario actualizado correctamente' : 'Error al actualizar el usuario'
-            ]);
-            break;
-
-        /* ----------------------------------------------------------------------
-         * CASO: ELIMINAR USUARIO
-         * ---------------------------------------------------------------------- */
-        case 'eliminar':
-            $cedula = trim($request['cedula'] ?? '');
-
-            if (empty($cedula)) {
+            if (empty($cedula) || empty($nombre) || empty($apellido)) {
                 echo json_encode([
                     'success' => false, 
-                    'message' => 'La cédula es requerida para eliminar el usuario'
+                    'message' => 'Cédula, nombre y apellido son campos obligatorios.'
                 ]);
-                break;
+                exit();
             }
 
-            $exito = $modelo->eliminarUsuario($cedula);
+            $passFinal = !empty($contrasenia) ? $contrasenia : $contraseniaAct;
+            $cambiarPass = !empty($contrasenia);
 
-            echo json_encode([
-                'success' => (bool)$exito,
-                'message' => $exito ? 'Usuario eliminado correctamente' : 'Error al eliminar el usuario'
-            ]);
-            break;
+            $modelo = new Modelo_Usuario();
+            $resultado = $modelo->actualizarUsuario($cedulaOriginal, $cedula, $nombre, $apellido, $email, $passFinal, $rol, $especialidad, $cambiarPass);
 
-        /* ----------------------------------------------------------------------
-         * CASO POR DEFECTO
-         * ---------------------------------------------------------------------- */
-        default:
-            echo json_encode([
-                'success' => false, 
-                'message' => 'Acción no válida o no especificada'
-            ]);
-            break;
-    }
+            if ($resultado) {
+                echo json_encode(['success' => true, 'message' => 'Usuario actualizado con éxito.']);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'No se pudo actualizar el usuario.']);
+            }
+        }
+        break;
 
-} catch (Throwable $e) {
-    /* ==============================================================================
-     * CAPTURA GLOBAL DE EXCEPCIONES
-     * ==============================================================================
-     * Retorna cualquier falla o error no esperado en formato JSON estándar.
-     */
-    echo json_encode([
-        'success' => false, 
-        'message' => 'Error en el servidor: ' . $e->getMessage()
-    ]);
+    case 'eliminar':
+        $cedula = $_GET['cedula'] ?? $_POST['cedula'] ?? '';
+        if (!empty($cedula)) {
+            $modelo = new Modelo_Usuario();
+            $resultado = $modelo->eliminarUsuario($cedula);
+            echo json_encode(['success' => $resultado]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Cédula no proporcionada.']);
+        }
+        break;
+
+    default:
+        echo json_encode(['success' => false, 'message' => 'Acción no válida.']);
+        break;
 }

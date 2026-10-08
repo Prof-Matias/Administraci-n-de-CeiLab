@@ -642,15 +642,15 @@ if (!isset($_SESSION['Rol'])) {
                 const tbody = document.getElementById('bodyTablaUsuarios');
                 tbody.innerHTML = usuarios.map(u => `
                     <tr>
-                        <td>${u.CI}</td>
-                        <td>${u.Nombre}</td>
-                        <td>${u.Apellido}</td>
-                        <td>${u.Email}</td>
-                        <td>${u.Rol}</td>
-                        <td>${u.Especialidad}</td>
+                        <td>${u.ci}</td>
+                        <td>${u.nombre}</td>
+                        <td>${u.apellido}</td>
+                        <td>${u.email}</td>
+                        <td>${u.rol}</td>
+                        <td>${u.especialidad}</td>
                         <td style="white-space: nowrap;">
-                            <button class="btn-modal btn-editar" onclick="editarUsuario('${u.CI}')">Editar</button>
-                            <button class="btn-modal btn-eliminar" onclick="eliminarUsuario('${u.CI}')">Eliminar</button>
+                            <button class="btn-modal btn-editar" onclick="editarUsuario('${u.ci}')">Editar</button>
+                            <button class="btn-modal btn-eliminar" onclick="eliminarUsuario('${u.ci}')">Eliminar</button>
                         </td>
                     </tr>
                 `).join('');
@@ -677,18 +677,18 @@ if (!isset($_SESSION['Rol'])) {
                 const res = await fetch(`${RUTA_CONTROLADOR}?action=ver&cedula=${cedula}`);
                 const u = await res.json();
 
-                document.getElementById('cedula_original').value = u.CI;
-                document.getElementById('cedula').value = u.CI;
+                document.getElementById('cedula_original').value = u.ci;
+                document.getElementById('cedula').value = u.ci;
                 document.getElementById('cedula').readOnly = false;
                 document.getElementById('errorCedula').style.display = 'none';
                 
-                document.getElementById('nombre').value = u.Nombre;
-                document.getElementById('apellido').value = u.Apellido;
-                document.getElementById('correo').value = u.Email;
-                document.getElementById('rol').value = u.Rol;
-                document.getElementById('especialidad').value = u.Especialidad;
+                document.getElementById('nombre').value = u.nombre;
+                document.getElementById('apellido').value = u.apellido;
+                document.getElementById('correo').value = u.email;
+                document.getElementById('rol').value = u.rol;
+                document.getElementById('especialidad').value = u.especialidad;
                 
-                document.getElementById('contrasena_actual').value = u.Contraseña;
+                document.getElementById('contrasena_actual').value = u.contrasenia;
                 document.getElementById('contrasena').value = '';
                 document.getElementById('contrasena').required = false;
                 document.getElementById('helpPass').style.display = 'block';
@@ -814,7 +814,7 @@ if (!isset($_SESSION['Rol'])) {
 
                     return `
                         <tr>
-                            <td>${p.ID_Material}</td>
+                            <td>${p.id_material}</td>
                             <td>
                                 <img src="${fotoRuta}" 
                                      style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; background: #eee;" 
@@ -822,15 +822,15 @@ if (!isset($_SESSION['Rol'])) {
                                      onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
                                 <span style="display:none; font-size: 11px; color: #777;">Sin foto</span>
                             </td>
-                            <td><b>${p.Nombre}</b></td>
-                            <td>${p.Descripcion || '-'}</td>
-                            <td>${p.Categoria || '-'}</td>
-                            <td>${p.Cantidad_Total}</td>
-                            <td>${p.Cantidad_Disponible}</td>
-                            <td>${p.Estado || '-'}</td>
+                            <td><b>${p.nombre}</b></td>
+                            <td>${p.descripcion || '-'}</td>
+                            <td>${p.categoria || '-'}</td>
+                            <td>${p.cantidad_total}</td>
+                            <td>${p.cantidad_disponible}</td>
+                            <td>${p.estado || '-'}</td>
                             <td style="white-space: nowrap;">
-                                <button class="btn-modal btn-editar" onclick="editarProducto(${p.ID_Material})">Editar</button>
-                                <button class="btn-modal btn-eliminar" onclick="eliminarProducto(${p.ID_Material})">Eliminar</button>
+                                <button class="btn-modal btn-editar" onclick="editarProducto(${p.id_material})">Editar</button>
+                                <button class="btn-modal btn-eliminar" onclick="eliminarProducto(${p.id_material})">Eliminar</button>
                             </td>
                         </tr>
                     `;
@@ -855,14 +855,14 @@ if (!isset($_SESSION['Rol'])) {
                 const res = await fetch(`${RUTA_CONTROLADOR_PRODUCTOS}?action=ver&id=${id}`);
                 const p = await res.json();
 
-                document.getElementById('id_material').value = p.ID_Material;
-                document.getElementById('prod_nombre').value = p.Nombre;
-                document.getElementById('prod_descripcion').value = p.Descripcion || '';
-                document.getElementById('prod_categoria').value = p.Categoria || '';
-                document.getElementById('prod_cant_total').value = p.Cantidad_Total;
-                document.getElementById('prod_cant_disp').value = p.Cantidad_Disponible;
-                document.getElementById('prod_estado').value = p.Estado || 'Disponible';
-                document.getElementById('foto_actual').value = p.Foto_Material || '';
+                document.getElementById('id_material').value = p.id_material;
+                document.getElementById('prod_nombre').value = p.nombre;
+                document.getElementById('prod_descripcion').value = p.descripcion || '';
+                document.getElementById('prod_categoria').value = p.categoria || '';
+                document.getElementById('prod_cant_total').value = p.cantidad_total;
+                document.getElementById('prod_cant_disp').value = p.cantidad_disponible;
+                document.getElementById('prod_estado').value = p.estado || 'Disponible';
+                document.getElementById('foto_actual').value = p.foto_material || '';
 
                 document.getElementById('tituloFormProducto').innerText = 'Editar Producto';
                 document.getElementById('modalFormularioProducto').classList.add('active');
