@@ -12,9 +12,9 @@ $cedula = $_SESSION['cedula_temp'];
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     // Captura el parámetro de contraseña (soporta varias nomenclaturas comunes)
-    $contrasenia = $_POST["contrasenia"] ?? $_POST["contrasena"] ?? $_POST["Contraseña"] ?? '';
+    $contrasena = $_POST["contrasenia"] ?? $_POST["contrasena"] ?? $_POST["Contraseña"] ?? '';
     
-    if (!empty($contrasenia)) {
+    if (!empty($contrasena)) {
         try {
             $pdo = Conexion::conectar();
             $query = "SELECT ci, nombre, apellido, email, rol, especialidad, contrasenia FROM usuario WHERE ci = :cedula";
@@ -24,7 +24,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
             $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            if ($usuario && password_verify($contrasenia, $usuario['contrasenia'])) {
+            if ($usuario && password_verify($contrasena, $usuario['contrasenia'])) {
                 // Regenerar el ID de sesión por seguridad al autenticar correctamente
                 session_regenerate_id(true);
 
@@ -65,10 +65,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             }
 
         } catch (PDOException $e) {
-    // Si ocurre una falla con la BD, redirige de forma segura
-    header("Location: ../Contrasenia.php?error=db");
-    exit();
-}
+            header("Location: ../Contrasenia.php?error=db");
+            exit();
+        }
     } else {
         header("Location: ../Contrasenia.php?error=empty");
         exit();

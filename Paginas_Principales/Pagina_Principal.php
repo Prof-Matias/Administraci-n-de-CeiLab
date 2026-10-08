@@ -27,7 +27,7 @@ if (!$rolUsuario) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="Diseño_Principal.css">
-    <title>CeiLab - Gestión de Usuarios</title>
+    <title>CeiLab - Gestión Principal</title>
     
     <style>
     /* ==========================================================================
@@ -85,12 +85,6 @@ if (!$rolUsuario) {
         color: #666;
     }
 
-<<<<<<< Updated upstream
-    /* Tabla de la lista de usuarios */
-    .tabla-modal {
-        width: 100%;
-        table-layout: fixed;
-=======
     /* ==========================================================================
        ESTILOS CSS: TABLAS RESPONSIVE
        ========================================================================== */
@@ -106,23 +100,20 @@ if (!$rolUsuario) {
     .tabla-modal {
         width: 100%;
         min-width: 800px;
->>>>>>> Stashed changes
         border-collapse: collapse;
-        margin-top: 15px;
     }
 
     .tabla-modal th, .tabla-modal td {
         border: 1px solid #ddd;
         padding: 10px;
         text-align: left;
-        overflow-wrap: anywhere;
-        word-break: break-word;
+        vertical-align: middle;
     }
 
     .tabla-modal th {
         background-color: #f4f4f4;
         position: sticky;
-        top: -24px;
+        top: 0;
         z-index: 2;
     }
 
@@ -137,7 +128,7 @@ if (!$rolUsuario) {
         font-weight: bold;
     }
 
-    .form-group input, .form-group select {
+    .form-group input, .form-group select, .form-group textarea {
         width: 100%;
         padding: 8px;
         box-sizing: border-box;
@@ -158,6 +149,84 @@ if (!$rolUsuario) {
     .btn-eliminar { background-color: #dc3545; color: white; }
     .btn-cancelar { background-color: #6c757d; color: white; }
     .error-msg { color: #dc3545; font-size: 13px; margin-top: 4px; display: none; }
+
+    /* ==========================================================================
+       ESTILOS CSS: VISTA DE TARJETAS PARA CLIENTES
+       ========================================================================== */
+    .grid-productos {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 20px;
+        padding: 10px 0;
+    }
+
+    .tarjeta-producto {
+        background-color: #fff;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        display: flex;
+        flex-direction: column;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .tarjeta-producto:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+
+    .tarjeta-producto img {
+        width: 100%;
+        height: 180px;
+        object-fit: cover;
+        border-bottom: 1px solid #e0e0e0;
+        background: #f8f9fa;
+    }
+
+    .tarjeta-cuerpo {
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+    }
+
+    .tarjeta-cuerpo h4 {
+        margin: 0 0 10px 0;
+        font-size: 1.1rem;
+        color: #333;
+    }
+
+    .tarjeta-cuerpo p {
+        margin: 4px 0;
+        color: #555;
+        font-size: 0.9rem;
+    }
+
+    .btn-prestamo {
+        margin-top: 15px;
+        background-color: #0d6efd;
+        color: white;
+        border: none;
+        padding: 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        text-align: center;
+        transition: background-color 0.3s;
+    }
+
+    .btn-prestamo:hover {
+        background-color: #0b5ed7;
+    }
+
+    .btn-sin-stock {
+        background-color: #6c757d;
+        cursor: not-allowed;
+    }
+    .btn-sin-stock:hover {
+        background-color: #6c757d;
+    }
     </style>
 </head>
 <body>
@@ -168,26 +237,17 @@ if (!$rolUsuario) {
     <header class="Barra">
         <a href="Pagina_Principal.php"><img src="../Material_Visual/Logo2.png" alt="Logo CeiLab"></a>
         <div class="dropdown">
-<<<<<<< Updated upstream
-            <button class="dropbtn" id="menuBtn">Mi Perfil</button>
-=======
             <button class="dropbtn" id="menuBtn"><?php echo htmlspecialchars($nombreUsuario); ?></button>
->>>>>>> Stashed changes
             <div class="dropdown-content" id="menuContent">
                 <a href="">Ver Perfil</a>
                 <a href="../index.php" class="logout-link">Cerrar Sesión</a>
             </div>
         </div>
     </header>
-    
+
     <!-- Mensaje de Bienvenida personalizado -->
     <div>
-<<<<<<< Updated upstream
-        <h1><?php echo htmlspecialchars($_SESSION['Nombre']); ?></h1>
-        <h2>Bienvenido al sistema de prestaciones del CeiLab del Cerp del Este</h2>
-=======
         <h2>Bienvenido al sistema de prestaciones del CeiLab del CERP del Este</h2>
->>>>>>> Stashed changes
     </div>
 
     <!-- ==========================================================================
@@ -196,16 +256,32 @@ if (!$rolUsuario) {
     <?php if (strtoupper(trim($rolUsuario)) === "ADMINISTRADOR"): ?>
         <!-- Opciones para Administradores -->
         <input type="button" id="Usuarios" value="Gestionar Usuarios" onclick="abrirModalGestionUsuarios()">
-        <input type="button" id="Productos" value="Gestionar Productos">
+        <input type="button" id="Productos" value="Gestionar Productos" onclick="abrirModalGestionProductos()">
         <input type="button" id="Prestamo" value="Gestionar Préstamos">
         <input type="button" id="Reservas" value="Gestionar Reservas">
         <input type="button" id="Solicitud" value="Ver Solicitudes">
         <input type="button" id="Historial" value="Ver historial de solicitudes">
     <?php elseif (strtoupper(trim($rolUsuario)) === "CLIENTE"): ?>
         <!-- Opciones para Clientes -->
-        <input type="button" id="SolicitarPres" value="Solicitar Préstamo">
+        <input type="button" id="SolicitarPres" value="Solicitar Préstamo" onclick="abrirModalSolicitarPrestamo()">
         <input type="button" id="SolicitarRes" value="Solicitar Reservas">
     <?php endif; ?>
+
+    <!-- ==========================================================================
+         MODAL: CATÁLOGO DE PRODUCTOS (VISTA CLIENTE)
+         ========================================================================== -->
+    <div class="modal-overlay" id="modalSolicitarPrestamo">
+        <div class="modal-content" style="max-width: 1200px;">
+            <div class="modal-header">
+                <h3>Catálogo de Materiales - Solicitar Préstamo</h3>
+                <button class="modal-close" onclick="cerrarModal('modalSolicitarPrestamo')">&times;</button>
+            </div>
+            
+            <div id="contenedor-productos-cliente" class="grid-productos">
+                <!-- Las tarjetas de productos se renderizan dinámicamente aquí -->
+            </div>
+        </div>
+    </div>
 
     <!-- ==========================================================================
          MODAL 1: TABLA DE GESTIÓN DE USUARIOS
@@ -219,24 +295,6 @@ if (!$rolUsuario) {
             
             <button class="btn-modal btn-crear" onclick="abrirModalFormulario()">+ Nuevo Usuario</button>
             
-<<<<<<< Updated upstream
-            <table class="tabla-modal">
-                <thead>
-                    <tr>
-                        <th>Cédula</th>
-                        <th>Nombre</th>
-                        <th>Apellido</th>
-                        <th>Email</th>
-                        <th>Rol</th>
-                        <th>Especialidad</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="bodyTablaUsuarios">
-                    <!-- Filas renderizadas dinámicamente mediante JavaScript -->
-                </tbody>
-            </table>
-=======
             <div class="table-responsive">
                 <table class="tabla-modal">
                     <thead>
@@ -255,7 +313,6 @@ if (!$rolUsuario) {
                     </tbody>
                 </table>
             </div>
->>>>>>> Stashed changes
         </div>
     </div>
 
@@ -270,10 +327,7 @@ if (!$rolUsuario) {
             </div>
             
             <form id="formUsuario" onsubmit="solicitarConfirmacion(event)">
-                <!-- Campo oculto para conservar la Cédula Original antes de editar -->
                 <input type="hidden" id="cedula_original" name="cedula_original">
-                
-                <!-- Campo oculto para conservar la contraseña actual si no se edita -->
                 <input type="hidden" id="contrasena_actual" name="contrasena_actual">
                 
                 <div class="form-group">
@@ -322,7 +376,7 @@ if (!$rolUsuario) {
     </div>
 
     <!-- ==========================================================================
-         MODAL 3: CONFIRMACIÓN DE OPERACIÓN
+         MODAL 3: CONFIRMACIÓN DE OPERACIÓN DE USUARIOS
          ========================================================================== -->
     <div class="modal-overlay" id="modalConfirmacionGuardar" style="z-index: 1100;">
         <div class="modal-content" style="max-width: 380px; text-align: center;">
@@ -336,8 +390,6 @@ if (!$rolUsuario) {
     </div>
 
     <!-- ==========================================================================
-<<<<<<< Updated upstream
-=======
          MODAL 4: TABLA DE GESTIÓN DE PRODUCTOS / MATERIALES
          ========================================================================== -->
     <div class="modal-overlay" id="modalGestionProductos">
@@ -445,7 +497,6 @@ if (!$rolUsuario) {
     </div>
 
     <!-- ==========================================================================
->>>>>>> Stashed changes
          LÓGICA JAVASCRIPT / CLIENTE
          ========================================================================== -->
     <script>
@@ -453,10 +504,12 @@ if (!$rolUsuario) {
         const RUTA_CONTROLADOR = '../CRUD_Usuarios/Controlador/Controlador_Usuarios.php';
         let esEdicion = false;
 
+        // Ruta del controlador PHP encargado de procesar las solicitudes de productos
+        const RUTA_CONTROLADOR_PRODUCTOS = '../CRUD_Productos/Controlador/Controlador_Productos.php';
+        let esEdicionProducto = false;
+
         /**
          * Algoritmo del Módulo 10 para validar el Dígito Verificador de la Cédula Uruguaya (CI).
-         * @param {string} ci - Cédula a validar.
-         * @returns {boolean} - Devuelve true si la Cédula es válida.
          */
         function validarCedulaUruguayaJS(ci) {
             ci = ci.replace(/[^0-9]/g, '');
@@ -506,17 +559,11 @@ if (!$rolUsuario) {
 
         /**
          * Oculta una ventana modal por su ID.
-         * @param {string} id - ID del elemento modal.
          */
         function cerrarModal(id) {
             document.getElementById(id).classList.remove('active');
         }
 
-<<<<<<< Updated upstream
-        /**
-         * Abre la modal principal de usuarios y carga la lista actualizada.
-         */
-=======
         /* ==========================================================================
            MÓDULO VISTA CLIENTE (TARJETAS DE PRÉSTAMO)
            ========================================================================== */
@@ -592,37 +639,17 @@ if (!$rolUsuario) {
         /* ==========================================================================
            MÓDULO USUARIOS (ADMINISTRADOR)
            ========================================================================== */
->>>>>>> Stashed changes
         async function abrirModalGestionUsuarios() {
             document.getElementById('modalGestionUsuarios').classList.add('active');
             await cargarUsuarios();
         }
 
-        /**
-         * Consulta mediante fetch la lista de usuarios al controlador PHP y renderiza la tabla.
-         */
         async function cargarUsuarios() {
             try {
                 const res = await fetch(`${RUTA_CONTROLADOR}?action=listar`);
                 const usuarios = await res.json();
                 
                 const tbody = document.getElementById('bodyTablaUsuarios');
-<<<<<<< Updated upstream
-                tbody.innerHTML = usuarios.map(u => `
-                    <tr>
-                        <td>${u.CI}</td>
-                        <td>${u.Nombre}</td>
-                        <td>${u.Apellido}</td>
-                        <td>${u.Email}</td>
-                        <td>${u.Rol}</td>
-                        <td>${u.Especialidad}</td>
-                        <td>
-                            <button class="btn-modal btn-editar" onclick="editarUsuario('${u.CI}')">Editar</button>
-                            <button class="btn-modal btn-eliminar" onclick="eliminarUsuario('${u.CI}')">Eliminar</button>
-                        </td>
-                    </tr>
-                `).join('');
-=======
                 tbody.innerHTML = usuarios.map(u => {
                     const ci = u.ci || u.CI;
                     const nombre = u.nombre || u.Nombre;
@@ -646,15 +673,11 @@ if (!$rolUsuario) {
                         </tr>
                     `;
                 }).join('');
->>>>>>> Stashed changes
             } catch (error) {
                 console.error("Error al cargar usuarios:", error);
             }
         }
 
-        /**
-         * Limpia y prepara el formulario para registrar un nuevo usuario.
-         */
         function abrirModalFormulario() {
             esEdicion = false;
             document.getElementById('formUsuario').reset();
@@ -667,22 +690,12 @@ if (!$rolUsuario) {
             document.getElementById('modalFormularioUsuario').classList.add('active');
         }
 
-        /**
-         * Obtiene los datos del usuario seleccionado por Cédula y los precarga en el formulario para su edición.
-         * @param {string} cedula - Cédula del usuario a editar.
-         */
         async function editarUsuario(cedula) {
             esEdicion = true;
             try {
                 const res = await fetch(`${RUTA_CONTROLADOR}?action=ver&cedula=${cedula}`);
                 const u = await res.json();
 
-<<<<<<< Updated upstream
-                // Se guarda la Cédula Original en un campo oculto
-                document.getElementById('cedula_original').value = u.CI;
-                document.getElementById('cedula').value = u.CI;
-                document.getElementById('cedula').readOnly = false; // Se permite modificar la cédula si fuera necesario
-=======
                 const ciVal = u.ci || u.CI;
                 const nombreVal = u.nombre || u.Nombre;
                 const apellidoVal = u.apellido || u.Apellido;
@@ -694,7 +707,6 @@ if (!$rolUsuario) {
                 document.getElementById('cedula_original').value = ciVal;
                 document.getElementById('cedula').value = ciVal;
                 document.getElementById('cedula').readOnly = false;
->>>>>>> Stashed changes
                 document.getElementById('errorCedula').style.display = 'none';
                 
                 document.getElementById('nombre').value = nombreVal;
@@ -703,12 +715,7 @@ if (!$rolUsuario) {
                 document.getElementById('rol').value = rolVal;
                 document.getElementById('especialidad').value = espVal;
                 
-<<<<<<< Updated upstream
-                // Se guarda el hash de contraseña actual para no perderlo si no se modifica
-                document.getElementById('contrasena_actual').value = u.Contraseña;
-=======
                 document.getElementById('contrasena_actual').value = passVal;
->>>>>>> Stashed changes
                 document.getElementById('contrasena').value = '';
                 document.getElementById('contrasena').required = false;
                 document.getElementById('helpPass').style.display = 'block';
@@ -720,23 +727,17 @@ if (!$rolUsuario) {
             }
         }
 
-        /**
-         * Intercepta el envío del formulario, valida la Cédula y solicita confirmación al usuario.
-         * @param {Event} e - Evento de submit.
-         */
         function solicitarConfirmacion(e) {
             e.preventDefault();
             const form = document.getElementById('formUsuario');
             const cedulaVal = document.getElementById('cedula').value;
             const errorCedula = document.getElementById('errorCedula');
 
-            // Validar requerimientos nativos de HTML
             if (!form.checkValidity()) {
                 form.reportValidity();
                 return;
             }
 
-            // Validar Cédula mediante el algoritmo de Módulo 10
             if (!validarCedulaUruguayaJS(cedulaVal)) {
                 errorCedula.style.display = 'block';
                 document.getElementById('cedula').focus();
@@ -753,9 +754,6 @@ if (!$rolUsuario) {
             document.getElementById('modalConfirmacionGuardar').classList.add('active');
         }
 
-        /**
-         * Envía la información cargada en el formulario al controlador PHP vía POST.
-         */
         async function ejecutarGuardado() {
             cerrarModal('modalConfirmacionGuardar');
 
@@ -794,10 +792,6 @@ if (!$rolUsuario) {
             }
         }
 
-        /**
-         * Solicita confirmación y envía petición de eliminación por Cédula al controlador.
-         * @param {string} cedula - Cédula del usuario a eliminar.
-         */
         async function eliminarUsuario(cedula) {
             if (!confirm(`¿Estás seguro de eliminar el usuario con Cédula ${cedula}?`)) return;
 
@@ -817,9 +811,6 @@ if (!$rolUsuario) {
                 console.error("Error al eliminar usuario:", error);
             }
         }
-<<<<<<< Updated upstream
-=======
-
         /* ==========================================================================
            MÓDULO PRODUCTOS / MATERIALES (ADMINISTRADOR)
            ========================================================================== */
@@ -999,7 +990,6 @@ if (!$rolUsuario) {
                 }
             }
         }
->>>>>>> Stashed changes
     </script>
 </body>
-</html> 
+</html>

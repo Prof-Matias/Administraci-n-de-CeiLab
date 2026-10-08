@@ -6,14 +6,9 @@
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/../Modelo/Modelo_Usuario.php';
 
-<<<<<<< Updated upstream
-// Se establece la cabecera de respuesta como JSON con codificación UTF-8
-header('Content-Type: application/json; charset=utf-8');
-=======
 $action = $_GET['action'] ?? '';
 
 switch ($action) {
->>>>>>> Stashed changes
 
     case 'listar':
         $modelo = new Modelo_Usuario();
