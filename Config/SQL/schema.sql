@@ -1,7 +1,7 @@
 -- ============================================================
 -- Sistema de Gestión de Préstamos del CeiLab - CeRP del Este
--- schema.sql v5 (Normalizado: minúsculas y sin caracteres especiales)
--- Motor: MySQL / MariaDB (InnoDB)
+-- schema.sql v6 (CHECK en estado + índice para solicitudes pendientes)
+-- Motor: MySQL 8.0.16+ / MariaDB 10.2.1+ (InnoDB)
 -- ============================================================
 
 SET NAMES utf8mb4;
@@ -34,23 +34,26 @@ CREATE TABLE IF NOT EXISTS `telefono` (
 -- MATERIAL
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `material` (
-  `id_material`        int(11) NOT NULL AUTO_INCREMENT,
-  `nombre`             varchar(100) NOT NULL,
-  `descripcion`        text DEFAULT NULL,
-  `categoria`          varchar(50) DEFAULT NULL,
-  `cantidad_total`     int(11) NOT NULL,
+  `id_material`         int(11) NOT NULL AUTO_INCREMENT,
+  `nombre`              varchar(100) NOT NULL,
+  `descripcion`         text DEFAULT NULL,
+  `categoria`           varchar(50) DEFAULT NULL,
+  `cantidad_total`      int(11) NOT NULL,
   `cantidad_disponible` int(11) NOT NULL,
-  `estado`             varchar(30) DEFAULT NULL,
-  `foto_material`      varchar(900) COLLATE utf8mb4_general_ci NOT NULL,
+  `estado`              varchar(30) DEFAULT NULL,
+  `foto_material`       varchar(900) COLLATE utf8mb4_general_ci NOT NULL,
   PRIMARY KEY (`id_material`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- ------------------------------------------------------------
 -- SOLICITUD
+-- estado: PENDIENTE -> APROBADO | RECHAZADO
+--         APROBADO  -> ACTIVO -> FINALIZADO
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `solicitud` (
   `id_solicitud`     int(11) NOT NULL AUTO_INCREMENT,
-  `estado`           varchar(30) NOT NULL,
+  `estado`           varchar(30) NOT NULL DEFAULT 'PENDIENTE'
+                     CHECK (`estado` IN ('PENDIENTE', 'APROBADO', 'RECHAZADO', 'ACTIVO', 'FINALIZADO')),
   `fecha_solicitud`  datetime NOT NULL,
   `fecha_validacion` datetime DEFAULT NULL,
   `motivo_rechazo`   text DEFAULT NULL,
@@ -58,7 +61,8 @@ CREATE TABLE IF NOT EXISTS `solicitud` (
   `ci_administrador` varchar(8) DEFAULT NULL,
   PRIMARY KEY (`id_solicitud`),
   KEY `ci_cliente` (`ci_cliente`),
-  KEY `ci_administrador` (`ci_administrador`)
+  KEY `ci_administrador` (`ci_administrador`),
+  KEY `idx_solicitud_estado` (`estado`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- ------------------------------------------------------------
@@ -108,12 +112,14 @@ CREATE TABLE IF NOT EXISTS `reserva_material` (
 
 -- ------------------------------------------------------------
 -- HISTORIAL_SOLICITUD
+-- (estado puede ser NULL; si tiene valor, debe ser uno válido)
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `historial_solicitud` (
   `id_historial`     int(11) NOT NULL AUTO_INCREMENT,
   `tipo`             varchar(50) DEFAULT NULL,
   `fecha_archivo`    datetime DEFAULT NULL,
-  `estado`           varchar(30) DEFAULT NULL,
+  `estado`           varchar(30) DEFAULT NULL
+                     CHECK (`estado` IS NULL OR `estado` IN ('PENDIENTE', 'APROBADO', 'RECHAZADO', 'ACTIVO', 'FINALIZADO')),
   `fecha_solicitud`  datetime DEFAULT NULL,
   `fecha_validacion` datetime DEFAULT NULL,
   `motivo_rechazo`   text DEFAULT NULL,
