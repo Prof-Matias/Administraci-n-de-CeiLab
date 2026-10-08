@@ -1,29 +1,32 @@
 <?php
 session_start();
-require_once "../Config/Conexion.php";
+require_once __DIR__ . "/../Config/Conexion.php";
 
-// 1. Si no existe la sesión, redirigir al login
-if (!isset($_SESSION['CI'])) {
-    header("Location: ../Index.php");
+// Capturar la cédula guardada en la sesión (soporta minúsculas y mayúsculas)
+$cedulaSesion = $_SESSION['ci'] ?? $_SESSION['CI'] ?? null;
+
+// 1. Si no existe la sesión de usuario, redirigir al login
+if (!$cedulaSesion) {
+    header("Location: ../index.php");
     exit();
 }
 
 // 2. Verificar en la base de datos si el usuario sigue existiendo
 try {
     $pdo = Conexion::conectar();
-    $stmt = $pdo->prepare("SELECT CI FROM usuario WHERE CI = :cedula");
-    $stmt->execute([':cedula' => $_SESSION['CI']]);
-    $usuarioExiste = $stmt->fetch();
+    $stmt = $pdo->prepare("SELECT ci FROM usuario WHERE ci = :cedula");
+    $stmt->execute([':cedula' => $cedulaSesion]);
+    $usuarioExiste = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    // Si el usuario ya NO existe en la base de datos
+    // Si el usuario ya NO existe en la base de datos (ej: fue eliminado por un admin)
     if (!$usuarioExiste) {
         session_unset();     // Vacía todas las variables de sesión
-        session_destroy();   // Destruye la sesión en el servidor
-        header("Location: ../Index.php?error=usuario_eliminado");
+        session_destroy();   // Destruye la sesión activa
+        header("Location: ../index.php?error=usuario_eliminado");
         exit();
     }
 } catch (PDOException $e) {
-    // Si ocurre un error de conexión, por seguridad se corta la ejecución
-    die("Error al verificar la sesión.");
+    // En caso de error técnico en la BD, se interrumpe por seguridad
+    die("Error al verificar la sesión del usuario.");
 }
 ?>
