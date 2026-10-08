@@ -40,8 +40,20 @@ switch ($action) {
                 exit();
             }
 
+<<<<<<< Updated upstream
             $modelo = new Modelo_Usuario();
             $resultado = $modelo->guardarUsuario($cedula, $nombre, $apellido, $email, $contrasenia, $rol, $especialidad);
+=======
+            // 2. Verificar que no exista un usuario registrado con la misma Cédula
+            $existe = $modelo->obtenerUsuarioPorCI($cedula);
+            if ($existe) {
+                echo json_encode([
+                    'success' => false, 
+                    'message' => 'El Usuario con esta cédula ya se encuentra registrado'
+                ]);
+                break;
+            }
+>>>>>>> Stashed changes
 
             if ($resultado) {
                 echo json_encode(['success' => true, 'message' => 'Usuario guardado con éxito.']);
