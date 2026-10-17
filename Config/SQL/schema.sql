@@ -1,8 +1,19 @@
 -- ============================================================
+-- Cambios de v6 a v7:
+--   1. material: agrega id_serie, tipo_control, fecha_baja y
+--      motivo_baja; normaliza estado. Todas las filas existentes
+--      quedan como CANTIDAD, porque en v6 no hay números de serie.
+--      Los equipos se vuelven a cargar a mano, uno por serie.
+--   2. Crea historial_estado_material y prestamo_pedido.
+--   3. Pasa a prestamo_pedido lo que todavía no se entregó
+--      (solicitudes PENDIENTE, APROBADO o RECHAZADO).
+--   4. prestamo_material: agrega los datos de devolución.
+--   5. solicitud / historial_solicitud: agrega CANCELADO.
+--   6. Cambia ON DELETE CASCADE por RESTRICT hacia material.
+-- ============================================================
 -- Sistema de Gestión de Préstamos del CeiLab - CeRP del Este
 -- schema.sql v7 (ID_serie en material, estado individual por unidad,
 --                pedido por nombre, historial de estados del material)
--- Motor: MySQL 8.0.16+ / MariaDB 10.2.1+ (InnoDB)
 -- ============================================================
 
 SET NAMES utf8mb4;
@@ -41,7 +52,8 @@ CREATE TABLE IF NOT EXISTS `telefono` (
 -- Los equipos de un mismo tipo comparten el nombre: el catálogo
 -- del cliente los agrupa por nombre.
 --
--- estado (ver Config/Estados.php):
+--En PROCESO
+-- estado (ver Config/Estados.php): 
 --   DISPONIBLE -> PRESTADO          (entrega de un préstamo; solo SERIE)
 --   PRESTADO   -> DISPONIBLE        (devolución sin daños)
 --   PRESTADO   -> EN_MANTENIMIENTO  (devolución con daños)
@@ -70,16 +82,17 @@ CREATE TABLE IF NOT EXISTS `material` (
   -- SERIE: tiene serie y es una sola unidad; CANTIDAD: no tiene serie
   CONSTRAINT `chk_material_tipo` CHECK (
         (`tipo_control` = 'SERIE'    AND `id_serie` IS NOT NULL AND `cantidad_total` = 1)
-     OR (`tipo_control` = 'CANTIDAD' AND `id_serie` IS NULL)),
+    OR (`tipo_control` = 'CANTIDAD' AND `id_serie` IS NULL)),
   CONSTRAINT `chk_material_cantidades` CHECK (
         `cantidad_total` >= 0 AND `cantidad_disponible` BETWEEN 0 AND `cantidad_total`),
-  -- Una línea de consumibles nunca está PRESTADA como un todo
+  -- Una línea de consumibles nunca está PRESTADA como un todo (Esto significa que si el estado es PRESTADO y hablamos de un material que el tipo_control es de SERIE, 
+  -- entonces cuenta como uno solo y no la cantidad total de consumibles que hay en la línea. Por eso se hace esta restricción)
   CONSTRAINT `chk_material_prestado` CHECK (
         `estado` <> 'PRESTADO' OR `tipo_control` = 'SERIE'),
   -- En un equipo, el disponible acompaña al estado
   CONSTRAINT `chk_material_serie_disp` CHECK (
         `tipo_control` = 'CANTIDAD'
-     OR `cantidad_disponible` = (CASE WHEN `estado` = 'DISPONIBLE' THEN 1 ELSE 0 END)),
+    OR `cantidad_disponible` = (CASE WHEN `estado` = 'DISPONIBLE' THEN 1 ELSE 0 END)),
   -- La baja lógica guarda cuándo se hizo
   CONSTRAINT `chk_material_baja` CHECK (
         (`estado` = 'DADO_DE_BAJA') = (`fecha_baja` IS NOT NULL))
@@ -118,7 +131,7 @@ CREATE TABLE IF NOT EXISTS `historial_estado_material` (
 CREATE TABLE IF NOT EXISTS `solicitud` (
   `id_solicitud`     int(11) NOT NULL AUTO_INCREMENT,
   `estado`           varchar(30) NOT NULL DEFAULT 'PENDIENTE'
-                     CHECK (`estado` IN ('PENDIENTE', 'APROBADO', 'RECHAZADO', 'ACTIVO', 'FINALIZADO', 'CANCELADO')),
+                    CHECK (`estado` IN ('PENDIENTE', 'APROBADO', 'RECHAZADO', 'ACTIVO', 'FINALIZADO', 'CANCELADO')),
   `fecha_solicitud`  datetime NOT NULL,
   `fecha_validacion` datetime DEFAULT NULL,
   `motivo_rechazo`   text DEFAULT NULL,
@@ -156,7 +169,7 @@ CREATE TABLE IF NOT EXISTS `prestamo_pedido` (
 
 -- ------------------------------------------------------------
 -- PRESTAMO_MATERIAL  (v7)
--- Lo que efectivamente se entregó. La completa el administrador
+-- Lo que se entregó. La completa el administrador
 -- al entregar: una fila por cada equipo (SERIE, cantidad = 1) o
 -- por cada línea de consumibles (CANTIDAD). Al devolver se anota
 -- la fecha, cuánto volvió y en qué estado quedó el equipo.
@@ -208,7 +221,7 @@ CREATE TABLE IF NOT EXISTS `historial_solicitud` (
   `tipo`             varchar(50) DEFAULT NULL,
   `fecha_archivo`    datetime DEFAULT NULL,
   `estado`           varchar(30) DEFAULT NULL
-                     CHECK (`estado` IS NULL OR `estado` IN ('PENDIENTE', 'APROBADO', 'RECHAZADO', 'ACTIVO', 'FINALIZADO', 'CANCELADO')),
+                    CHECK (`estado` IS NULL OR `estado` IN ('PENDIENTE', 'APROBADO', 'RECHAZADO', 'ACTIVO', 'FINALIZADO', 'CANCELADO')),
   `fecha_solicitud`  datetime DEFAULT NULL,
   `fecha_validacion` datetime DEFAULT NULL,
   `motivo_rechazo`   text DEFAULT NULL,
