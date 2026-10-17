@@ -6,7 +6,11 @@ header('Content-Type: application/json; charset=utf-8');
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
 require_once __DIR__ . '/../../Config/Guardia.php';
-$accionesParaTodos = ['listar', 'ver'];
+
+// Definir las acciones que requieren sesión pero no requieren rol específico
+$accionesParaTodos = ['listar', 'ver', 'catalogo'];
+
+// Verificar si la acción requiere sesión o rol
 if (in_array($action, $accionesParaTodos, true)) {
     exigirSesion();
 } else {
@@ -25,6 +29,12 @@ try {
             if (!file_exists($directorioAbsoluto)) {
                 mkdir($directorioAbsoluto, 0777, true);
             }
+            // Validación de tipo de archivo y tamaño
+            $permitidas = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+            $extension  = strtolower(pathinfo($_FILES[$fileInputName]['name'], PATHINFO_EXTENSION));
+            if (!in_array($extension, $permitidas, true) || @getimagesize($_FILES[$fileInputName]['tmp_name']) === false) {
+                throw new ErrorNegocio('La foto debe ser una imagen JPG, PNG, GIF o WEBP.');
+            }
 
             $nombreOriginal = $_FILES[$fileInputName]['name'];
             $extension = pathinfo($nombreOriginal, PATHINFO_EXTENSION);
@@ -38,9 +48,29 @@ try {
             }
         }
         return null;
-    }
+     }
+     
+     function datosFormulario($fotoPorDefecto) {
+    return [
+        'tipo_control'   => strtoupper(trim($_POST['tipo_control'] ?? '')),
+        'nombre'         => $_POST['nombre'] ?? '',
+        'descripcion'    => $_POST['descripcion'] ?? '',
+        'categoria'      => $_POST['categoria'] ?? '',
+        'cantidad_total' => (int)($_POST['cantidad_total'] ?? 0),
+        'id_serie'       => $_POST['id_serie'] ?? null,
+        'foto'           => procesarImagen('foto_material') ?: $fotoPorDefecto,
+    ];
+}
+
+function ok($data = null) {
+    echo json_encode(['success' => true, 'data' => $data], JSON_UNESCAPED_UNICODE);
+}
 
     switch ($action) {
+
+        case 'catalogo':
+            echo json_encode($modelo->catalogo());
+            break;
 
         case 'listar':
             echo json_encode($modelo->obtenerProductos());

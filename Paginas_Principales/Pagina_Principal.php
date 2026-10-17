@@ -27,7 +27,7 @@ if (!isset($_SESSION['Rol'])) {
     
     <style>
     /* ==========================================================================
-       ESTILOS CSS: VENTANAS EMERGENTES (MODALS) Y TABLAS
+    ESTILOS CSS: VENTANAS EMERGENTES (MODALS) Y TABLAS
        ========================================================================== */
     
     /* Fondo oscuro para las ventanas modales */
@@ -82,7 +82,7 @@ if (!isset($_SESSION['Rol'])) {
     }
 
     /* ==========================================================================
-       ESTILOS CSS: TABLAS RESPONSIVE
+    ESTILOS CSS: TABLAS RESPONSIVE
        ========================================================================== */
     .table-responsive {
         width: 100%;
@@ -404,6 +404,7 @@ if (!isset($_SESSION['Rol'])) {
                     <thead>
                         <tr>
                             <th style="width: 50px;">ID</th>
+                            <th style="width: 50px;">Serial</th>
                             <th style="width: 70px;">Imagen</th>
                             <th>Nombre</th>
                             <th>Descripción</th>
@@ -437,41 +438,54 @@ if (!isset($_SESSION['Rol'])) {
                 <input type="hidden" id="foto_actual" name="foto_actual">
                 
                 <div class="form-group">
+                    <label>Tipo de control</label>
+                    <select id="prod_tipo" name="tipo_control" onchange="ajustarFormularioProducto()" required>
+                        <option value="SERIE">Por número de serie (un registro por equipo)</option>
+                        <option value="CANTIDAD">Por cantidad (consumibles sin serie)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
                     <label>Nombre del Producto / Material</label>
                     <input type="text" id="prod_nombre" name="nombre" required>
+                    <small>Los equipos del mismo tipo comparten el nombre (por ejemplo, «Ceibalita»).</small>
                 </div>
-                
+
                 <div class="form-group">
                     <label>Descripción</label>
                     <textarea id="prod_descripcion" name="descripcion" rows="3" required></textarea>
                 </div>
-                
+
                 <div class="form-group">
                     <label>Categoría</label>
                     <input type="text" id="prod_categoria" name="categoria" required>
                 </div>
-                
-                <div class="form-group">
-                    <label>Cantidad Total</label>
-                    <input type="number" id="prod_cant_total" name="cantidad_total" min="0" required>
+
+                <!-- Alta de equipos: varias series a la vez -->
+                <div class="form-group" id="grupoSeries">
+                    <label>Números de serie (uno por línea)</label>
+                    <textarea id="prod_series" name="series" rows="4" placeholder="CEIB-0011&#10;CEIB-0012"></textarea>
                 </div>
-                
-                <div class="form-group">
-                    <label>Cantidad Disponible</label>
-                    <input type="number" id="prod_cant_disp" name="cantidad_disponible" min="0" required>
+
+                <!-- Edición de un equipo -->
+                <div class="form-group" id="grupoSerie" style="display:none;">
+                    <label>Número de serie</label>
+                    <input type="text" id="prod_id_serie" name="id_serie">
                 </div>
-                
-                <div class="form-group">
-                    <label>Estado</label>
-                    <select id="prod_estado" name="estado" required>
-                        <option value="Disponible">Disponible</option>
-                        <option value="En Mantenimiento">En Mantenimiento</option>
-                        <option value="Agotado">Agotado</option>
-                    </select>
+
+                <div class="form-group" id="grupoCantidad" style="display:none;">
+                    <label>Cantidad total</label>
+                    <input type="number" id="prod_cant_total" name="cantidad_total" min="0">
+                    <small>El disponible se calcula: total menos lo que está prestado.</small>
                 </div>
-                
+
+                <div class="form-group" id="grupoAplicar" style="display:none;">
+                    <label><input type="checkbox" id="prod_aplicar" checked> Aplicar descripción, categoría y foto a todas las unidades de este nombre</label>
+                    <input type="hidden" id="prod_aplicar_valor" name="aplicar_al_grupo" value="1">
+                </div>
+
                 <div class="form-group">
-                    <label>Imagen del Producto (Acepta cualquier formato)</label>
+                    <label>Imagen del Producto (JPG, PNG, GIF o WEBP)</label>
                     <input type="file" id="prod_foto" name="foto_material" accept="image/*">
                 </div>
                 
@@ -506,6 +520,7 @@ if (!isset($_SESSION['Rol'])) {
         const RUTA_CONTROLADOR_PRODUCTOS = '../CRUD_Productos/Controlador/Controlador_Productos.php';
         let esEdicionProducto = false;
 
+        const RUTA_VERIFICADOR = '../Login_logica/Validar_Cedula.php'
         /**
          * Algoritmo del Módulo 10 para validar el Dígito Verificador de la Cédula Uruguaya (CI).
          */
@@ -571,7 +586,7 @@ if (!isset($_SESSION['Rol'])) {
 
         async function cargarProductosCliente() {
             try {
-                const res = await fetch(`${RUTA_CONTROLADOR_PRODUCTOS}?action=listar`);
+                const res = await fetch(`${RUTA_CONTROLADOR_PRODUCTOS}?action=catalogo`);
                 const textoRespuesta = await res.text();
                 
                 let productos;
@@ -591,24 +606,25 @@ if (!isset($_SESSION['Rol'])) {
                 }
 
                 contenedor.innerHTML = productos.map(p => {
-                    const fotoLimpia = p.Foto_Material ? p.Foto_Material.replace(/^\/+/, '') : '';
+                    const fotoLimpia = p.foto_material ? p.foto_material.replace(/^\/+/, '') : '';
                     const fotoRuta = fotoLimpia ? `../CRUD_Productos/${fotoLimpia}` : '';
-                    const stock = parseInt(p.Cantidad_Disponible) || 0;
+                    const stock = parseInt(p.cantidad_disponible) || 0;
                     
                     let btnHtml = '';
-                    if (stock > 0 && p.Estado !== 'En Mantenimiento') {
-                        btnHtml = `<button onclick="iniciarProcesoPrestamo(${p.ID_Material}, '${p.Nombre}')" class="btn-prestamo">Solicitar Préstamo</button>`;
+                    if (stock > 0 && p.estado !== 'En Mantenimiento') {
+                        btnHtml = `<button onclick="iniciarProcesoPrestamo(${p.id_material}, '${p.nombre}')" class="btn-prestamo">Solicitar Préstamo</button>`;
                     } else {
                         btnHtml = `<button class="btn-prestamo btn-sin-stock" disabled>Agotado / No Disponible</button>`;
                     }
 
                     return `
                         <div class="tarjeta-producto">
-                            <img src="${fotoRuta}" alt="${p.Nombre}" onerror="this.src=''; this.style.display='none';">
+                            <img src="${fotoRuta}" alt="${p.nombre}" onerror="this.src=''; this.style.display='none';">
                             <div class="tarjeta-cuerpo">
-                                <h4>${p.Nombre}</h4>
-                                <p><strong>Categoría:</strong> ${p.Categoria || '-'}</p>
-                                <p><strong>Descripción:</strong> ${p.Descripcion || '-'}</p>
+                            <td>${p.id_serie ? `<code>${esc(p.id_serie)}</code>` : '<small>por cantidad</small>'}</td>
+                                <h4>${p.nombre}</h4>
+                                <p><strong>Categoría:</strong> ${p.categoria || '-'}</p>
+                                <p><strong>Descripción:</strong> ${p.descripcion || '-'}</p>
                                 <p><strong>Disponibles:</strong> ${stock}</p>
                                 ${btnHtml}
                             </div>
@@ -782,7 +798,7 @@ if (!isset($_SESSION['Rol'])) {
         }
 
         /* ==========================================================================
-           MÓDULO PRODUCTOS / MATERIALES (ADMINISTRADOR)
+        MÓDULO PRODUCTOS / MATERIALES (ADMINISTRADOR)
            ========================================================================== */
         async function abrirModalGestionProductos() {
             document.getElementById('modalGestionProductos').classList.add('active');
@@ -804,7 +820,7 @@ if (!isset($_SESSION['Rol'])) {
 
                 const tbody = document.getElementById('bodyTablaProductos');
                 if (!Array.isArray(productos) || productos.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;">No hay productos registrados.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;">No hay productos registrados.</td></tr>`;
                     return;
                 }
 
@@ -815,11 +831,12 @@ if (!isset($_SESSION['Rol'])) {
                     return `
                         <tr>
                             <td>${p.id_material}</td>
+                            <td>${p.id_serie ? `<code>${p.id_serie}</code>` : '<small>por cantidad</small>'}</td>
                             <td>
                                 <img src="${fotoRuta}" 
-                                     style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; background: #eee;" 
-                                     alt="Img" 
-                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                    style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; background: #eee;" 
+                                    alt="Img" 
+                                    onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
                                 <span style="display:none; font-size: 11px; color: #777;">Sin foto</span>
                             </td>
                             <td><b>${p.nombre}</b></td>
@@ -840,15 +857,28 @@ if (!isset($_SESSION['Rol'])) {
             }
         }   
 
+       /** Cambia las secciones del formuarlio de agregar producto en base a el tipo de control seleccionado */
+        function ajustarFormularioProducto() {
+            const tipo = document.getElementById('prod_tipo').value;
+            document.getElementById('grupoSeries').style.display   = (!esEdicionProducto && tipo === 'SERIE') ? '' : 'none';
+            document.getElementById('grupoSerie').style.display    = (esEdicionProducto && tipo === 'SERIE') ? '' : 'none';
+            document.getElementById('grupoCantidad').style.display = tipo === 'CANTIDAD' ? '' : 'none';
+            document.getElementById('grupoAplicar').style.display  = esEdicionProducto ? '' : 'none';
+            document.getElementById('prod_series').required     = !esEdicionProducto && tipo === 'SERIE';
+            document.getElementById('prod_id_serie').required   = esEdicionProducto && tipo === 'SERIE';
+            document.getElementById('prod_cant_total').required = tipo === 'CANTIDAD';
+            document.getElementById('prod_tipo').disabled = esEdicionProducto;   // el tipo no cambia después del alta
+        }
+ 
         function abrirModalFormularioProducto() {
             esEdicionProducto = false;
             document.getElementById('formProducto').reset();
             document.getElementById('id_material').value = '';
             document.getElementById('foto_actual').value = '';
             document.getElementById('tituloFormProducto').innerText = 'Nuevo Producto';
+            ajustarFormularioProducto();
             document.getElementById('modalFormularioProducto').classList.add('active');
         }
-
         async function editarProducto(id) {
             esEdicionProducto = true;
             try {
@@ -943,4 +973,4 @@ if (!isset($_SESSION['Rol'])) {
         }
     </script>
 </body>
-</html>
+</html>         
