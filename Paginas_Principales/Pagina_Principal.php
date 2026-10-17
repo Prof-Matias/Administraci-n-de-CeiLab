@@ -828,8 +828,34 @@ if (!isset($_SESSION['Rol'])) {
                     const fotoLimpia = p.Foto_Material ? p.Foto_Material.replace(/^\/+/, '') : '';
                     const fotoRuta = fotoLimpia ? `../CRUD_Productos/${fotoLimpia}` : '';
 
+                    const claseFila = p.estado === 'DADO_DE_BAJA' ? 'fila-dada-de-baja' : '';
+
+                    let badgeClase = 'badge-secondary';
+                    if (p.estado === 'DISPONIBLE') badgeClase = 'badge-disponible';
+                    else if (p.estado === 'EN_MANTENIMIENTO') badgeClase = 'badge-mantenimiento';
+                    else if (p.estado === 'DADO_DE_BAJA') badgeClase = 'badge-baja';
+                    else if (p.estado === 'PRESTADO') badgeClase = 'badge-prestado';
+
+                    const etiquetaEstado = `<span class="badge-estado ${badgeClase}">${p.estado || '-'}</span>`;
+
+                    const detalleMotivo = (p.estado === 'DADO_DE_BAJA' && p.motivo_baja) 
+                        ? `<br><small style="color: #6c757d; font-style: italic; display: block; margin-top: 4px;">Motivo: ${p.motivo_baja}</small>` 
+                        : '';
+
+                    // CONDICIONAL PARA LOS BOTONES: Si está dado de baja, no muestra botones de edición ni baja
+                    let botonesAccion = '';
+                    if (p.estado !== 'DADO_DE_BAJA') {
+                        botonesAccion = `
+                            <button class="btn-modal btn-editar" onclick="editarProducto(${p.id_material})">Editar</button>
+                            <button class="btn-modal btn-eliminar" onclick="BajarMaterial(${p.id_material})">Dar de Baja</button>
+                        `;
+                    } else {
+                        // Espacio reservado para cuando implementen el botón de historial más adelante
+                        botonesAccion = `<small style="color: #94a3b8; font-style: italic;">Sin acciones</small>`;
+                    }
+
                     return `
-                        <tr>
+                        <tr class="${claseFila}">
                             <td>${p.id_material}</td>
                             <td>${p.id_serie ? `<code>${p.id_serie}</code>` : '<small>por cantidad</small>'}</td>
                             <td>
@@ -844,10 +870,12 @@ if (!isset($_SESSION['Rol'])) {
                             <td>${p.categoria || '-'}</td>
                             <td>${p.cantidad_total}</td>
                             <td>${p.cantidad_disponible}</td>
-                            <td>${p.estado || '-'}</td>
+                            <td>
+                                ${etiquetaEstado}
+                                ${detalleMotivo}
+                            </td>
                             <td style="white-space: nowrap;">
-                                <button class="btn-modal btn-editar" onclick="editarProducto(${p.id_material})">Editar</button>
-                                <button class="btn-modal btn-eliminar" onclick="eliminarProducto(${p.id_material})">Eliminar</button>
+                                ${botonesAccion}
                             </td>
                         </tr>
                     `;
@@ -956,21 +984,34 @@ if (!isset($_SESSION['Rol'])) {
             }
         }
 
-        async function eliminarProducto(id) {
-            if (confirm('¿Desea eliminar el producto seleccionado?')) {
-                try {
-                    const res = await fetch(`${RUTA_CONTROLADOR_PRODUCTOS}?action=eliminar&id=${id}`);
-                    const data = await res.json();
-                    if (data.success) {
-                        cargarProductos();
-                    } else {
-                        alert('No se pudo eliminar el producto.');
-                    }
-                } catch (error) {
-                    console.error("Error al eliminar producto:", error);
-                }
-            }
+        async function BajarMaterial(idMaterial) {
+    const motivo = prompt("Ingrese el motivo de la baja del material:");
+    
+    // Si el usuario cancela o deja el campo vacío, no hacemos nada
+    if (motivo === null) return; 
+    if (motivo.trim() === "") {
+        alert("Debe especificar un motivo obligatoriamente.");
+        return;
+    }
+
+    try {
+        const res = await fetch(`${RUTA_CONTROLADOR_PRODUCTOS}?action=darDeBaja`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id_material: idMaterial, motivo_baja: motivo })
+        });
+        
+        const resultado = await res.json();
+        if (resultado.success || res.ok) {
+            alert("Material dado de baja correctamente.");
+            cargarProductos(); // Recarga la tabla al instante
+        } else {
+            alert(resultado.mensaje || "No se pudo procesar la baja.");
         }
+    } catch (error) {
+        console.error("Error al dar de baja:", error);
+    }
+}
     </script>
 </body>
 </html>         

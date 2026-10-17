@@ -164,6 +164,19 @@ function ok($data = null) {
             echo json_encode(['success' => (bool)$exito]);
             break;
 
+        case 'darDeBaja':
+    $data = json_decode(file_get_contents("php://input"), true);
+    $id = $data['id_material'] ?? null;
+    $motivo = $data['motivo_baja'] ?? 'Sin motivo especificado';
+
+    if ($id) {
+        $resultado = $modelo->darDeBajaConMotivo($id, $motivo);
+        echo json_encode(['success' => $resultado]);
+    } else {
+        echo json_encode(['success' => false, 'mensaje' => 'ID no válido']);
+    }
+    break;
+
         default:
             echo json_encode(['success' => false, 'message' => 'Acción no reconocida']);
             break;
