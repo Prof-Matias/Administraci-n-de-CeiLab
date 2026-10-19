@@ -1,4 +1,23 @@
-/* RESET BÁSICO Y CENTRADO DE PÁGINA */
+/* =========================================================
+   VARIABLES DE COLOR (SISTEMA CLARO Y OSCURO)
+   ========================================================= */
+:root {
+  --panel-bg: #eaeaea;        
+  --title-color: #0f172a;     
+  --btn-bg: #3c80ee;          
+  --btn-hover: #1059be;       
+}
+
+body.dark-mode {
+  --panel-bg: #222526;        
+  --title-color: #ffffff;     
+  --btn-bg: #313131;          
+  --btn-hover: #030303;       
+}
+
+/* =========================================================
+   RESET BÁSICO Y CONFIGURACIÓN PANTALLA COMPLETA
+   ========================================================= */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -8,157 +27,269 @@
 html,
 body {
   width: 100%;
-  min-height: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 
 body {
-  min-height: 100vh;
+  width: 100vw;
+  height: 100vh;
   display: flex;
-  flex-direction: column;
-  align-items: left;
-  justify-content: left;
-  padding: 20px;
-  overflow-x: hidden;
-
-  background-color: #0079a8;
-  background: linear-gradient(
-    90deg,
-    rgba(0, 121, 168, 1) 0%,
-    rgba(0, 90, 125, 1) 50%,
-    rgba(0, 48, 66, 1) 100%
-  );
-
-  background-repeat: no-repeat;
-  background-size: cover;
-  background-attachment: fixed;
-
+  align-items: center;
+  justify-content: center;
+  background-color: #121212;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   color: #1e293b;
+  transition: background-color 0.3s ease;
 }
 
+/* =========================================================
+   SWITCH ANIMADO PARA ALTERNAR TEMA (SOL / LUNA)
+   ========================================================= */
+.theme-switch {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  width: 64px;
+  height: 34px;
+  z-index: 1000;
+  cursor: pointer;
+}
 
-/* CONTENEDOR PRINCIPAL (.mb-3) TARJETA ESTILO CEIBAL */
-.mb-3 {
-  width: min(100%, 400px);
-  max-width: 400px;
+/* Oculta el checkbox original */
+.theme-switch input {
+  display: none;
+}
 
+/* El fondo del interruptor (La pista) */
+.slider {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #cbd5e1;
+  border-radius: 34px;
+  transition: background-color 0.4s ease;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* El círculo interior (El pulgar/thumb) que se mueve y gira */
+.slider-thumb {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 26px;
+  height: 26px;
   background-color: #ffffff;
+  border-radius: 50%;
+  
+  /* Transición con efecto "rebote" (cubic-bezier) y giro de 360 grados */
+  transition: transform 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55), background-color 0.4s ease;
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+  overflow: hidden;
+}
+
+/* Íconos por defecto dentro del círculo */
+.slider-thumb .icon {
+  position: absolute;
+  font-size: 14px;
+  transition: opacity 0.4s ease, transform 0.6s ease;
+}
+
+/* Estado Día (Sol visible, Luna oculta) */
+.slider-thumb .sun {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+.slider-thumb .moon {
+  opacity: 0;
+  transform: rotate(-90deg) scale(0.5);
+}
+
+/* ANIMACIONES AL ACTIVAR EL SWITCH (MODO OSCURO) */
+input:checked + .slider {
+  background-color: #1e293b;
+}
+
+input:checked + .slider .slider-thumb {
+  transform: translateX(30px) rotate(360deg);
+  background-color: #0f172a;
+}
+
+input:checked + .slider .sun {
+  opacity: 0;
+  transform: rotate(90deg) scale(0.5);
+}
+
+input:checked + .slider .moon {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+
+/* =========================================================
+   CONTENEDOR PRINCIPAL (.mb-3) - PANTALLA COMPLETA
+   ========================================================= */
+.mb-3 {
+  width: 100vw;
+  height: 100vh;
+  max-width: 100%;
+  min-height: 100vh;
+
+  /* Aplica la variable de fondo (Claro/Oscuro) */
+  background-color: var(--panel-bg); 
   position: relative;
 
-  padding: 2.5rem 2rem;
+  padding: 2rem;
+  padding-right: 60vw;
 
-  border-radius: 12px;
-  box-shadow: 10px 20px 25px rgba(0, 0, 0, 0.08);
-  border: 1px solid #e2e8f0;
+  border-radius: 0;
+  box-shadow: none;
+  border: none;
+  margin: 0;
 
-  margin: 1rem auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center; 
+  
+  overflow: hidden;
+  transition: background-color 0.4s ease;
 }
 
+.mb-3 > br {
+  display: none;
+}
 
-/* TÍTULO VISUAL GENERADO VÍA CSS */
-.mb-3::before {
-  content: "Ingreso CeiLab";
+/* =========================================================
+   1. FOTO DEL EDIFICIO (MITAD DERECHA - 60%)
+   ========================================================= */
+.mb-3::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 60vw;
+  height: 100vh;
 
+  background-image: url("Material_Visual/fondo.jpeg");
+  background-size: cover;
+  background-position: center;
+  border-left: 1px solid rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+}
+
+/* =========================================================
+   2. LOGO SUPERIOR (ITRIO TEAM) 
+   ========================================================= */
+.mb-3 > img:first-of-type {
   display: block;
   width: 100%;
-
-  text-align: center;
-
-  font-size: 1.5rem;
-  font-weight: 700;
-
-  color: #0f172a;
-
-  margin-bottom: 1.5rem;
+  max-width: 190px; 
+  height: auto;
+  object-fit: contain;
+  margin: 0;
+  margin-bottom: 1.2rem; 
+  margin-top: 2rem;
 }
 
-
-/* FORMULARIO */
+/* =========================================================
+   3. FORMULARIO (AMPLIO Y CENTRADO)
+   ========================================================= */
 form {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.2rem; 
+  
   width: 100%;
+  max-width: 360px;
+  
+  margin-bottom: 2.5rem; 
 }
 
-
-/* ETIQUETA / LABEL */
-.form-label {
+/* TÍTULO "Iniciar Sesión" */
+form::before {
+  content: "Iniciar Sesión";
   display: block;
   width: 100%;
-
-  font-size: 0.9rem;
-  font-weight: 700;
-
-  color: #475569;
-
-  margin-bottom: 0.5rem;
+  text-align: center;
+  font-size: 1.75rem;
+  font-weight: 500;
+  
+  /* Aplica la variable del texto (Claro/Oscuro) */
+  color: var(--title-color); 
+  
+  margin-bottom: 0.3rem;
+  letter-spacing: -0.3px;
+  transition: color 0.4s ease;
 }
 
+.form-label {
+  display: none;
+}
 
-/* CAMPO DE ENTRADA / INPUT */
+/* CAMPO DE CÉDULA */
 .form-control {
   display: block;
-
   width: 100%;
-  max-width: 100%;
+  
+  padding: 0.95rem 1.2rem 0.95rem 3.2rem; 
 
-  padding: 0.75rem 1rem;
-
-  font-size: 1rem;
+  font-size: 1.05rem;
   color: #1e293b;
-
   background-color: #ffffff;
+  
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%2364748b" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="11" r="2"/><path d="M13 10h5M13 14h3"/></svg>');
+  background-repeat: no-repeat;
+  background-position: 14px center;
+  background-size: 22px 22px;
 
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-
+  border: 1px solid #64748b;
+  border-radius: 30px;
   outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
 
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+.form-control::placeholder {
+  color: #94a3b8;
 }
 
 .form-control:focus {
-  border-color: #0056b3;
-
-  box-shadow:
-    0 0 0 3px rgba(0, 86, 179, 0.15);
+  border-color: #64748b;
+  box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.2);
 }
-
 
 /* BOTÓN DE VERIFICACIÓN */
 .btn-primary,
 #Verificar {
   display: block;
-
   width: 100%;
-  max-width: 100%;
+  
+  padding: 0.95rem;
 
-  margin-top: 1.25rem;
-
-  padding: 0.75rem;
-
-  font-size: 1rem;
+  font-size: 1.1rem;
   font-weight: 600;
-
   color: #ffffff;
-
-  background-color: #001bb3;
-
+  
+  /* Aplica la variable del botón (Claro/Oscuro) */
+  background-color: var(--btn-bg);
+  
   border: none;
-  border-radius: 8px;
-
+  border-radius: 30px;
   cursor: pointer;
-
-  transition:
-    background-color 0.2s ease,
-    transform 0.1s ease;
+  transition: background-color 0.3s ease, transform 0.1s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
 }
 
 .btn-primary:hover,
 #Verificar:hover {
-  background-color: #02178a;
+  background-color: var(--btn-hover);
 }
 
 .btn-primary:active,
@@ -166,220 +297,56 @@ form {
   transform: scale(0.98);
 }
 
-
 /* CUADRO DE ERROR PHP (.alert-danger) */
 .alert-danger {
   display: block;
-
   width: 100%;
-  max-width: 100%;
-
-  margin-top: 1rem;
-
-  padding: 0.75rem;
-
+  padding: 0.8rem;
   background-color: #fef2f2;
-
   border: 1px solid #fecaca;
-
   color: #991b1b;
-
-  border-radius: 8px;
-
-  font-size: 0.875rem;
+  border-radius: 10px;
+  font-size: 0.9rem;
   font-weight: 500;
-
   text-align: center;
 }
 
-
-/* LOGO RESPONSIVE */
-.Logo {
+/* =========================================================
+   4. LOGO INFERIOR (CERP DEL ESTE)
+   ========================================================= */
+.Logo,
+img.Logo {
   display: block;
-
   width: 100%;
-  max-width: 500px;
-
-  height: auto;
-
+  max-width: 220px; 
+  max-height: 160px; 
   object-fit: contain;
-
-  margin: 1rem auto 0;
+  margin: 0;
 }
 
-
 /* =========================================================
-   CELULARES
+   RESPONSIVIDAD (PANTALLAS MÓVILES Y TABLETS)
    ========================================================= */
-
-@media screen and (max-width: 480px) {
-
-  body {
-    width: 100%;
+@media screen and (max-width: 768px) {
+  html, body {
+    overflow-y: auto;
+  }
+  .mb-3 {
+    width: 100vw;
     min-height: 100vh;
-
-    padding: 12px;
-
-    justify-content: center;
-
-    overflow-x: hidden;
-  }
-
-  .mb-3 {
-    width: 100%;
-    max-width: 100%;
-
-    padding: 2rem 1.25rem;
-
-    margin: 0.5rem auto;
-
-    border-radius: 10px;
-  }
-
-  .mb-3::before {
-    font-size: 1.3rem;
-    margin-bottom: 1.25rem;
-  }
-
-  .form-label {
-    font-size: 0.875rem;
-  }
-
-  .form-control {
-    width: 100%;
-    max-width: 100%;
-
-    padding: 0.75rem 0.85rem;
-
-    font-size: 1rem;
-  }
-
-  .btn-primary,
-  #Verificar {
-    width: 100%;
-    max-width: 100%;
-
-    padding: 0.75rem;
-
-    font-size: 1rem;
-  }
-
-  .alert-danger {
-    width: 100%;
-    max-width: 100%;
-
-    font-size: 0.8rem;
-
-    padding: 0.7rem;
-  }
-
-  .Logo {
-    width: 100%;
-    max-width: 100%;
-
     height: auto;
-
-    margin: 0.75rem auto 0;
+    padding: 2.5rem 1.5rem;
   }
-}
-
-
-/* =========================================================
-   TABLETS
-   ========================================================= */
-
-@media screen and (min-width: 481px) and (max-width: 1024px) {
-
-  body {
-    width: 100%;
-    min-height: 100vh;
-
-    padding: 20px;
-
-    justify-content: center;
-
-    overflow-x: hidden;
+  .mb-3::after {
+    display: none;
   }
-
-  .mb-3 {
-    width: min(90%, 450px);
-    max-width: 450px;
-
-    padding: 2.5rem 2rem;
-
-    margin: 1rem auto;
+  
+  .mb-3 > img:first-of-type {
+    max-width: 160px;
   }
-
-  .Logo {
-    width: min(90vw, 450px);
-    max-width: 450px;
-
-    height: auto;
-
-    margin: 1rem auto 0;
-  }
-}
-
-
-/* =========================================================
-   COMPUTADORAS
-   ========================================================= */
-
-@media screen and (min-width: 1025px) {
-
-  body {
-    width: 100%;
-    min-height: 100vh;
-
-    padding: 30px;
-
-    justify-content: left;
-
-    overflow-x: hidden;
-  }
-
-  .mb-3 {
-    width: 400px;
-    max-width: 400px;
-  }
-
-  .Logo {
-    width: min(500px, 80vw);
-    max-width: 500px;
-
-    height: auto;
-
-    margin: 1rem auto 0;
-  }
-}
-
-
-/* =========================================================
-   PANTALLAS CON POCA ALTURA
-   ========================================================= */
-
-@media screen and (max-height: 650px) {
-
-  body {
-    justify-content: flex-start;
-
-    padding-top: 15px;
-    padding-bottom: 15px;
-  }
-
-  .mb-3 {
-    margin-top: 0.5rem;
-    margin-bottom: 0.5rem;
-
-    padding-top: 1.5rem;
-    padding-bottom: 1.5rem;
-  }
-
-  .mb-3::before {
-    margin-bottom: 1rem;
-  }
-
-  .Logo {
-    margin-top: 0.5rem;
+  
+  .Logo,
+  img.Logo {
+    max-width: 180px;
   }
 }
