@@ -110,15 +110,17 @@ function ok($data = null) {
             }
 
             // 3. Insertar en la base de datos
-            $exito = $modelo->guardarProducto(
-                $nombre,
-                $_POST['descripcion'] ?? '',
-                $_POST['categoria'] ?? '',
-                $cantidadTotal,
-                $cantidadDisponible,
-                $_POST['estado'] ?? 'Disponible',
-                $rutaImagen
-            );
+           $exito = $modelo->guardarProducto(
+    $_POST['id_serie'] ?? null,       
+    $_POST['tipo_control'] ?? 'serie', 
+    $_POST['nombre'] ?? '',            
+    $_POST['descripcion'] ?? '',      
+    $_POST['categoria'] ?? '',         
+    $cantidadTotal,                    
+    $cantidadDisponible,               
+    $_POST['estado'] ?? EstadoMaterial::DISPONIBLE, 
+    $rutaImagen                        
+);
 
             echo json_encode(['success' => (bool)$exito]);
             break;

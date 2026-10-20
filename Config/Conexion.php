@@ -1,7 +1,7 @@
 <?php
 class Conexion {
     public static function conectar() {
-        $servidor = "mysql:dbname=ceilab;host=localhost;charset=utf8mb4";
+        $servidor = "mysql:dbname=ceilab2;host=localhost;charset=utf8mb4";
         $usuario = "root";
         $contrasenia = "";
 
