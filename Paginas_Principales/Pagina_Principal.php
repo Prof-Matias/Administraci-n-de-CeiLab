@@ -479,10 +479,12 @@ if (!isset($_SESSION['Rol'])) {
                     <small>El disponible se calcula: total menos lo que está prestado.</small>
                 </div>
 
-                <div class="form-group" id="grupoAplicar" style="display:none;">
-                    <label><input type="checkbox" id="prod_aplicar" checked> Aplicar descripción, categoría y foto a todas las unidades de este nombre</label>
-                    <input type="hidden" id="prod_aplicar_valor" name="aplicar_al_grupo" value="1">
-                </div>
+              <div class="form-group" id="grupoAplicar" style="display:none;">
+    <label>
+        <input type="checkbox" id="prod_aplicar" name="aplicar_al_grupo" value="1" checked> 
+        Aplicar nombre, descripción, categoría y foto a todas las unidades de este grupo
+    </label>
+</div>
 
                 <div class="form-group">
                     <label>Imagen del Producto (JPG, PNG, GIF o WEBP)</label>
@@ -805,85 +807,116 @@ if (!isset($_SESSION['Rol'])) {
             await cargarProductos();
         }
 
-        async function cargarProductos() {
-            try {
-                const res = await fetch(`${RUTA_CONTROLADOR_PRODUCTOS}?action=listar`);
-                const textoRespuesta = await res.text();
+        // 1. Modificación en cargarProductos para mostrar el botón "Reactivar"
+async function cargarProductos() {
+    try {
+        const res = await fetch(`${RUTA_CONTROLADOR_PRODUCTOS}?action=listar`);
+        const textoRespuesta = await res.text();
 
-                let productos;
-                try {
-                    productos = JSON.parse(textoRespuesta);
-                } catch (e) {
-                    console.error("Respuesta del servidor no válida:", textoRespuesta);
-                    return;
-                }
+        let productos;
+        try {
+            productos = JSON.parse(textoRespuesta);
+        } catch (e) {
+            console.error("Respuesta del servidor no válida:", textoRespuesta);
+            return;
+        }
 
-                const tbody = document.getElementById('bodyTablaProductos');
-                if (!Array.isArray(productos) || productos.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;">No hay productos registrados.</td></tr>`;
-                    return;
-                }
+        const tbody = document.getElementById('bodyTablaProductos');
+        if (!Array.isArray(productos) || productos.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;">No hay productos registrados.</td></tr>`;
+            return;
+        }
 
-                tbody.innerHTML = productos.map(p => {
-                    const fotoLimpia = p.Foto_Material ? p.Foto_Material.replace(/^\/+/, '') : '';
-                    const fotoRuta = fotoLimpia ? `../CRUD_Productos/${fotoLimpia}` : '';
+        tbody.innerHTML = productos.map(p => {
+            const fotoLimpia = p.foto_material ? p.foto_material.replace(/^\/+/, '') : (p.Foto_Material ? p.Foto_Material.replace(/^\/+/, '') : '');
+            const fotoRuta = fotoLimpia ? `../CRUD_Productos/${fotoLimpia}` : '';
 
-                    const claseFila = p.estado === 'DADO_DE_BAJA' ? 'fila-dada-de-baja' : '';
+            const estadoUpper = (p.estado || '').toUpperCase();
+            const claseFila = estadoUpper === 'DADO_DE_BAJA' ? 'fila-dada-de-baja' : '';
 
-                    let badgeClase = 'badge-secondary';
-                    if (p.estado === 'DISPONIBLE') badgeClase = 'badge-disponible';
-                    else if (p.estado === 'EN_MANTENIMIENTO') badgeClase = 'badge-mantenimiento';
-                    else if (p.estado === 'DADO_DE_BAJA') badgeClase = 'badge-baja';
-                    else if (p.estado === 'PRESTADO') badgeClase = 'badge-prestado';
+            let badgeClase = 'badge-secondary';
+            if (estadoUpper === 'DISPONIBLE') badgeClase = 'badge-disponible';
+            else if (estadoUpper === 'EN_MANTENIMIENTO') badgeClase = 'badge-mantenimiento';
+            else if (estadoUpper === 'DADO_DE_BAJA') badgeClase = 'badge-baja';
+            else if (estadoUpper === 'PRESTADO') badgeClase = 'badge-prestado';
 
-                    const etiquetaEstado = `<span class="badge-estado ${badgeClase}">${p.estado || '-'}</span>`;
+            const etiquetaEstado = `<span class="badge-estado ${badgeClase}">${p.estado || '-'}</span>`;
+            const detalleMotivo = (estadoUpper === 'DADO_DE_BAJA' && p.motivo_baja) 
+                ? `<br><small style="color: #6c757d; font-style: italic; display: block; margin-top: 4px;">Motivo: ${p.motivo_baja}</small>` 
+                : '';
 
-                    const detalleMotivo = (p.estado === 'DADO_DE_BAJA' && p.motivo_baja) 
-                        ? `<br><small style="color: #6c757d; font-style: italic; display: block; margin-top: 4px;">Motivo: ${p.motivo_baja}</small>` 
-                        : '';
-
-                    // CONDICIONAL PARA LOS BOTONES: Si está dado de baja, no muestra botones de edición ni baja
-                    let botonesAccion = '';
-                    if (p.estado !== 'DADO_DE_BAJA') {
-                        botonesAccion = `
-                            <button class="btn-modal btn-editar" onclick="editarProducto(${p.id_material})">Editar</button>
-                            <button class="btn-modal btn-eliminar" onclick="BajarMaterial(${p.id_material})">Dar de Baja</button>
-                        `;
-                    } else {
-                        // Espacio reservado para cuando implementen el botón de historial más adelante
-                        botonesAccion = `<small style="color: #94a3b8; font-style: italic;">Sin acciones</small>`;
-                    }
-
-                    return `
-                        <tr class="${claseFila}">
-                            <td>${p.id_material}</td>
-                            <td>${p.id_serie ? `<code>${p.id_serie}</code>` : '<small>por cantidad</small>'}</td>
-                            <td>
-                                <img src="${fotoRuta}" 
-                                    style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; background: #eee;" 
-                                    alt="Img" 
-                                    onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                                <span style="display:none; font-size: 11px; color: #777;">Sin foto</span>
-                            </td>
-                            <td><b>${p.nombre}</b></td>
-                            <td>${p.descripcion || '-'}</td>
-                            <td>${p.categoria || '-'}</td>
-                            <td>${p.cantidad_total}</td>
-                            <td>${p.cantidad_disponible}</td>
-                            <td>
-                                ${etiquetaEstado}
-                                ${detalleMotivo}
-                            </td>
-                            <td style="white-space: nowrap;">
-                                ${botonesAccion}
-                            </td>
-                        </tr>
-                    `;
-                }).join('');
-            } catch (error) {
-                console.error("Error al cargar productos:", error);
+            // CONDICIONAL DE BOTONES:
+            // Si está activo -> Editar / Dar de baja
+            // Si está DADO_DE_BAJA -> Mostrar solo botón Reactivar
+            let botonesAccion = '';
+            if (estadoUpper !== 'DADO_DE_BAJA') {
+                botonesAccion = `
+                    <button class="btn-modal btn-editar" onclick="editarProducto(${p.id_material})">Editar</button>
+                    <button class="btn-modal btn-eliminar" onclick="BajarMaterial(${p.id_material})">Dar de Baja</button>
+                `;
+            } else {
+                botonesAccion = `
+                    <button class="btn-modal btn-crear" style="background-color: #28a745;" onclick="reactivarMaterial(${p.id_material})">Reactivar</button>
+                `;
             }
-        }   
+
+            return `
+                <tr class="${claseFila}">
+                    <td>${p.id_material}</td>
+                    <td>${p.id_serie ? `<code>${p.id_serie}</code>` : '<small>por cantidad</small>'}</td>
+                    <td>
+                        <img src="${fotoRuta}" 
+                            style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; background: #eee;" 
+                            alt="Img" 
+                            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                        <span style="display:none; font-size: 11px; color: #777;">Sin foto</span>
+                    </td>
+                    <td><b>${p.nombre}</b></td>
+                    <td>${p.descripcion || '-'}</td>
+                    <td>${p.categoria || '-'}</td>
+                    <td>${p.cantidad_total}</td>
+                    <td>${p.cantidad_disponible}</td>
+                    <td>
+                        ${etiquetaEstado}
+                        ${detalleMotivo}
+                    </td>
+                    <td style="white-space: nowrap;">
+                        ${botonesAccion}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error("Error al cargar productos:", error);
+    }
+}
+
+// 2. Nueva función para procesar la reactivación
+async function reactivarMaterial(idMaterial) {
+    if (!confirm("¿Estás seguro de que deseas reactivar este producto y restablecerlo como DISPONIBLE?")) {
+        return;
+    }
+
+    try {
+        const res = await fetch(`${RUTA_CONTROLADOR_PRODUCTOS}?action=reactivar`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id_material: idMaterial })
+        });
+
+        const resultado = await res.json();
+
+        if (resultado.success) {
+            alert(resultado.message || "Producto reactivado con éxito.");
+            cargarProductos(); // Recarga la tabla
+        } else {
+            alert(resultado.message || "No se pudo reactivar el producto.");
+        }
+    } catch (error) {
+        console.error("Error al reactivar:", error);
+        alert("Error de conexión al intentar reactivar el producto.");
+    }
+}
 
        /** Cambia las secciones del formuarlio de agregar producto en base a el tipo de control seleccionado */
         function ajustarFormularioProducto() {
@@ -908,27 +941,48 @@ if (!isset($_SESSION['Rol'])) {
             document.getElementById('modalFormularioProducto').classList.add('active');
         }
         async function editarProducto(id) {
-            esEdicionProducto = true;
-            try {
-                const res = await fetch(`${RUTA_CONTROLADOR_PRODUCTOS}?action=ver&id=${id}`);
-                const p = await res.json();
+    esEdicionProducto = true;
+    try {
+        const res = await fetch(`${RUTA_CONTROLADOR_PRODUCTOS}?action=ver&id=${id}`);
+        const p = await res.json();
 
-                document.getElementById('id_material').value = p.id_material;
-                document.getElementById('prod_nombre').value = p.nombre;
-                document.getElementById('prod_descripcion').value = p.descripcion || '';
-                document.getElementById('prod_categoria').value = p.categoria || '';
-                document.getElementById('prod_cant_total').value = p.cantidad_total;
-                document.getElementById('prod_cant_disp').value = p.cantidad_disponible;
-                document.getElementById('prod_estado').value = p.estado || 'Disponible';
-                document.getElementById('foto_actual').value = p.foto_material || '';
-
-                document.getElementById('tituloFormProducto').innerText = 'Editar Producto';
-                document.getElementById('modalFormularioProducto').classList.add('active');
-            } catch (error) {
-                console.error("Error al cargar el producto:", error);
-            }
+        if (!p || !p.id_material) {
+            alert("No se encontraron datos para este producto.");
+            return;
         }
 
+        // Cargar campos hidden y básicos presentes en tu HTML
+        document.getElementById('id_material').value = p.id_material;
+        document.getElementById('prod_nombre').value = p.nombre || '';
+        document.getElementById('prod_descripcion').value = p.descripcion || '';
+        document.getElementById('prod_categoria').value = p.categoria || '';
+        document.getElementById('foto_actual').value = p.foto_material || p.Foto_Material || '';
+
+        // Cargar tipo de control (SERIE / CANTIDAD)
+        const selectTipo = document.getElementById('prod_tipo');
+        if (selectTipo) {
+            selectTipo.value = p.tipo_control || 'SERIE';
+        }
+
+        // Cargar campos según tipo de control
+        if (p.tipo_control === 'CANTIDAD') {
+            document.getElementById('prod_cant_total').value = p.cantidad_total || 0;
+        } else {
+            document.getElementById('prod_id_serie').value = p.id_serie || '';
+        }
+
+        // Ajustar visibilidad de campos según esEdicionProducto = true
+        ajustarFormularioProducto();
+
+        // Actualizar título del modal y mostrarlo
+        document.getElementById('tituloFormProducto').innerText = 'Editar Producto';
+        document.getElementById('modalFormularioProducto').classList.add('active');
+
+    } catch (error) {
+        console.error("Error al cargar el producto para edición:", error);
+        alert("Ocurrió un error al obtener la información del producto.");
+    }
+}
         function solicitarConfirmacionProducto(e) {
             e.preventDefault();
             const form = document.getElementById('formProducto');
@@ -984,10 +1038,10 @@ if (!isset($_SESSION['Rol'])) {
             }
         }
 
-        async function BajarMaterial(idMaterial) {
+   async function BajarMaterial(idMaterial) {
     const motivo = prompt("Ingrese el motivo de la baja del material:");
     
-    // Si el usuario cancela o deja el campo vacío, no hacemos nada
+    // Si el usuario cancela o deja el campo vacío, se interrumpe el proceso
     if (motivo === null) return; 
     if (motivo.trim() === "") {
         alert("Debe especificar un motivo obligatoriamente.");
@@ -1002,16 +1056,21 @@ if (!isset($_SESSION['Rol'])) {
         });
         
         const resultado = await res.json();
-        if (resultado.success || res.ok) {
-            alert("Material dado de baja correctamente.");
-            cargarProductos(); // Recarga la tabla al instante
+
+        // Evaluación estricta de éxito devuelto por PHP
+        if (resultado.success) {
+            alert(resultado.message || "Material dado de baja correctamente.");
+            cargarProductos(); // Recarga la tabla en la interfaz
         } else {
-            alert(resultado.mensaje || "No se pudo procesar la baja.");
+            alert(resultado.message || resultado.mensaje || "No se pudo procesar la baja.");
         }
     } catch (error) {
         console.error("Error al dar de baja:", error);
+        alert("Error de conexión al procesar la baja con el servidor.");
     }
+
 }
+
     </script>
 </body>
 </html>         

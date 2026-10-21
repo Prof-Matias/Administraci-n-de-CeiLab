@@ -7,10 +7,8 @@ $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
 require_once __DIR__ . '/../../Config/Guardia.php';
 
-// Definir las acciones que requieren sesión pero no requieren rol específico
 $accionesParaTodos = ['listar', 'ver', 'catalogo'];
 
-// Verificar si la acción requiere sesión o rol
 if (in_array($action, $accionesParaTodos, true)) {
     exigirSesion();
 } else {
@@ -20,51 +18,31 @@ if (in_array($action, $accionesParaTodos, true)) {
 try {
     $modelo = new Modelo_Producto();
 
-    // Función auxiliar para subir cualquier tipo de imagen
     function procesarImagen($fileInputName) {
         if (isset($_FILES[$fileInputName]) && $_FILES[$fileInputName]['error'] === UPLOAD_ERR_OK) {
             $directorioAbsoluto = __DIR__ . '/../uploads/';
             
-            // Crea la carpeta 'uploads' si no existe
             if (!file_exists($directorioAbsoluto)) {
                 mkdir($directorioAbsoluto, 0777, true);
             }
-            // Validación de tipo de archivo y tamaño
             $permitidas = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
             $extension  = strtolower(pathinfo($_FILES[$fileInputName]['name'], PATHINFO_EXTENSION));
             if (!in_array($extension, $permitidas, true) || @getimagesize($_FILES[$fileInputName]['tmp_name']) === false) {
-                throw new ErrorNegocio('La foto debe ser una imagen JPG, PNG, GIF o WEBP.');
+                throw new Exception('La foto debe ser una imagen JPG, PNG, GIF o WEBP.');
             }
 
             $nombreOriginal = $_FILES[$fileInputName]['name'];
             $extension = pathinfo($nombreOriginal, PATHINFO_EXTENSION);
             
-            // Genera un nombre único conservando la extensión original
             $nombreArchivo = 'prod_' . uniqid() . '.' . strtolower($extension);
             $destino = $directorioAbsoluto . $nombreArchivo;
 
             if (move_uploaded_file($_FILES[$fileInputName]['tmp_name'], $destino)) {
-                return 'uploads/' . $nombreArchivo; // Ruta relativa para guardar en BD
+                return 'uploads/' . $nombreArchivo;
             }
         }
         return null;
-     }
-     
-     function datosFormulario($fotoPorDefecto) {
-    return [
-        'tipo_control'   => strtoupper(trim($_POST['tipo_control'] ?? '')),
-        'nombre'         => $_POST['nombre'] ?? '',
-        'descripcion'    => $_POST['descripcion'] ?? '',
-        'categoria'      => $_POST['categoria'] ?? '',
-        'cantidad_total' => (int)($_POST['cantidad_total'] ?? 0),
-        'id_serie'       => $_POST['id_serie'] ?? null,
-        'foto'           => procesarImagen('foto_material') ?: $fotoPorDefecto,
-    ];
-}
-
-function ok($data = null) {
-    echo json_encode(['success' => true, 'data' => $data], JSON_UNESCAPED_UNICODE);
-}
+    }
 
     switch ($action) {
 
@@ -82,106 +60,209 @@ function ok($data = null) {
             break;
 
         case 'guardar':
-            $nombre = $_POST['nombre'] ?? '';
-            $cantidadTotal = (int)($_POST['cantidad_total'] ?? 0);
-            $cantidadDisponible = (int)($_POST['cantidad_disponible'] ?? 0);
+            $nombre = trim($_POST['nombre'] ?? '');
+            $tipoControl = strtoupper(trim($_POST['tipo_control'] ?? 'SERIE'));
+            $descripcion = $_POST['descripcion'] ?? '';
+            $categoria = $_POST['categoria'] ?? '';
+            $estado = $_POST['estado'] ?? 'DISPONIBLE';
+            $estado = strtoupper(trim($_POST['estado'] ?? 'DISPONIBLE'));
 
-            // VALIDACIONES DE CANTIDAD
-            if ($cantidadTotal < 0 || $cantidadDisponible < 0) {
-                echo json_encode(['success' => false, 'message' => 'Las cantidades no pueden ser números negativos.']);
-                break;
+            $rutaImagen = procesarImagen('foto_material') ?: 'uploads/default.png';
+
+            if ($tipoControl === 'SERIE') {
+                // Leer números de serie enviados (línea por línea)
+                $seriesRaw = $_POST['series'] ?? $_POST['id_serie'] ?? '';
+                $lineasSeries = array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $seriesRaw)));
+
+                if (empty($lineasSeries)) {
+                    echo json_encode(['success' => false, 'message' => 'Debe ingresar al menos un número de serie.']);
+                    break;
+                }
+
+                // Validar que ninguno de los números de serie exista en la BD
+                foreach ($lineasSeries as $serie) {
+                    if ($modelo->obtenerProductoPorSerie($serie)) {
+                        echo json_encode(['success' => false, 'message' => "El número de serie '{$serie}' ya está registrado en el sistema."]);
+                        break 2;
+                    }
+                }
+
+                // Registrar un producto individual por cada número de serie
+                foreach ($lineasSeries as $serie) {
+                    $modelo->guardarProducto(
+                        $serie,
+                        'SERIE',
+                        $nombre,
+                        $descripcion,
+                        $categoria,
+                        1, // total
+                        1, // disponible
+                        $estado,
+                        $rutaImagen
+                    );
+                }
+
+                echo json_encode(['success' => true]);
+            } else {
+                // Registro por CANTIDAD
+                $cantidadTotal = (int)($_POST['cantidad_total'] ?? 0);
+                $cantidadDisponible = $cantidadTotal;
+
+                if ($cantidadTotal <= 0) {
+                    echo json_encode(['success' => false, 'message' => 'La cantidad debe ser mayor a 0.']);
+                    break;
+                }
+
+                if ($modelo->obtenerProductoPorNombre($nombre)) {
+                    echo json_encode(['success' => false, 'message' => 'Un producto consumible con ese nombre ya existe.']);
+                    break;
+                }
+
+                $exito = $modelo->guardarProducto(
+                    null,
+                    'CANTIDAD',
+                    $nombre,
+                    $descripcion,
+                    $categoria,
+                    $cantidadTotal,
+                    $cantidadDisponible,
+                    $estado,
+                    $rutaImagen
+                );
+
+                echo json_encode(['success' => (bool)$exito]);
             }
-
-            if ($cantidadDisponible > $cantidadTotal) {
-                echo json_encode(['success' => false, 'message' => 'La cantidad disponible no puede ser mayor a la cantidad total.']);
-                break;
-            }
-
-            // 1. Verificación de duplicado por nombre
-            if ($modelo->obtenerProductoPorNombre($nombre)) {
-                echo json_encode(['success' => false, 'message' => 'El producto ya existe']);
-                break;
-            }
-
-            // 2. Procesar la imagen recibida
-            $rutaImagen = procesarImagen('foto_material');
-            if (!$rutaImagen) {
-                $rutaImagen = 'uploads/default.png'; // Imagen por defecto si no suben ninguna
-            }
-
-            // 3. Insertar en la base de datos
-           $exito = $modelo->guardarProducto(
-    $_POST['id_serie'] ?? null,       
-    $_POST['tipo_control'] ?? 'serie', 
-    $_POST['nombre'] ?? '',            
-    $_POST['descripcion'] ?? '',      
-    $_POST['categoria'] ?? '',         
-    $cantidadTotal,                    
-    $cantidadDisponible,               
-    $_POST['estado'] ?? EstadoMaterial::DISPONIBLE, 
-    $rutaImagen                        
-);
-
-            echo json_encode(['success' => (bool)$exito]);
             break;
 
         case 'actualizar':
-            $id = $_POST['id_material'] ?? 0;
-            $fotoActual = $_POST['foto_actual'] ?? 'uploads/default.png';
-            $cantidadTotal = (int)($_POST['cantidad_total'] ?? 0);
-            $cantidadDisponible = (int)($_POST['cantidad_disponible'] ?? 0);
+    $id = $_POST['id_material'] ?? 0;
+    $fotoActual = $_POST['foto_actual'] ?? 'uploads/default.png';
+    
+    // 1. Obtener el producto actual de la BD
+    $productoActual = $modelo->obtenerProductoPorID($id);
+    if (!$productoActual) {
+        echo json_encode(['success' => false, 'message' => 'El producto no existe.']);
+        break;
+    }
 
-            // VALIDACIONES DE CANTIDAD
-            if ($cantidadTotal < 0 || $cantidadDisponible < 0) {
-                echo json_encode(['success' => false, 'message' => 'Las cantidades no pueden ser números negativos.']);
-                break;
-            }
+    $nombreOriginal = $productoActual['nombre']; // Guardamos el nombre actual antes de modificar
+    $nuevoNombre    = trim($_POST['nombre'] ?? $nombreOriginal);
+    $descripcion    = $_POST['descripcion'] ?? $productoActual['descripcion'];
+    $categoria      = $_POST['categoria'] ?? $productoActual['categoria'];
+    $tipoControl    = $productoActual['tipo_control'];
+    $idSerieFinal   = null;
 
-            if ($cantidadDisponible > $cantidadTotal) {
-                echo json_encode(['success' => false, 'message' => 'La cantidad disponible no puede ser mayor a la cantidad total.']);
-                break;
-            }
+    if ($tipoControl === 'SERIE') {
+        $idSerieFinal = trim($_POST['id_serie'] ?? $productoActual['id_serie']);
 
-            // Si se subió una nueva imagen, se usa la nueva; de lo contrario, conserva la anterior
-            $nuevaFoto = procesarImagen('foto_material');
-            $fotoFinal = $nuevaFoto ? $nuevaFoto : $fotoActual;
-
-            $exito = $modelo->actualizarProducto(
-                $id,
-                $_POST['nombre'] ?? '',
-                $_POST['descripcion'] ?? '',
-                $_POST['categoria'] ?? '',
-                $cantidadTotal,
-                $cantidadDisponible,
-                $_POST['estado'] ?? 'Disponible',
-                $fotoFinal
-            );
-
-            echo json_encode(['success' => (bool)$exito]);
+        if (empty($idSerieFinal)) {
+            echo json_encode(['success' => false, 'message' => 'El número de serie no puede estar vacío.']);
             break;
+        }
 
+        // Validar duplicado de serie en otro registro
+        $productoDuplicado = $modelo->obtenerProductoPorSerie($idSerieFinal, $id);
+        if ($productoDuplicado) {
+            echo json_encode(['success' => false, 'message' => "El número de serie '{$idSerieFinal}' ya pertenece a otro producto."]);
+            break;
+        }
+
+        $cantidadTotal = 1;
+        $cantidadDisponible = (int)$productoActual['cantidad_disponible'];
+    } else {
+        $cantidadTotal = (int)($_POST['cantidad_total'] ?? $productoActual['cantidad_total']);
+        $cantidadDisponible = min($cantidadTotal, (int)$productoActual['cantidad_disponible']);
+    }
+
+    // Procesar imagen
+    $nuevaFoto = procesarImagen('foto_material');
+    $fotoFinal = $nuevaFoto ? $nuevaFoto : $fotoActual;
+
+    $estadoFinal = isset($_POST['estado']) ? strtoupper(trim($_POST['estado'])) : $productoActual['estado'];
+
+    // 2. Actualizar el registro individual seleccionado
+    $exito = $modelo->actualizarProducto(
+        $id,
+        $nuevoNombre,
+        $descripcion,
+        $categoria,
+        $cantidadTotal,
+        $cantidadDisponible,
+        $estadoFinal,
+        $fotoFinal,
+        $idSerieFinal
+    );
+
+    // 3. Si la actualización fue exitosa y la opción "Aplicar a todo" está marcada
+    $aplicarAlGrupo = isset($_POST['aplicar_al_grupo']) && ($_POST['aplicar_al_grupo'] === '1' || $_POST['aplicar_al_grupo'] === 'on');
+
+    if ($exito && $aplicarAlGrupo) {
+        $modelo->actualizarGrupoPorNombre(
+            $nombreOriginal,
+            $nuevoNombre,
+            $descripcion,
+            $categoria,
+            $fotoFinal
+        );
+    }
+
+    echo json_encode(['success' => (bool)$exito]);
+    break;
         case 'eliminar':
             $id = $_GET['id'] ?? 0;
             $exito = $modelo->eliminarProducto($id);
             echo json_encode(['success' => (bool)$exito]);
             break;
 
-        case 'darDeBaja':
+    case 'darDeBaja':
     $data = json_decode(file_get_contents("php://input"), true);
     $id = $data['id_material'] ?? null;
-    $motivo = $data['motivo_baja'] ?? 'Sin motivo especificado';
+    $motivo = trim($data['motivo_baja'] ?? '');
 
-    if ($id) {
-        $resultado = $modelo->darDeBajaConMotivo($id, $motivo);
-        echo json_encode(['success' => $resultado]);
+    // Obtener la cédula del usuario responsable desde la sesión
+    $ciResponsable = $_SESSION['ci'] ?? $_SESSION['usuario']['ci'] ?? null;
+
+    if (!$id || empty($motivo)) {
+        echo json_encode(['success' => false, 'message' => 'Debe ingresar un motivo válido.']);
+        break;
+    }
+
+    if ($modelo->esProductoComprometido($id)) {
+        echo json_encode([
+            'success' => false, 
+            'message' => 'Operación cancelada: El producto está PRESTADO o reservado.'
+        ]);
+        break;
+    }
+
+    // Se envía la CI del usuario al método
+    $resultado = $modelo->darDeBajaConMotivo($id, $motivo, $ciResponsable);
+    if ($resultado) {
+        echo json_encode(['success' => true, 'message' => 'Material dado de baja correctamente.']);
     } else {
-        echo json_encode(['success' => false, 'mensaje' => 'ID no válido']);
+        echo json_encode(['success' => false, 'message' => 'No se pudo registrar la baja.']);
     }
     break;
 
-        default:
-            echo json_encode(['success' => false, 'message' => 'Acción no reconocida']);
-            break;
+case 'reactivar':
+    $data = json_decode(file_get_contents("php://input"), true);
+    $id = $data['id_material'] ?? null;
+
+    // Obtener la cédula del usuario responsable desde la sesión
+    $ciResponsable = $_SESSION['ci'] ?? $_SESSION['usuario']['ci'] ?? null;
+
+    if ($id) {
+        // Se envía la CI del usuario al método
+        $resultado = $modelo->reactivarProducto($id, $ciResponsable);
+        if ($resultado) {
+            echo json_encode(['success' => true, 'message' => 'Producto reactivado correctamente.']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'No se pudo reactivar el producto.']);
+        }
+    } else {
+        echo json_encode(['success' => false, 'message' => 'ID no válido.']);
+    }
+    break;
     }
 
 } catch (Exception $e) {
