@@ -279,113 +279,123 @@ if (!isset($_SESSION['Rol'])) {
         </div>
     </div>
 
-    <!-- ==========================================================================
-         MODAL 1: TABLA DE GESTIÓN DE USUARIOS
-         ========================================================================== -->
-    <div class="modal-overlay" id="modalGestionUsuarios">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Gestión de Usuarios</h3>
-                <button class="modal-close" onclick="cerrarModal('modalGestionUsuarios')">&times;</button>
-            </div>
-            
-            <button class="btn-modal btn-crear" onclick="abrirModalFormulario()">+ Nuevo Usuario</button>
-            
-            <!-- CONTENEDOR RESPONSIVE AÑADIDO AQUÍ -->
-            <div class="table-responsive">
-                <table class="tabla-modal">
-                    <thead>
-                        <tr>
-                            <th>Cédula</th>
-                            <th>Nombre</th>
-                            <th>Apellido</th>
-                            <th>Email</th>
-                            <th>Rol</th>
-                            <th>Especialidad</th>
-                            <th style="width: 160px;">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="bodyTablaUsuarios">
-                        <!-- Filas renderizadas dinámicamente mediante JavaScript -->
-                    </tbody>
-                </table>
-            </div>
+   <!-- ==========================================================================
+     MODAL 1: TABLA DE GESTIÓN DE USUARIOS
+     ========================================================================== -->
+<div class="modal-overlay" id="modalGestionUsuarios">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Gestión de Usuarios</h3>
+            <button class="modal-close" onclick="cerrarModal('modalGestionUsuarios')">&times;</button>
+        </div>
+        
+        <button class="btn-modal btn-crear" onclick="abrirModalFormulario()">+ Nuevo Usuario</button>
+        
+        <div class="table-responsive">
+            <table class="tabla-modal">
+                <thead>
+                    <tr>
+                        <th>Cédula</th>
+                        <th>Nombre</th>
+                        <th>Apellido</th>
+                        <th>Email</th>
+                        <th>Teléfono(s)</th>
+                        <th>Rol</th>
+                        <th>Especialidad</th>
+                        <th style="width: 160px;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="bodyTablaUsuarios">
+                    <!-- Filas renderizadas por JS -->
+                </tbody>
+            </table>
         </div>
     </div>
+</div>
 
-    <!-- ==========================================================================
-         MODAL 2: FORMULARIO DE REGISTRO / EDICIÓN DE USUARIO
-         ========================================================================== -->
-    <div class="modal-overlay" id="modalFormularioUsuario">
-        <div class="modal-content" style="max-width: 500px;">
-            <div class="modal-header">
-                <h3 id="tituloFormUsuario">Usuario</h3>
-                <button class="modal-close" onclick="cerrarModal('modalFormularioUsuario')">&times;</button>
+<!-- ==========================================================================
+     MODAL 2: FORMULARIO DE REGISTRO / EDICIÓN DE USUARIO
+     ========================================================================== -->
+<div class="modal-overlay" id="modalFormularioUsuario">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+            <h3 id="tituloFormUsuario">Usuario</h3>
+            <button class="modal-close" onclick="cerrarModal('modalFormularioUsuario')">&times;</button>
+        </div>
+        
+        <form id="formUsuario" onsubmit="solicitarConfirmacion(event)">
+            <input type="hidden" id="cedula_original" name="cedula_original">
+            <input type="hidden" id="contrasena_actual" name="contrasena_actual">
+            
+            <div class="form-group">
+                <label>Cédula (CI)</label>
+                <input type="text" id="cedula" name="cedula" inputmode="numeric" minlength="8" maxlength="8" placeholder="8 dígitos" required>
+                <span id="errorCedula" class="error-msg" style="display:none; color: #ef4444; font-size: 12px;">La Cédula ingresada no es válida.</span>
             </div>
             
-            <form id="formUsuario" onsubmit="solicitarConfirmacion(event)">
-                <input type="hidden" id="cedula_original" name="cedula_original">
-                <input type="hidden" id="contrasena_actual" name="contrasena_actual">
-                
-                <div class="form-group">
-                    <label>Cédula (CI)</label>
-                    <input type="text" id="cedula" name="cedula" inputmode="numeric" minlength="8" maxlength="8" placeholder="8 dígitos (Ej: 12345678)" required>
-                    <span id="errorCedula" class="error-msg">La Cédula ingresada no es válida.</span>
-                </div>
-                
-                <div class="form-group">
-                    <label>Nombre</label>
-                    <input type="text" id="nombre" name="nombre" required>
-                </div>
-                
-                <div class="form-group">
-                    <label>Apellido</label>
-                    <input type="text" id="apellido" name="apellido" required>
-                </div>
-                
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" id="correo" name="correo" required>
-                </div>
-                
-                <div class="form-group">
-                    <label>Contraseña</label>
-                    <input type="password" id="contrasena" name="contrasena">
-                    <small id="helpPass" style="display:none; color: #666;">Dejar en blanco para conservar la actual.</small>
-                </div>
-                
-                <div class="form-group">
-                    <label>Rol</label>
-                    <select name="rol" id="rol" required>
-                        <option value="ADMINISTRADOR">Administrador</option>
-                        <option value="CLIENTE">Cliente</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label>Especialidad</label>
-                    <input type="text" id="especialidad" name="especialidad" required>
-                </div>
-                
-                <button type="submit" class="btn-modal btn-crear" style="width: 100%; margin-top: 10px;">Guardar</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- ==========================================================================
-         MODAL 3: CONFIRMACIÓN DE OPERACIÓN DE USUARIOS
-         ========================================================================== -->
-    <div class="modal-overlay" id="modalConfirmacionGuardar" style="z-index: 1100;">
-        <div class="modal-content" style="max-width: 380px; text-align: center;">
-            <h3 style="margin-top: 0;">Confirmación</h3>
-            <p id="textoConfirmacion" style="margin: 20px 0; font-size: 16px;">¿Estás seguro de guardar los cambios?</p>
-            <div style="display: flex; justify-content: space-evenly;">
-                <button type="button" class="btn-modal btn-crear" style="width: 40%;" onclick="ejecutarGuardado()">Sí</button>
-                <button type="button" class="btn-modal btn-cancelar" style="width: 40%;" onclick="cerrarModal('modalConfirmacionGuardar')">No</button>
+            <div class="form-group">
+                <label>Nombre</label>
+                <input type="text" id="nombre" name="nombre" required>
             </div>
+            
+            <div class="form-group">
+                <label>Apellido</label>
+                <input type="text" id="apellido" name="apellido" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="correo" name="correo" required>
+            </div>
+
+            <!-- CONTENEDOR DE TELÉFONOS DINÁMICOS -->
+            <div class="form-group" id="contenedor-telefonos">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                    <label id="labelTelefonos" style="margin: 0;">Teléfono(s) *</label>
+                    <button type="button" class="btn-modal btn-editar" style="padding: 3px 8px; font-size: 12px;" onclick="agregarCampoTelefono()">+ Agregar Teléfono</button>
+                </div>
+                <div id="lista-telefonos">
+                    <!-- Los campos de texto de teléfonos se insertan dinámicamente con JS -->
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Contraseña</label>
+                <input type="password" id="contrasena" name="contrasena">
+                <small id="helpPass" style="display:none; color: #666;">Dejar en blanco para conservar la actual.</small>
+            </div>
+            
+            <div class="form-group">
+                <label>Rol</label>
+                <select name="rol" id="rol" required>
+                    <option value="CLIENTE">Cliente</option>
+                    <option value="ADMINISTRADOR">Administrador</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Especialidad</label>
+                <input type="text" id="especialidad" name="especialidad">
+            </div>
+            
+            <button type="submit" class="btn-modal btn-crear" style="width: 100%; margin-top: 10px;">Guardar Usuario</button>
+        </form>
+    </div>
+</div>
+
+<!-- ==========================================================================
+     MODAL 3: CONFIRMACIÓN DE OPERACIÓN
+     ========================================================================== -->
+<div class="modal-overlay" id="modalConfirmacionGuardar" style="z-index: 1100;">
+    <div class="modal-content" style="max-width: 380px; text-align: center;">
+        <h3 style="margin-top: 0;">Confirmación</h3>
+        <p id="textoConfirmacion" style="margin: 20px 0; font-size: 16px;">¿Estás seguro de guardar los cambios?</p>
+        <div style="display: flex; justify-content: space-evenly;">
+            <button type="button" class="btn-modal btn-crear" style="width: 40%;" onclick="ejecutarGuardado()">Sí</button>
+            <button type="button" class="btn-modal btn-cancelar" style="width: 40%;" onclick="cerrarModal('modalConfirmacionGuardar')">No</button>
         </div>
     </div>
-
+</div>
     <!-- ==========================================================================
          MODAL 4: TABLA DE GESTIÓN DE PRODUCTOS / MATERIALES
          ========================================================================== -->
@@ -510,19 +520,19 @@ if (!isset($_SESSION['Rol'])) {
         </div>
     </div>
 
-    <!-- ==========================================================================
+   <!-- ==========================================================================
          LÓGICA JAVASCRIPT / CLIENTE
          ========================================================================== -->
     <script>
-        // Ruta del controlador PHP encargado de procesar las solicitudes de usuarios
+        // Rutas globales a los controladores PHP
         const RUTA_CONTROLADOR = '../CRUD_Usuarios/Controlador/Controlador_Usuarios.php';
-        let esEdicion = false;
-
-        // Ruta del controlador PHP encargado de procesar las solicitudes de productos
         const RUTA_CONTROLADOR_PRODUCTOS = '../CRUD_Productos/Controlador/Controlador_Productos.php';
+        const RUTA_VERIFICADOR = '../Login_logica/Validar_Cedula.php';
+
+        // Banderas de estado de edición
+        let esEdicion = false;
         let esEdicionProducto = false;
 
-        const RUTA_VERIFICADOR = '../Login_logica/Validar_Cedula.php'
         /**
          * Algoritmo del Módulo 10 para validar el Dígito Verificador de la Cédula Uruguaya (CI).
          */
@@ -543,23 +553,32 @@ if (!isset($_SESSION['Rol'])) {
             return digitoEsperado === digitoReal;
         }
 
-        // Configuración del menú desplegable de perfil
-        const menuBtn = document.getElementById('menuBtn');
-        const menuContent = document.getElementById('menuContent');
-        if (menuBtn) {
-            menuBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                menuContent.classList.toggle('show');
-            });
-            document.addEventListener('click', (e) => {
-                if (!menuContent.contains(e.target) && !menuBtn.contains(e.target)) {
-                    menuContent.classList.remove('show');
-                }
-            });
+        /**
+         * Oculta una ventana modal por su ID de forma segura.
+         */
+        function cerrarModal(id) {
+            const modal = document.getElementById(id);
+            if (modal) modal.classList.remove('active');
         }
 
-        // Restricción de entrada: Permite solo números en el campo de Cédula
+        // Configuración inicial al cargar el DOM
         document.addEventListener('DOMContentLoaded', () => {
+            // Menú desplegable de perfil
+            const menuBtn = document.getElementById('menuBtn');
+            const menuContent = document.getElementById('menuContent');
+            if (menuBtn && menuContent) {
+                menuBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    menuContent.classList.toggle('show');
+                });
+                document.addEventListener('click', (e) => {
+                    if (!menuContent.contains(e.target) && !menuBtn.contains(e.target)) {
+                        menuContent.classList.remove('show');
+                    }
+                });
+            }
+
+            // Restricción a números en el campo de Cédula
             const cedulaInput = document.getElementById('cedula');
             const errorCedula = document.getElementById('errorCedula');
 
@@ -571,18 +590,12 @@ if (!isset($_SESSION['Rol'])) {
             }
         });
 
-        /**
-         * Oculta una ventana modal por su ID.
-         */
-        function cerrarModal(id) {
-            document.getElementById(id).classList.remove('active');
-        }
-
         /* ==========================================================================
            MÓDULO VISTA CLIENTE (TARJETAS DE PRÉSTAMO)
            ========================================================================== */
         async function abrirModalSolicitarPrestamo() {
-            document.getElementById('modalSolicitarPrestamo').classList.add('active');
+            const modal = document.getElementById('modalSolicitarPrestamo');
+            if (modal) modal.classList.add('active');
             await cargarProductosCliente();
         }
 
@@ -613,7 +626,7 @@ if (!isset($_SESSION['Rol'])) {
                     const stock = parseInt(p.cantidad_disponible) || 0;
                     
                     let btnHtml = '';
-                    if (stock > 0 && p.estado !== 'En Mantenimiento') {
+                    if (stock > 0 && (p.estado || '').toUpperCase() !== 'EN_MANTENIMIENTO') {
                         btnHtml = `<button onclick="iniciarProcesoPrestamo(${p.id_material}, '${p.nombre}')" class="btn-prestamo">Solicitar Préstamo</button>`;
                     } else {
                         btnHtml = `<button class="btn-prestamo btn-sin-stock" disabled>Agotado / No Disponible</button>`;
@@ -623,7 +636,7 @@ if (!isset($_SESSION['Rol'])) {
                         <div class="tarjeta-producto">
                             <img src="${fotoRuta}" alt="${p.nombre}" onerror="this.src=''; this.style.display='none';">
                             <div class="tarjeta-cuerpo">
-                            <td>${p.id_serie ? `<code>${esc(p.id_serie)}</code>` : '<small>por cantidad</small>'}</td>
+                                <td>${p.id_serie ? `<code>${p.id_serie}</code>` : '<small>por cantidad</small>'}</td>
                                 <h4>${p.nombre}</h4>
                                 <p><strong>Categoría:</strong> ${p.categoria || '-'}</p>
                                 <p><strong>Descripción:</strong> ${p.descripcion || '-'}</p>
@@ -643,50 +656,122 @@ if (!isset($_SESSION['Rol'])) {
             alert(`Iniciando solicitud para el material: ${nombreProducto} (ID: ${idProducto})\n\n(Funcionalidad en desarrollo)`);
         }
 
-
         /* ==========================================================================
-           MÓDULO USUARIOS (ADMINISTRADOR)
+           MÓDULO USUARIOS & TELÉFONOS
            ========================================================================== */
         async function abrirModalGestionUsuarios() {
-            document.getElementById('modalGestionUsuarios').classList.add('active');
+            const modal = document.getElementById('modalGestionUsuarios');
+            if (!modal) {
+                alert("Error: No se encontró el modal 'modalGestionUsuarios' en la página.");
+                return;
+            }
+            modal.classList.add('active');
             await cargarUsuarios();
+        }
+
+        function agregarCampoTelefono(valor = '', esObligatorio = false) {
+            const lista = document.getElementById('lista-telefonos');
+            if (!lista) return;
+
+            const div = document.createElement('div');
+            div.className = 'input-grupo-tel';
+            div.style.cssText = 'display: flex; gap: 8px; margin-bottom: 6px;';
+
+            const attrRequired = esObligatorio ? 'required' : '';
+
+            div.innerHTML = `
+                <input type="text" name="telefonos[]" class="form-control telefono-input" 
+                       inputmode="numeric" placeholder="Ej: 099123456" value="${valor}" 
+                       oninput="this.value = this.value.replace(/[^0-9]/g, '');" ${attrRequired} style="flex: 1;">
+                <button type="button" class="btn-modal btn-eliminar" style="padding: 2px 8px; font-size: 14px;" onclick="eliminarCampoTelefono(this)">&times;</button>
+            `;
+            lista.appendChild(div);
+        }
+
+        function eliminarCampoTelefono(btn) {
+            const lista = document.getElementById('lista-telefonos');
+            if (lista && lista.children.length > 1) {
+                btn.parentElement.remove();
+            } else if (btn.parentElement) {
+                const input = btn.parentElement.querySelector('input');
+                if (input) input.value = '';
+            }
         }
 
         async function cargarUsuarios() {
             try {
                 const res = await fetch(`${RUTA_CONTROLADOR}?action=listar`);
                 const usuarios = await res.json();
-                
+
                 const tbody = document.getElementById('bodyTablaUsuarios');
-                tbody.innerHTML = usuarios.map(u => `
-                    <tr>
-                        <td>${u.ci}</td>
-                        <td>${u.nombre}</td>
-                        <td>${u.apellido}</td>
-                        <td>${u.email}</td>
-                        <td>${u.rol}</td>
-                        <td>${u.especialidad}</td>
-                        <td style="white-space: nowrap;">
-                            <button class="btn-modal btn-editar" onclick="editarUsuario('${u.ci}')">Editar</button>
-                            <button class="btn-modal btn-eliminar" onclick="eliminarUsuario('${u.ci}')">Eliminar</button>
-                        </td>
-                    </tr>
-                `).join('');
+                if (!tbody) return;
+
+                if (!Array.isArray(usuarios) || usuarios.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;">No hay usuarios registrados.</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = usuarios.map(u => {
+                    const cedulaVal = u.ci || u.cedula || '-';
+                    const telefonosTexto = (Array.isArray(u.telefonos) && u.telefonos.length > 0) 
+                        ? u.telefonos.join(', ') 
+                        : '-';
+
+                    return `
+                        <tr>
+                            <td>${cedulaVal}</td>
+                            <td>${u.nombre || '-'}</td>
+                            <td>${u.apellido || '-'}</td>
+                            <td>${u.email || u.correo || '-'}</td>
+                            <td>${telefonosTexto}</td>
+                            <td>${u.rol || '-'}</td>
+                            <td>${u.especialidad || '-'}</td>
+                            <td style="white-space: nowrap;">
+                                <button class="btn-modal btn-editar" onclick="editarUsuario('${cedulaVal}')">Editar</button>
+                                <button class="btn-modal btn-eliminar" onclick="eliminarUsuario('${cedulaVal}')">Eliminar</button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
             } catch (error) {
-                console.error("Error al cargar usuarios:", error);
+                console.error("Error al cargar lista de usuarios:", error);
             }
         }
 
         function abrirModalFormulario() {
             esEdicion = false;
-            document.getElementById('formUsuario').reset();
-            document.getElementById('cedula_original').value = '';
-            document.getElementById('cedula').readOnly = false;
-            document.getElementById('errorCedula').style.display = 'none';
-            document.getElementById('tituloFormUsuario').innerText = 'Nuevo Usuario';
-            document.getElementById('helpPass').style.display = 'none';
-            document.getElementById('contrasena').required = true;
-            document.getElementById('modalFormularioUsuario').classList.add('active');
+            const form = document.getElementById('formUsuario');
+            if (form) form.reset();
+
+            const cedulaOrig = document.getElementById('cedula_original');
+            if (cedulaOrig) cedulaOrig.value = '';
+
+            const cedulaInput = document.getElementById('cedula');
+            if (cedulaInput) cedulaInput.readOnly = false;
+
+            const errorCedula = document.getElementById('errorCedula');
+            if (errorCedula) errorCedula.style.display = 'none';
+
+            const listaTel = document.getElementById('lista-telefonos');
+            if (listaTel) {
+                listaTel.innerHTML = '';
+                agregarCampoTelefono('', true);
+            }
+
+            const labelTel = document.getElementById('labelTelefonos');
+            if (labelTel) labelTel.innerText = 'Teléfono(s) *';
+
+            const titulo = document.getElementById('tituloFormUsuario');
+            if (titulo) titulo.innerText = 'Nuevo Usuario';
+
+            const helpPass = document.getElementById('helpPass');
+            if (helpPass) helpPass.style.display = 'none';
+
+            const passInput = document.getElementById('contrasena');
+            if (passInput) passInput.required = true;
+
+            const modal = document.getElementById('modalFormularioUsuario');
+            if (modal) modal.classList.add('active');
         }
 
         async function editarUsuario(cedula) {
@@ -695,26 +780,58 @@ if (!isset($_SESSION['Rol'])) {
                 const res = await fetch(`${RUTA_CONTROLADOR}?action=ver&cedula=${cedula}`);
                 const u = await res.json();
 
-                document.getElementById('cedula_original').value = u.ci;
-                document.getElementById('cedula').value = u.ci;
-                document.getElementById('cedula').readOnly = false;
-                document.getElementById('errorCedula').style.display = 'none';
-                
-                document.getElementById('nombre').value = u.nombre;
-                document.getElementById('apellido').value = u.apellido;
-                document.getElementById('correo').value = u.email;
-                document.getElementById('rol').value = u.rol;
-                document.getElementById('especialidad').value = u.especialidad;
-                
-                document.getElementById('contrasena_actual').value = u.contrasenia;
-                document.getElementById('contrasena').value = '';
-                document.getElementById('contrasena').required = false;
-                document.getElementById('helpPass').style.display = 'block';
+                if (!u || (!u.ci && !u.cedula)) {
+                    alert("No se encontraron datos para el usuario seleccionado.");
+                    return;
+                }
 
-                document.getElementById('tituloFormUsuario').innerText = 'Editar Usuario';
-                document.getElementById('modalFormularioUsuario').classList.add('active');
+                const ciVal = u.ci || u.cedula;
+                document.getElementById('cedula_original').value = ciVal;
+                document.getElementById('cedula').value = ciVal;
+                document.getElementById('cedula').readOnly = true;
+
+                const errorCedula = document.getElementById('errorCedula');
+                if (errorCedula) errorCedula.style.display = 'none';
+
+                document.getElementById('nombre').value = u.nombre || '';
+                document.getElementById('apellido').value = u.apellido || '';
+                document.getElementById('correo').value = u.email || u.correo || '';
+                document.getElementById('rol').value = u.rol || 'CLIENTE';
+                document.getElementById('especialidad').value = u.especialidad || '';
+
+                const lista = document.getElementById('lista-telefonos');
+                if (lista) {
+                    lista.innerHTML = '';
+                    if (Array.isArray(u.telefonos) && u.telefonos.length > 0) {
+                        u.telefonos.forEach(tel => agregarCampoTelefono(tel, false));
+                    } else {
+                        agregarCampoTelefono('', false);
+                    }
+                }
+
+                const labelTel = document.getElementById('labelTelefonos');
+                if (labelTel) labelTel.innerText = 'Teléfono(s) (Opcional)';
+
+                const passActual = document.getElementById('contrasena_actual');
+                if (passActual) passActual.value = u.contrasenia || u.contrasena || '';
+
+                const passInput = document.getElementById('contrasena');
+                if (passInput) {
+                    passInput.value = '';
+                    passInput.required = false;
+                }
+
+                const helpPass = document.getElementById('helpPass');
+                if (helpPass) helpPass.style.display = 'block';
+
+                const titulo = document.getElementById('tituloFormUsuario');
+                if (titulo) titulo.innerText = 'Editar Usuario';
+
+                const modal = document.getElementById('modalFormularioUsuario');
+                if (modal) modal.classList.add('active');
             } catch (error) {
-                console.error("Error al cargar el usuario:", error);
+                console.error("Error al cargar usuario para edición:", error);
+                alert("Error al obtener los datos del usuario.");
             }
         }
 
@@ -730,19 +847,22 @@ if (!isset($_SESSION['Rol'])) {
             }
 
             if (!validarCedulaUruguayaJS(cedulaVal)) {
-                errorCedula.style.display = 'block';
+                if (errorCedula) errorCedula.style.display = 'block';
                 document.getElementById('cedula').focus();
                 return;
             } else {
-                errorCedula.style.display = 'none';
+                if (errorCedula) errorCedula.style.display = 'none';
             }
 
             const mensaje = esEdicion 
                 ? '¿Estás seguro de actualizar este usuario?' 
                 : '¿Estás seguro de registrar este nuevo usuario?';
 
-            document.getElementById('textoConfirmacion').innerText = mensaje;
-            document.getElementById('modalConfirmacionGuardar').classList.add('active');
+            const textoConf = document.getElementById('textoConfirmacion');
+            if (textoConf) textoConf.innerText = mensaje;
+
+            const modalConf = document.getElementById('modalConfirmacionGuardar');
+            if (modalConf) modalConf.classList.add('active');
         }
 
         async function ejecutarGuardado() {
@@ -758,30 +878,21 @@ if (!isset($_SESSION['Rol'])) {
                     body: formData
                 });
 
-                const textoRespuesta = await res.text();
-                let data;
-
-                try {
-                    data = JSON.parse(textoRespuesta);
-                } catch (e) {
-                    console.error("El servidor no devolvió JSON:", textoRespuesta);
-                    alert("Error del servidor (PHP):\n" + textoRespuesta.substring(0, 300));
-                    return;
-                }
+                const data = await res.json();
 
                 if (data.success) {
-                    alert(esEdicion ? '¡Usuario actualizado con éxito!' : '¡Usuario creado con éxito!');
+                    alert(data.message || 'Operación realizada con éxito.');
                     cerrarModal('modalFormularioUsuario');
                     form.reset();
                     cargarUsuarios();
                 } else {
-                    alert(data.message || 'Ocurrió un error al procesar la solicitud.');
+                    alert(data.message || 'Ocurrió un error al guardar los datos.');
                 }
             } catch (error) {
-                console.error("Error de red/petición:", error);
-                alert('Error de conexión con el servidor: ' + error.message);
+                console.error("Error al guardar:", error);
+                alert('Error de conexión con el servidor.');
             }
-        }   
+        }
 
         async function eliminarUsuario(cedula) {
             if (confirm('¿Desea eliminar el usuario seleccionado?')) {
@@ -789,200 +900,217 @@ if (!isset($_SESSION['Rol'])) {
                     const res = await fetch(`${RUTA_CONTROLADOR}?action=eliminar&cedula=${cedula}`);
                     const data = await res.json();
                     if (data.success) {
+                        alert("Usuario eliminado correctamente.");
                         cargarUsuarios();
                     } else {
-                        alert('No se pudo eliminar el usuario.');
+                        alert(data.message || 'No se pudo eliminar el usuario.');
                     }
                 } catch (error) {
-                    console.error("Error al eliminar:", error);
+                    console.error("Error al eliminar usuario:", error);
+                    alert("Error de conexión al intentar eliminar el usuario.");
                 }
             }
         }
 
         /* ==========================================================================
-        MÓDULO PRODUCTOS / MATERIALES (ADMINISTRADOR)
+           MÓDULO PRODUCTOS / MATERIALES (ADMINISTRADOR)
            ========================================================================== */
         async function abrirModalGestionProductos() {
-            document.getElementById('modalGestionProductos').classList.add('active');
+            const modal = document.getElementById('modalGestionProductos');
+            if (modal) modal.classList.add('active');
             await cargarProductos();
         }
 
-        // 1. Modificación en cargarProductos para mostrar el botón "Reactivar"
-async function cargarProductos() {
-    try {
-        const res = await fetch(`${RUTA_CONTROLADOR_PRODUCTOS}?action=listar`);
-        const textoRespuesta = await res.text();
+        async function cargarProductos() {
+            try {
+                const res = await fetch(`${RUTA_CONTROLADOR_PRODUCTOS}?action=listar`);
+                const textoRespuesta = await res.text();
 
-        let productos;
-        try {
-            productos = JSON.parse(textoRespuesta);
-        } catch (e) {
-            console.error("Respuesta del servidor no válida:", textoRespuesta);
-            return;
+                let productos;
+                try {
+                    productos = JSON.parse(textoRespuesta);
+                } catch (e) {
+                    console.error("Respuesta del servidor no válida:", textoRespuesta);
+                    return;
+                }
+
+                const tbody = document.getElementById('bodyTablaProductos');
+                if (!tbody) return;
+
+                if (!Array.isArray(productos) || productos.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;">No hay productos registrados.</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = productos.map(p => {
+                    const fotoLimpia = p.foto_material ? p.foto_material.replace(/^\/+/, '') : (p.Foto_Material ? p.Foto_Material.replace(/^\/+/, '') : '');
+                    const fotoRuta = fotoLimpia ? `../CRUD_Productos/${fotoLimpia}` : '';
+
+                    const estadoUpper = (p.estado || '').toUpperCase();
+                    const claseFila = estadoUpper === 'DADO_DE_BAJA' ? 'fila-dada-de-baja' : '';
+
+                    let badgeClase = 'badge-secondary';
+                    if (estadoUpper === 'DISPONIBLE') badgeClase = 'badge-disponible';
+                    else if (estadoUpper === 'EN_MANTENIMIENTO') badgeClase = 'badge-mantenimiento';
+                    else if (estadoUpper === 'DADO_DE_BAJA') badgeClase = 'badge-baja';
+                    else if (estadoUpper === 'PRESTADO') badgeClase = 'badge-prestado';
+
+                    const etiquetaEstado = `<span class="badge-estado ${badgeClase}">${p.estado || '-'}</span>`;
+                    const detalleMotivo = (estadoUpper === 'DADO_DE_BAJA' && p.motivo_baja) 
+                        ? `<br><small style="color: #6c757d; font-style: italic; display: block; margin-top: 4px;">Motivo: ${p.motivo_baja}</small>` 
+                        : '';
+
+                    let botonesAccion = '';
+                    if (estadoUpper !== 'DADO_DE_BAJA') {
+                        botonesAccion = `
+                            <button class="btn-modal btn-editar" onclick="editarProducto(${p.id_material})">Editar</button>
+                            <button class="btn-modal btn-eliminar" onclick="BajarMaterial(${p.id_material})">Dar de Baja</button>
+                        `;
+                    } else {
+                        botonesAccion = `
+                            <button class="btn-modal btn-crear" style="background-color: #28a745;" onclick="reactivarMaterial(${p.id_material})">Reactivar</button>
+                        `;
+                    }
+
+                    return `
+                        <tr class="${claseFila}">
+                            <td>${p.id_material}</td>
+                            <td>${p.id_serie ? `<code>${p.id_serie}</code>` : '<small>por cantidad</small>'}</td>
+                            <td>
+                                <img src="${fotoRuta}" 
+                                    style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; background: #eee;" 
+                                    alt="Img" 
+                                    onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                <span style="display:none; font-size: 11px; color: #777;">Sin foto</span>
+                            </td>
+                            <td><b>${p.nombre}</b></td>
+                            <td>${p.descripcion || '-'}</td>
+                            <td>${p.categoria || '-'}</td>
+                            <td>${p.cantidad_total}</td>
+                            <td>${p.cantidad_disponible}</td>
+                            <td>
+                                ${etiquetaEstado}
+                                ${detalleMotivo}
+                            </td>
+                            <td style="white-space: nowrap;">
+                                ${botonesAccion}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error("Error al cargar productos:", error);
+            }
         }
 
-        const tbody = document.getElementById('bodyTablaProductos');
-        if (!Array.isArray(productos) || productos.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;">No hay productos registrados.</td></tr>`;
-            return;
-        }
-
-        tbody.innerHTML = productos.map(p => {
-            const fotoLimpia = p.foto_material ? p.foto_material.replace(/^\/+/, '') : (p.Foto_Material ? p.Foto_Material.replace(/^\/+/, '') : '');
-            const fotoRuta = fotoLimpia ? `../CRUD_Productos/${fotoLimpia}` : '';
-
-            const estadoUpper = (p.estado || '').toUpperCase();
-            const claseFila = estadoUpper === 'DADO_DE_BAJA' ? 'fila-dada-de-baja' : '';
-
-            let badgeClase = 'badge-secondary';
-            if (estadoUpper === 'DISPONIBLE') badgeClase = 'badge-disponible';
-            else if (estadoUpper === 'EN_MANTENIMIENTO') badgeClase = 'badge-mantenimiento';
-            else if (estadoUpper === 'DADO_DE_BAJA') badgeClase = 'badge-baja';
-            else if (estadoUpper === 'PRESTADO') badgeClase = 'badge-prestado';
-
-            const etiquetaEstado = `<span class="badge-estado ${badgeClase}">${p.estado || '-'}</span>`;
-            const detalleMotivo = (estadoUpper === 'DADO_DE_BAJA' && p.motivo_baja) 
-                ? `<br><small style="color: #6c757d; font-style: italic; display: block; margin-top: 4px;">Motivo: ${p.motivo_baja}</small>` 
-                : '';
-
-            // CONDICIONAL DE BOTONES:
-            // Si está activo -> Editar / Dar de baja
-            // Si está DADO_DE_BAJA -> Mostrar solo botón Reactivar
-            let botonesAccion = '';
-            if (estadoUpper !== 'DADO_DE_BAJA') {
-                botonesAccion = `
-                    <button class="btn-modal btn-editar" onclick="editarProducto(${p.id_material})">Editar</button>
-                    <button class="btn-modal btn-eliminar" onclick="BajarMaterial(${p.id_material})">Dar de Baja</button>
-                `;
-            } else {
-                botonesAccion = `
-                    <button class="btn-modal btn-crear" style="background-color: #28a745;" onclick="reactivarMaterial(${p.id_material})">Reactivar</button>
-                `;
+        async function reactivarMaterial(idMaterial) {
+            if (!confirm("¿Estás seguro de que deseas reactivar este producto y restablecerlo como DISPONIBLE?")) {
+                return;
             }
 
-            return `
-                <tr class="${claseFila}">
-                    <td>${p.id_material}</td>
-                    <td>${p.id_serie ? `<code>${p.id_serie}</code>` : '<small>por cantidad</small>'}</td>
-                    <td>
-                        <img src="${fotoRuta}" 
-                            style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; background: #eee;" 
-                            alt="Img" 
-                            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                        <span style="display:none; font-size: 11px; color: #777;">Sin foto</span>
-                    </td>
-                    <td><b>${p.nombre}</b></td>
-                    <td>${p.descripcion || '-'}</td>
-                    <td>${p.categoria || '-'}</td>
-                    <td>${p.cantidad_total}</td>
-                    <td>${p.cantidad_disponible}</td>
-                    <td>
-                        ${etiquetaEstado}
-                        ${detalleMotivo}
-                    </td>
-                    <td style="white-space: nowrap;">
-                        ${botonesAccion}
-                    </td>
-                </tr>
-            `;
-        }).join('');
-    } catch (error) {
-        console.error("Error al cargar productos:", error);
-    }
-}
+            try {
+                const res = await fetch(`${RUTA_CONTROLADOR_PRODUCTOS}?action=reactivar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id_material: idMaterial })
+                });
 
-// 2. Nueva función para procesar la reactivación
-async function reactivarMaterial(idMaterial) {
-    if (!confirm("¿Estás seguro de que deseas reactivar este producto y restablecerlo como DISPONIBLE?")) {
-        return;
-    }
+                const resultado = await res.json();
 
-    try {
-        const res = await fetch(`${RUTA_CONTROLADOR_PRODUCTOS}?action=reactivar`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id_material: idMaterial })
-        });
-
-        const resultado = await res.json();
-
-        if (resultado.success) {
-            alert(resultado.message || "Producto reactivado con éxito.");
-            cargarProductos(); // Recarga la tabla
-        } else {
-            alert(resultado.message || "No se pudo reactivar el producto.");
+                if (resultado.success) {
+                    alert(resultado.message || "Producto reactivado con éxito.");
+                    cargarProductos();
+                } else {
+                    alert(resultado.message || "No se pudo reactivar el producto.");
+                }
+            } catch (error) {
+                console.error("Error al reactivar:", error);
+                alert("Error de conexión al intentar reactivar el producto.");
+            }
         }
-    } catch (error) {
-        console.error("Error al reactivar:", error);
-        alert("Error de conexión al intentar reactivar el producto.");
-    }
-}
 
-       /** Cambia las secciones del formuarlio de agregar producto en base a el tipo de control seleccionado */
         function ajustarFormularioProducto() {
-            const tipo = document.getElementById('prod_tipo').value;
-            document.getElementById('grupoSeries').style.display   = (!esEdicionProducto && tipo === 'SERIE') ? '' : 'none';
-            document.getElementById('grupoSerie').style.display    = (esEdicionProducto && tipo === 'SERIE') ? '' : 'none';
-            document.getElementById('grupoCantidad').style.display = tipo === 'CANTIDAD' ? '' : 'none';
-            document.getElementById('grupoAplicar').style.display  = esEdicionProducto ? '' : 'none';
-            document.getElementById('prod_series').required     = !esEdicionProducto && tipo === 'SERIE';
-            document.getElementById('prod_id_serie').required   = esEdicionProducto && tipo === 'SERIE';
-            document.getElementById('prod_cant_total').required = tipo === 'CANTIDAD';
-            document.getElementById('prod_tipo').disabled = esEdicionProducto;   // el tipo no cambia después del alta
+            const tipoSelect = document.getElementById('prod_tipo');
+            if (!tipoSelect) return;
+
+            const tipo = tipoSelect.value;
+            
+            const gSeries = document.getElementById('grupoSeries');
+            const gSerie = document.getElementById('grupoSerie');
+            const gCant = document.getElementById('grupoCantidad');
+            const gAplicar = document.getElementById('grupoAplicar');
+
+            if (gSeries) gSeries.style.display = (!esEdicionProducto && tipo === 'SERIE') ? '' : 'none';
+            if (gSerie) gSerie.style.display = (esEdicionProducto && tipo === 'SERIE') ? '' : 'none';
+            if (gCant) gCant.style.display = (tipo === 'CANTIDAD') ? '' : 'none';
+            if (gAplicar) gAplicar.style.display = esEdicionProducto ? '' : 'none';
+
+            const prodSeries = document.getElementById('prod_series');
+            if (prodSeries) prodSeries.required = !esEdicionProducto && tipo === 'SERIE';
+
+            const prodIdSerie = document.getElementById('prod_id_serie');
+            if (prodIdSerie) prodIdSerie.required = esEdicionProducto && tipo === 'SERIE';
+
+            const prodCantTotal = document.getElementById('prod_cant_total');
+            if (prodCantTotal) prodCantTotal.required = (tipo === 'CANTIDAD');
+
+            tipoSelect.disabled = esEdicionProducto;
         }
- 
+
         function abrirModalFormularioProducto() {
             esEdicionProducto = false;
-            document.getElementById('formProducto').reset();
+            const form = document.getElementById('formProducto');
+            if (form) form.reset();
+
             document.getElementById('id_material').value = '';
             document.getElementById('foto_actual').value = '';
             document.getElementById('tituloFormProducto').innerText = 'Nuevo Producto';
+            
             ajustarFormularioProducto();
             document.getElementById('modalFormularioProducto').classList.add('active');
         }
+
         async function editarProducto(id) {
-    esEdicionProducto = true;
-    try {
-        const res = await fetch(`${RUTA_CONTROLADOR_PRODUCTOS}?action=ver&id=${id}`);
-        const p = await res.json();
+            esEdicionProducto = true;
+            try {
+                const res = await fetch(`${RUTA_CONTROLADOR_PRODUCTOS}?action=ver&id=${id}`);
+                const p = await res.json();
 
-        if (!p || !p.id_material) {
-            alert("No se encontraron datos para este producto.");
-            return;
+                if (!p || !p.id_material) {
+                    alert("No se encontraron datos para este producto.");
+                    return;
+                }
+
+                document.getElementById('id_material').value = p.id_material;
+                document.getElementById('prod_nombre').value = p.nombre || '';
+                document.getElementById('prod_descripcion').value = p.descripcion || '';
+                document.getElementById('prod_categoria').value = p.categoria || '';
+                document.getElementById('foto_actual').value = p.foto_material || p.Foto_Material || '';
+
+                const selectTipo = document.getElementById('prod_tipo');
+                if (selectTipo) {
+                    selectTipo.value = p.tipo_control || 'SERIE';
+                }
+
+                if (p.tipo_control === 'CANTIDAD') {
+                    const cantInput = document.getElementById('prod_cant_total');
+                    if (cantInput) cantInput.value = p.cantidad_total || 0;
+                } else {
+                    const serieInput = document.getElementById('prod_id_serie');
+                    if (serieInput) serieInput.value = p.id_serie || '';
+                }
+
+                ajustarFormularioProducto();
+
+                document.getElementById('tituloFormProducto').innerText = 'Editar Producto';
+                document.getElementById('modalFormularioProducto').classList.add('active');
+
+            } catch (error) {
+                console.error("Error al cargar el producto para edición:", error);
+                alert("Ocurrió un error al obtener la información del producto.");
+            }
         }
 
-        // Cargar campos hidden y básicos presentes en tu HTML
-        document.getElementById('id_material').value = p.id_material;
-        document.getElementById('prod_nombre').value = p.nombre || '';
-        document.getElementById('prod_descripcion').value = p.descripcion || '';
-        document.getElementById('prod_categoria').value = p.categoria || '';
-        document.getElementById('foto_actual').value = p.foto_material || p.Foto_Material || '';
-
-        // Cargar tipo de control (SERIE / CANTIDAD)
-        const selectTipo = document.getElementById('prod_tipo');
-        if (selectTipo) {
-            selectTipo.value = p.tipo_control || 'SERIE';
-        }
-
-        // Cargar campos según tipo de control
-        if (p.tipo_control === 'CANTIDAD') {
-            document.getElementById('prod_cant_total').value = p.cantidad_total || 0;
-        } else {
-            document.getElementById('prod_id_serie').value = p.id_serie || '';
-        }
-
-        // Ajustar visibilidad de campos según esEdicionProducto = true
-        ajustarFormularioProducto();
-
-        // Actualizar título del modal y mostrarlo
-        document.getElementById('tituloFormProducto').innerText = 'Editar Producto';
-        document.getElementById('modalFormularioProducto').classList.add('active');
-
-    } catch (error) {
-        console.error("Error al cargar el producto para edición:", error);
-        alert("Ocurrió un error al obtener la información del producto.");
-    }
-}
         function solicitarConfirmacionProducto(e) {
             e.preventDefault();
             const form = document.getElementById('formProducto');
@@ -1038,39 +1166,35 @@ async function reactivarMaterial(idMaterial) {
             }
         }
 
-   async function BajarMaterial(idMaterial) {
-    const motivo = prompt("Ingrese el motivo de la baja del material:");
-    
-    // Si el usuario cancela o deja el campo vacío, se interrumpe el proceso
-    if (motivo === null) return; 
-    if (motivo.trim() === "") {
-        alert("Debe especificar un motivo obligatoriamente.");
-        return;
-    }
+        async function BajarMaterial(idMaterial) {
+            const motivo = prompt("Ingrese el motivo de la baja del material:");
+            
+            if (motivo === null) return; 
+            if (motivo.trim() === "") {
+                alert("Debe especificar un motivo obligatoriamente.");
+                return;
+            }
 
-    try {
-        const res = await fetch(`${RUTA_CONTROLADOR_PRODUCTOS}?action=darDeBaja`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id_material: idMaterial, motivo_baja: motivo })
-        });
-        
-        const resultado = await res.json();
+            try {
+                const res = await fetch(`${RUTA_CONTROLADOR_PRODUCTOS}?action=darDeBaja`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id_material: idMaterial, motivo_baja: motivo })
+                });
+                
+                const resultado = await res.json();
 
-        // Evaluación estricta de éxito devuelto por PHP
-        if (resultado.success) {
-            alert(resultado.message || "Material dado de baja correctamente.");
-            cargarProductos(); // Recarga la tabla en la interfaz
-        } else {
-            alert(resultado.message || resultado.mensaje || "No se pudo procesar la baja.");
+                if (resultado.success) {
+                    alert(resultado.message || "Material dado de baja correctamente.");
+                    cargarProductos();
+                } else {
+                    alert(resultado.message || resultado.mensaje || "No se pudo procesar la baja.");
+                }
+            } catch (error) {
+                console.error("Error al dar de baja:", error);
+                alert("Error de conexión al procesar la baja con el servidor.");
+            }
         }
-    } catch (error) {
-        console.error("Error al dar de baja:", error);
-        alert("Error de conexión al procesar la baja con el servidor.");
-    }
-
-}
-
     </script>
 </body>
-</html>         
+</html>

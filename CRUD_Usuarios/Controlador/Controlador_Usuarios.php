@@ -1,7 +1,5 @@
 <?php
-/**
- * Controlador_Usuarios.php
- */
+
 
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/../Modelo/Modelo_Usuario.php';
@@ -24,13 +22,14 @@ switch ($action) {
 
     case 'guardar':
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $cedula      = trim($_POST['cedula'] ?? $_POST['CI'] ?? '');
-            $nombre      = trim($_POST['nombre'] ?? $_POST['Nombre'] ?? '');
-            $apellido    = trim($_POST['apellido'] ?? $_POST['Apellido'] ?? '');
-            $email       = trim($_POST['correo'] ?? $_POST['email'] ?? $_POST['Email'] ?? '');
-            $contrasenia = $_POST['contrasena'] ?? $_POST['contrasenia'] ?? $_POST['Contraseña'] ?? '';
-            $rol         = trim($_POST['rol'] ?? $_POST['Rol'] ?? 'CLIENTE');
-            $especialidad= trim($_POST['especialidad'] ?? $_POST['Especialidad'] ?? '');
+            $cedula       = trim($_POST['cedula'] ?? $_POST['CI'] ?? '');
+            $nombre       = trim($_POST['nombre'] ?? $_POST['Nombre'] ?? '');
+            $apellido     = trim($_POST['apellido'] ?? $_POST['Apellido'] ?? '');
+            $email        = trim($_POST['correo'] ?? $_POST['email'] ?? $_POST['Email'] ?? '');
+            $contrasenia  = $_POST['contrasena'] ?? $_POST['contrasenia'] ?? $_POST['Contraseña'] ?? '';
+            $rol          = trim($_POST['rol'] ?? $_POST['Rol'] ?? 'CLIENTE');
+            $especialidad = trim($_POST['especialidad'] ?? $_POST['Especialidad'] ?? '');
+            $telefonos    = $_POST['telefonos'] ?? [];
 
             if (empty($cedula) || empty($nombre) || empty($apellido) || empty($contrasenia)) {
                 echo json_encode([
@@ -40,8 +39,28 @@ switch ($action) {
                 exit();
             }
 
+            // Validar teléfonos (Obligatorio al menos uno en ALTA)
+            $telefonosValidos = [];
+            if (is_array($telefonos)) {
+                foreach ($telefonos as $tel) {
+                    $telLimpio = trim($tel);
+                    if (!empty($telLimpio)) {
+                        if (!ctype_digit($telLimpio)) {
+                            echo json_encode(['success' => false, 'message' => 'Los números de teléfono solo deben contener dígitos.']);
+                            exit();
+                        }
+                        $telefonosValidos[] = $telLimpio;
+                    }
+                }
+            }
+
+            if (empty($telefonosValidos)) {
+                echo json_encode(['success' => false, 'message' => 'Debe registrar al menos un número de teléfono obligatorio.']);
+                exit();
+            }
+
             $modelo = new Modelo_Usuario();
-            $resultado = $modelo->guardarUsuario($cedula, $nombre, $apellido, $email, $contrasenia, $rol, $especialidad);
+            $resultado = $modelo->guardarUsuario($cedula, $nombre, $apellido, $email, $contrasenia, $rol, $especialidad, $telefonosValidos);
 
             if ($resultado) {
                 echo json_encode(['success' => true, 'message' => 'Usuario guardado con éxito.']);
@@ -62,6 +81,7 @@ switch ($action) {
             $contraseniaAct = $_POST['contrasena_actual'] ?? '';
             $rol            = trim($_POST['rol'] ?? 'CLIENTE');
             $especialidad   = trim($_POST['especialidad'] ?? '');
+            $telefonos      = $_POST['telefonos'] ?? [];
 
             if (empty($cedula) || empty($nombre) || empty($apellido)) {
                 echo json_encode([
@@ -71,11 +91,26 @@ switch ($action) {
                 exit();
             }
 
+            // Validar teléfonos (Opcionales en EDICIÓN)
+            $telefonosValidos = [];
+            if (is_array($telefonos)) {
+                foreach ($telefonos as $tel) {
+                    $telLimpio = trim($tel);
+                    if (!empty($telLimpio)) {
+                        if (!ctype_digit($telLimpio)) {
+                            echo json_encode(['success' => false, 'message' => 'Los números de teléfono solo deben contener dígitos.']);
+                            exit();
+                        }
+                        $telefonosValidos[] = $telLimpio;
+                    }
+                }
+            }
+
             $passFinal = !empty($contrasenia) ? $contrasenia : $contraseniaAct;
             $cambiarPass = !empty($contrasenia);
 
             $modelo = new Modelo_Usuario();
-            $resultado = $modelo->actualizarUsuario($cedulaOriginal, $cedula, $nombre, $apellido, $email, $passFinal, $rol, $especialidad, $cambiarPass);
+            $resultado = $modelo->actualizarUsuario($cedulaOriginal, $cedula, $nombre, $apellido, $email, $passFinal, $rol, $especialidad, $telefonosValidos, $cambiarPass);
 
             if ($resultado) {
                 echo json_encode(['success' => true, 'message' => 'Usuario actualizado con éxito.']);

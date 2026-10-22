@@ -1,16 +1,11 @@
 <?php
-/**
- * Modelo_Usuario.php
- * 
- * Clase encargada de la gestión de persistencia y consulta de datos
- * de la tabla 'usuario' en la base de datos utilizando PDO.
- */
+
 
 require_once __DIR__ . '/../../Config/Conexion.php';
 
 class Modelo_Usuario {
     /**
-     * Instancia de conexión a la base de datos (PDO).
+     * Instancia de conexión PDO.
      * @var PDO
      */
     private $conexion;
@@ -20,41 +15,58 @@ class Modelo_Usuario {
     }
 
     /**
-     * Obtiene la lista completa de usuarios.
+     * Obtiene todos los usuarios adjuntando sus teléfonos de la tabla 'telefono'.
      */
     public function obtenerUsuarios() {
         $stmt = $this->conexion->prepare("SELECT ci, nombre, apellido, email, rol, especialidad FROM usuario");
         $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $usuarios = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($usuarios as &$u) {
+            $u['telefonos'] = $this->obtenerTelefonosPorCI($u['ci']);
+        }
+        return $usuarios;
     }
 
-    // Alias para compatibilidad
     public function obtenerTodos() {
         return $this->obtenerUsuarios();
     }
 
     /**
-     * Busca y retorna los datos de un usuario específico mediante su Cédula (CI).
+     * Consulta la tabla 'telefono' para traer los números asociados a la CI.
+     */
+    public function obtenerTelefonosPorCI($ci) {
+        $stmt = $this->conexion->prepare("SELECT telefono FROM telefono WHERE ci_usuario = ?");
+        $stmt->execute([$ci]);
+        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    }
+
+    /**
+     * Busca un usuario por su CI e incluye sus teléfonos.
      */
     public function obtenerUsuarioPorCI($ci) {
         $stmt = $this->conexion->prepare("SELECT ci, nombre, apellido, email, rol, especialidad, contrasenia FROM usuario WHERE ci = ?");
         $stmt->execute([$ci]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($usuario) {
+            $usuario['telefonos'] = $this->obtenerTelefonosPorCI($ci);
+        }
+        return $usuario;
     }
 
-    // Alias para compatibilidad
     public function obtenerPorCedula($ci) {
         return $this->obtenerUsuarioPorCI($ci);
     }
 
     /**
-     * Registra un nuevo usuario en la base de datos.
+     * Guarda usuario y registra sus teléfonos en la tabla 'telefono'.
      */
-    public function guardarUsuario($ci, $nombre, $apellido, $email, $contrasenia, $rol, $especialidad) {
+    public function guardarUsuario($ci, $nombre, $apellido, $email, $contrasenia, $rol, $especialidad, $telefonos = []) {
         try {
+            $this->conexion->beginTransaction();
             $especialidad = !empty($especialidad) ? $especialidad : null;
             
-            // Si la contraseña no está encriptada aún, se le aplica el hash
             if (password_get_info($contrasenia)['algo'] === 0) {
                 $contrasenia = password_hash($contrasenia, PASSWORD_DEFAULT);
             }
@@ -63,27 +75,35 @@ class Modelo_Usuario {
                 "INSERT INTO usuario (ci, nombre, apellido, email, contrasenia, rol, especialidad) 
                  VALUES (?, ?, ?, ?, ?, ?, ?)"
             );
-            
-            return $stmt->execute([$ci, $nombre, $apellido, $email, $contrasenia, $rol, $especialidad]);
-        } catch (PDOException $e) {
+            $stmt->execute([$ci, $nombre, $apellido, $email, $contrasenia, $rol, $especialidad]);
+
+            // Inserción obligatoria de teléfonos
+            if (empty($telefonos)) {
+                throw new Exception("Debe ingresar al menos un teléfono.");
+            }
+            $this->insertarTelefonosBD($ci, $telefonos);
+
+            $this->conexion->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->conexion->rollBack();
             return false;
         }
     }
 
-    // Alias para compatibilidad
-    public function crearUsuario($ci, $nombre, $apellido, $email, $contrasenia, $rol, $especialidad) {
-        return $this->guardarUsuario($ci, $nombre, $apellido, $email, $contrasenia, $rol, $especialidad);
+    public function crearUsuario($ci, $nombre, $apellido, $email, $contrasenia, $rol, $especialidad, $telefonos = []) {
+        return $this->guardarUsuario($ci, $nombre, $apellido, $email, $contrasenia, $rol, $especialidad, $telefonos);
     }
 
     /**
-     * Actualiza los datos de un usuario existente.
+     * Actualiza datos de usuario y sincroniza teléfonos en la tabla 'telefono'.
      */
-    public function actualizarUsuario($ciOriginal, $ciNueva, $nombre, $apellido, $email, $contrasenia, $rol, $especialidad, $cambiarPass = true) {
+    public function actualizarUsuario($ciOriginal, $ciNueva, $nombre, $apellido, $email, $contrasenia, $rol, $especialidad, $telefonos = [], $cambiarPass = true) {
         try {
+            $this->conexion->beginTransaction();
             $especialidad = !empty($especialidad) ? $especialidad : null;
 
-            // Si se debe cambiar contraseña y no viene hasheada
-            if ($cambiarPass && password_get_info($contrasenia)['algo'] === 0) {
+            if ($cambiarPass && !empty($contrasenia) && password_get_info($contrasenia)['algo'] === 0) {
                 $contrasenia = password_hash($contrasenia, PASSWORD_DEFAULT);
             }
 
@@ -98,8 +118,7 @@ class Modelo_Usuario {
                     WHERE ci = :cedulaOriginal";
                     
             $stmt = $this->conexion->prepare($sql);
-            
-            return $stmt->execute([
+            $stmt->execute([
                 ':cedulaNueva'    => $ciNueva,
                 ':nombre'         => $nombre,
                 ':apellido'       => $apellido,
@@ -109,13 +128,43 @@ class Modelo_Usuario {
                 ':especialidad'   => $especialidad,
                 ':cedulaOriginal' => $ciOriginal
             ]);
-        } catch (PDOException $e) {
+
+            // Si cambió la cédula, actualiza la clave foránea en la tabla telefono
+            if ($ciOriginal !== $ciNueva) {
+                $stmtFK = $this->conexion->prepare("UPDATE telefono SET ci_usuario = ? WHERE ci_usuario = ?");
+                $stmtFK->execute([$ciNueva, $ciOriginal]);
+            }
+
+            // Solo actualiza teléfonos si se especificó al menos uno en el formulario de edición
+            if (!empty($telefonos)) {
+                $stmtDel = $this->conexion->prepare("DELETE FROM telefono WHERE ci_usuario = ?");
+                $stmtDel->execute([$ciNueva]);
+                $this->insertarTelefonosBD($ciNueva, $telefonos);
+            }
+
+            $this->conexion->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->conexion->rollBack();
             return false;
         }
     }
 
     /**
-     * Elimina el registro de un usuario.
+     * Inserta los números de teléfono asociados a una CI.
+     */
+    private function insertarTelefonosBD($ci, $telefonos) {
+        $stmtTel = $this->conexion->prepare("INSERT INTO telefono (ci_usuario, telefono) VALUES (?, ?)");
+        foreach ($telefonos as $tel) {
+            $telLimpio = trim($tel);
+            if (!empty($telLimpio)) {
+                $stmtTel->execute([$ci, $telLimpio]);
+            }
+        }
+    }
+
+    /**
+     * Elimina un usuario (las FK ON DELETE CASCADE eliminarán sus teléfonos en MySQL).
      */
     public function eliminarUsuario($ci) {
         try {
@@ -127,5 +176,5 @@ class Modelo_Usuario {
     }
 }
 
-// Alias de la clase para evitar errores de instanciación
+// Alias de la clase
 class ModeloUsuarios extends Modelo_Usuario {}
