@@ -101,9 +101,9 @@ class Modelo_Producto {
         }
     }
 
-// Verifica de forma simple si el producto está prestado o reservado
-public function esProductoComprometido($id_material) {
-    $sql = "SELECT id_material 
+    // Verifica de forma simple si el producto está prestado o reservado
+    public function esProductoComprometido($id_material) {
+        $sql = "SELECT id_material 
             FROM material 
             WHERE id_material = ? 
               AND (
@@ -239,6 +239,17 @@ public function registrarHistorialEstado($idMaterial, $estadoAnterior, $estadoNu
         $motivo
     ]);
 }
+
+    // Obtiene el historial de cambios de estado ordenado del más reciente al más antiguo
+    public function obtenerHistorialProducto($idMaterial) {
+        $sql = "SELECT id_cambio, id_material, estado_anterior, estado_nuevo, evento, fecha, ci_responsable, id_solicitud, motivo 
+            FROM historial_estado_material
+            WHERE id_material = ? 
+            ORDER BY fecha DESC";
+        $stmt = $this->conexion->prepare($sql);
+        $stmt->execute([$idMaterial]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 
 }
 

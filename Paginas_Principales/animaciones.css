@@ -1,0 +1,203 @@
+/* =========================================================
+   1. ANIMACIONES DE ENTRADA DESDE LOS LADOS
+   ========================================================= */
+
+@keyframes desdeIzquierda {
+  from {
+    opacity: 0;
+    transform: translateX(-60px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes desdeDerecha {
+  from {
+    opacity: 0;
+    transform: translateX(60px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Aplicación de animaciones */
+header.Barra {
+  animation: desdeIzquierda 0.7s ease-out forwards;
+}
+
+.hero-section {
+  animation: desdeDerecha 0.7s ease-out forwards;
+}
+
+.actions-section h3 {
+  animation: desdeIzquierda 0.8s ease-out forwards;
+}
+
+.app-footer {
+  animation: desdeDerecha 0.8s ease-out forwards;
+}
+
+/* Tarjetas alternadas: impares desde la izquierda, pares desde la derecha */
+.buttons-grid .action-card:nth-child(odd) {
+  animation: desdeIzquierda 0.7s ease-out forwards;
+}
+
+.buttons-grid .action-card:nth-child(even) {
+  animation: desdeDerecha 0.7s ease-out forwards;
+}
+
+
+/* =========================================================
+   2. EFECTO 3D REALISTA Y PULSACIÓN EN BOTONES
+   ========================================================= */
+
+.action-card {
+  position: relative !important;
+  transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+  
+  /* Borde inferior más grueso para simular el relieve 3D */
+  box-shadow: 0 5px 0 var(--card-border), 0 8px 15px rgba(0, 0, 0, 0.3) !important;
+  border: 1.5px solid var(--card-border) !important;
+  background-color: var(--card-bg) !important;
+}
+
+/* Estado Al pasar el cursor (Hover): Se eleva la tarjeta */
+.action-card:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 9px 0 var(--card-border), 0 14px 22px rgba(0, 0, 0, 0.4) !important;
+  border-color: var(--text-main) !important;
+}
+
+/* Estado Al hacer Clic (Active): Se hunde mecánicamente */
+.action-card:active {
+  transform: translateY(3px) !important;
+  box-shadow: 0 2px 0 var(--card-border), 0 3px 6px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Efecto 3D para el botón de perfil */
+.dropbtn {
+  transition: all 0.2s ease !important;
+  box-shadow: 0 4px 0 var(--card-border), 0 5px 10px rgba(0, 0, 0, 0.2) !important;
+}
+
+.dropbtn:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 0 var(--card-border), 0 8px 15px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dropbtn:active {
+  transform: translateY(2px) !important;
+  box-shadow: 0 1px 0 var(--card-border), 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* 1. Elevar toda la Barra de navegación */
+header.Barra {
+  position: relative !important;
+  z-index: 10000 !important;
+}
+
+/* 2. Forzar al contenedor del dropdown a mantenerse al frente */
+.dropdown {
+  position: relative !important;
+  z-index: 10001 !important;
+}
+
+.dropdown-content {
+  z-index: 10002 !important;
+}
+
+/* 3. Bajar la prioridad de la imagen del banner */
+.hero-section {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+/* =========================================================
+   SOLUCIÓN DE SUPERPOSICIÓN DE VENTANAS MODALES
+   ========================================================= */
+
+/* Eleva el fondo oscuro de las modales por encima de la barra */
+.modal-overlay {
+  z-index: 100000 !important;
+}
+
+/* Modal de confirmación (Guarda/Elimina) por encima de otras modales */
+#modalConfirmacionGuardar,
+#modalConfirmacionGuardarProducto {
+  z-index: 100010 !important;
+}
+
+/* Modal de historial por encima de la tabla principal */
+#modalHistorialProducto {
+  z-index: 100020 !important;
+}
+
+/* Asegura que el contenido del modal quede centrado y bien ordenado */
+.modal-content {
+  position: relative !important;
+  z-index: 100001 !important;
+}
+
+/* =========================================================
+   ANIMACIÓN: POP-UP DIVERTIDO CON DOBLE REBOTE ELÁSTICO
+   ========================================================= */
+
+@keyframes popUpDivertido {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) translateY(40px) rotate(-4deg); /* Nace pequeña, desplazada e inclinada */
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.08) translateY(-10px) rotate(1.5deg); /* Primer estiramiento y sobrepaso */
+  }
+  70% {
+    transform: scale(0.96) translateY(4px) rotate(-0.8deg); /* Contraataque de rebote comprimido */
+  }
+  85% {
+    transform: scale(1.02) translateY(-2px) rotate(0.3deg); /* Ajuste suave casi final */
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0) rotate(0deg); /* Posición final firme y centrada */
+  }
+}
+
+@keyframes fadeInOverlay {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Fondo con desenfoque dinámico */
+.modal-overlay.active {
+  animation: fadeInOverlay 0.25s ease-out forwards !important;
+  backdrop-filter: blur(5px) !important;
+}
+
+/* Aplicación del Pop-Up con rebote a la ventana modal */
+.modal-overlay.active .modal-content {
+  animation: popUpDivertido 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important;
+  transform-origin: center center !important;
+}
+
+/* =========================================================
+   OCULTAMIENTO DE CAMPOS CON MÁXIMA PRIORIDAD
+   ========================================================= */
+.oculto-dinamico {
+  display: none !important;
+}
+
+/* Asegurar que las cajas de grupo de formulario respeten el ocultamiento de JS */
+.modal-content form .form-group[style*="display: none"] {
+  display: none !important;
+}
+
+.modal-content form .form-group[style*="display: block"] {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+}

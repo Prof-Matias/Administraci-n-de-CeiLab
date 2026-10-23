@@ -134,31 +134,31 @@ try {
             }
             break;
 
-        case 'actualizar':
-    $id = $_POST['id_material'] ?? 0;
-    $fotoActual = $_POST['foto_actual'] ?? 'uploads/default.png';
+    case 'actualizar':
+        $id = $_POST['id_material'] ?? 0;
+        $fotoActual = $_POST['foto_actual'] ?? 'uploads/default.png';
     
-    // 1. Obtener el producto actual de la BD
-    $productoActual = $modelo->obtenerProductoPorID($id);
-    if (!$productoActual) {
+        // 1. Obtener el producto actual de la BD
+        $productoActual = $modelo->obtenerProductoPorID($id);
+        if (!$productoActual) {
         echo json_encode(['success' => false, 'message' => 'El producto no existe.']);
         break;
-    }
+        }
 
-    $nombreOriginal = $productoActual['nombre']; // Guardamos el nombre actual antes de modificar
-    $nuevoNombre    = trim($_POST['nombre'] ?? $nombreOriginal);
-    $descripcion    = $_POST['descripcion'] ?? $productoActual['descripcion'];
-    $categoria      = $_POST['categoria'] ?? $productoActual['categoria'];
-    $tipoControl    = $productoActual['tipo_control'];
-    $idSerieFinal   = null;
+        $nombreOriginal = $productoActual['nombre']; // Guardamos el nombre actual antes de modificar
+        $nuevoNombre    = trim($_POST['nombre'] ?? $nombreOriginal);
+        $descripcion    = $_POST['descripcion'] ?? $productoActual['descripcion'];
+        $categoria      = $_POST['categoria'] ?? $productoActual['categoria'];
+        $tipoControl    = $productoActual['tipo_control'];
+        $idSerieFinal   = null;
 
-    if ($tipoControl === 'SERIE') {
-        $idSerieFinal = trim($_POST['id_serie'] ?? $productoActual['id_serie']);
+        if ($tipoControl === 'SERIE') {
+            $idSerieFinal = trim($_POST['id_serie'] ?? $productoActual['id_serie']);
 
         if (empty($idSerieFinal)) {
             echo json_encode(['success' => false, 'message' => 'El número de serie no puede estar vacío.']);
             break;
-        }
+            }
 
         // Validar duplicado de serie en otro registro
         $productoDuplicado = $modelo->obtenerProductoPorSerie($idSerieFinal, $id);
@@ -169,19 +169,19 @@ try {
 
         $cantidadTotal = 1;
         $cantidadDisponible = (int)$productoActual['cantidad_disponible'];
-    } else {
+        } else {
         $cantidadTotal = (int)($_POST['cantidad_total'] ?? $productoActual['cantidad_total']);
         $cantidadDisponible = min($cantidadTotal, (int)$productoActual['cantidad_disponible']);
-    }
+        }
 
-    // Procesar imagen
-    $nuevaFoto = procesarImagen('foto_material');
-    $fotoFinal = $nuevaFoto ? $nuevaFoto : $fotoActual;
+        // Procesar imagen
+        $nuevaFoto = procesarImagen('foto_material');
+        $fotoFinal = $nuevaFoto ? $nuevaFoto : $fotoActual;
 
-    $estadoFinal = isset($_POST['estado']) ? strtoupper(trim($_POST['estado'])) : $productoActual['estado'];
+        $estadoFinal = isset($_POST['estado']) ? strtoupper(trim($_POST['estado'])) : $productoActual['estado'];
 
-    // 2. Actualizar el registro individual seleccionado
-    $exito = $modelo->actualizarProducto(
+        // 2. Actualizar el registro individual seleccionado
+        $exito = $modelo->actualizarProducto(
         $id,
         $nuevoNombre,
         $descripcion,
@@ -191,12 +191,12 @@ try {
         $estadoFinal,
         $fotoFinal,
         $idSerieFinal
-    );
+        );
 
-    // 3. Si la actualización fue exitosa y la opción "Aplicar a todo" está marcada
-    $aplicarAlGrupo = isset($_POST['aplicar_al_grupo']) && ($_POST['aplicar_al_grupo'] === '1' || $_POST['aplicar_al_grupo'] === 'on');
+        // 3. Si la actualización fue exitosa y la opción "Aplicar a todo" está marcada
+        $aplicarAlGrupo = isset($_POST['aplicar_al_grupo']) && ($_POST['aplicar_al_grupo'] === '1' || $_POST['aplicar_al_grupo'] === 'on');
 
-    if ($exito && $aplicarAlGrupo) {
+        if ($exito && $aplicarAlGrupo) {
         $modelo->actualizarGrupoPorNombre(
             $nombreOriginal,
             $nuevoNombre,
@@ -204,54 +204,54 @@ try {
             $categoria,
             $fotoFinal
         );
-    }
+        }
 
-    echo json_encode(['success' => (bool)$exito]);
-    break;
-        case 'eliminar':
-            $id = $_GET['id'] ?? 0;
-            $exito = $modelo->eliminarProducto($id);
-            echo json_encode(['success' => (bool)$exito]);
-            break;
+        echo json_encode(['success' => (bool)$exito]);
+        break;
+    case 'eliminar':
+        $id = $_GET['id'] ?? 0;
+        $exito = $modelo->eliminarProducto($id);
+        echo json_encode(['success' => (bool)$exito]);
+        break;
 
     case 'darDeBaja':
-    $data = json_decode(file_get_contents("php://input"), true);
-    $id = $data['id_material'] ?? null;
-    $motivo = trim($data['motivo_baja'] ?? '');
+        $data = json_decode(file_get_contents("php://input"), true);
+        $id = $data['id_material'] ?? null;
+        $motivo = trim($data['motivo_baja'] ?? '');
 
-    // Obtener la cédula del usuario responsable desde la sesión
-    $ciResponsable = $_SESSION['ci'] ?? $_SESSION['usuario']['ci'] ?? null;
+        // Obtener la cédula del usuario responsable desde la sesión
+        $ciResponsable = $_SESSION['ci'] ?? $_SESSION['usuario']['ci'] ?? null;
 
-    if (!$id || empty($motivo)) {
+        if (!$id || empty($motivo)) {
         echo json_encode(['success' => false, 'message' => 'Debe ingresar un motivo válido.']);
         break;
-    }
+        }
 
-    if ($modelo->esProductoComprometido($id)) {
+        if ($modelo->esProductoComprometido($id)) {
         echo json_encode([
             'success' => false, 
             'message' => 'Operación cancelada: El producto está PRESTADO o reservado.'
         ]);
         break;
-    }
+        }
 
-    // Se envía la CI del usuario al método
-    $resultado = $modelo->darDeBajaConMotivo($id, $motivo, $ciResponsable);
-    if ($resultado) {
+        // Se envía la CI del usuario al método
+         $resultado = $modelo->darDeBajaConMotivo($id, $motivo, $ciResponsable);
+        if ($resultado) {
         echo json_encode(['success' => true, 'message' => 'Material dado de baja correctamente.']);
-    } else {
-        echo json_encode(['success' => false, 'message' => 'No se pudo registrar la baja.']);
-    }
-    break;
+        } else {
+            echo json_encode(['success' => false, 'message' => 'No se pudo registrar la baja.']);
+        }
+        break;
 
-case 'reactivar':
-    $data = json_decode(file_get_contents("php://input"), true);
-    $id = $data['id_material'] ?? null;
+    case 'reactivar':
+        $data = json_decode(file_get_contents("php://input"), true);
+        $id = $data['id_material'] ?? null;
 
-    // Obtener la cédula del usuario responsable desde la sesión
-    $ciResponsable = $_SESSION['ci'] ?? $_SESSION['usuario']['ci'] ?? null;
+        // Obtener la cédula del usuario responsable desde la sesión
+        $ciResponsable = $_SESSION['ci'] ?? $_SESSION['usuario']['ci'] ?? null;
 
-    if ($id) {
+        if ($id) {
         // Se envía la CI del usuario al método
         $resultado = $modelo->reactivarProducto($id, $ciResponsable);
         if ($resultado) {
@@ -259,10 +259,21 @@ case 'reactivar':
         } else {
             echo json_encode(['success' => false, 'message' => 'No se pudo reactivar el producto.']);
         }
-    } else {
+        } else {
         echo json_encode(['success' => false, 'message' => 'ID no válido.']);
-    }
-    break;
+        }
+        break;
+
+    case 'historial':
+        $id = $_GET['id'] ?? $_GET['id_material'] ?? 0;
+        if ($id) {
+        echo json_encode($modelo->obtenerHistorialProducto($id));
+        } else {
+        echo json_encode([]);
+        }
+        break;
+
+
     }
 
 } catch (Exception $e) {

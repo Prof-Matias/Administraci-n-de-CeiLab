@@ -1,0 +1,640 @@
+/* =========================================================
+   VARIABLES DE COLOR (SISTEMA CLARO Y OSCURO)
+   ========================================================= */
+:root {
+  --card-bg: #ffffff;            /* Fondo pantalla claro */
+  --header-bg: #ffffff;
+  --text-main: #000000;
+  --text-sub: #555555;
+  --card-border: #777777;
+  --footer-bg: #dbe2e8;
+  --btn-pill-bg: #0022d2;
+  --btn-pill-text: #ffffff;
+  
+  /* Modales y Tablas */
+  --modal-bg: #ffffff;
+  --modal-text: #1e293b;
+  --table-border: #dddddd;
+  --table-th-bg: #f4f4f4;
+}
+
+body.dark-mode {
+  --card-bg: #1e1e1e;            /* Fondo pantalla oscuro */
+  --header-bg: #1e1e1e;
+  --text-main: #ffffff;
+  --text-sub: #bbbbbb;
+  --card-border: #555555;
+  --footer-bg: #2b2b2b;
+  --btn-pill-bg: #374151;
+  --btn-pill-text: #ffffff;
+  
+  /* Modales y Tablas */
+  --modal-bg: #222526;
+  --modal-text: #ffffff;
+  --table-border: #444444;
+  --table-th-bg: #2d3748;
+}
+
+/* Transición suave global */
+body, 
+.app-container, 
+header.Barra, 
+.action-card, 
+.app-footer, 
+.modal-content, 
+.dropbtn, 
+.dropdown-content,
+.hero-section {
+  transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease !important;
+}
+
+/* =========================================================
+   RESET Y TARJETA 100% PANTALLA COMPLETA
+   ========================================================= */
+* {
+  box-sizing: border-box !important;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  width: 100vw !important;
+  min-height: 100vh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background-color: var(--card-bg) !important;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  display: flex !important;
+  flex-direction: column !important;
+  color: var(--text-main) !important;
+  overflow-x: hidden !important;
+}
+
+.app-container {
+  width: 100vw !important;
+  max-width: 100% !important;
+  min-height: 100vh !important;
+  background-color: var(--card-bg) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  margin: 0 !important;
+}
+
+/* =========================================================
+   BARRA DE NAVEGACIÓN SUPERIOR
+   ========================================================= */
+header.Barra {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  padding: 16px 40px !important;
+  background-color: var(--header-bg) !important;
+  width: 100% !important;
+  max-width: 1000px !important;
+  border-bottom: 1px solid rgba(150, 150, 150, 0.15) !important;
+  position: relative !important;
+  z-index: 1000 !important;
+}
+
+.brand-logo {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  text-decoration: none !important;
+}
+
+.logo-itrio {
+  height: 40px !important;
+  width: auto !important;
+  object-fit: contain !important;
+}
+
+.brand-text {
+  font-weight: 800 !important;
+  font-size: 1.15rem !important;
+  color: var(--text-main) !important;
+  letter-spacing: 0.5px !important;
+}
+
+.nav-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+}
+
+.dropbtn {
+  background-color: var(--btn-pill-bg) !important;
+  color: var(--btn-pill-text) !important;
+  border: none !important;
+  padding: 8px 20px !important;
+  border-radius: 20px !important;
+  font-size: 0.85rem !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.2) !important;
+  position: static !important;
+  width: auto !important;
+}
+
+.dropbtn:hover {
+  transform: translateY(-1px) !important;
+}
+
+/* =========================================================
+   CONFIGURACIÓN DEL MENÚ DESPLEGABLE (Z-INDEX Y DESPLIEGUE)
+   ========================================================= */
+.dropdown {
+  position: relative !important;
+  display: inline-block !important;
+  z-index: 9999 !important;
+}
+
+.dropdown-content {
+  display: none !important;
+  position: absolute !important;
+  right: 0 !important;
+  top: 110% !important;
+  background-color: var(--card-bg) !important;
+  min-width: 160px !important;
+  border: 1px solid var(--card-border) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.4) !important;
+  overflow: hidden !important;
+  z-index: 10000 !important;
+}
+
+.dropdown-content.show {
+  display: block !important;
+  animation: fadeIn 0.2s ease;
+}
+
+.dropdown-content a {
+  display: block !important;
+  padding: 12px 18px !important;
+  color: var(--text-main) !important;
+  text-decoration: none !important;
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  text-align: left !important;
+}
+
+.dropdown-content a:hover {
+  background-color: rgba(150, 150, 150, 0.15) !important;
+}
+
+.dropdown-content a.logout-link {
+  color: #ef4444 !important;
+  border-top: 1px solid rgba(150, 150, 150, 0.2) !important;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* =========================================================
+   SWITCH ANIMADO SOL / LUNA
+   ========================================================= */
+.theme-switch {
+  position: relative !important;
+  width: 48px !important;
+  height: 26px !important;
+  cursor: pointer !important;
+  display: inline-block !important;
+}
+
+.theme-switch input {
+  display: none !important;
+}
+
+.slider {
+  position: absolute !important;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #cbd5e1 !important;
+  border-radius: 26px !important;
+  transition: background-color 0.4s ease !important;
+}
+
+.slider-thumb {
+  position: absolute !important;
+  top: 3px; left: 3px;
+  width: 20px; height: 20px;
+  background-color: #ffffff !important;
+  border-radius: 50% !important;
+  transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55), background-color 0.4s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
+  overflow: hidden !important;
+}
+
+.slider-thumb .icon {
+  position: absolute !important;
+  font-size: 10px !important;
+}
+
+.slider-thumb .sun { opacity: 1; transform: scale(1); }
+.slider-thumb .moon { opacity: 0; transform: scale(0.5); }
+
+input:checked + .slider { background-color: #374151 !important; }
+input:checked + .slider .slider-thumb {
+  transform: translateX(22px) rotate(360deg) !important;
+  background-color: #111827 !important;
+}
+input:checked + .slider .sun { opacity: 0 !important; }
+input:checked + .slider .moon { opacity: 1 !important; }
+
+/* =========================================================
+   HERO BANNER
+   ========================================================= */
+.hero-section {
+  position: relative !important;
+  width: 100% !important;
+  max-width: 1000px !important;
+  height: 220px !important;
+  margin: 10px 0 !important;
+  background-image: url("../Material_Visual/fondo.jpeg") !important;
+  background-size: cover !important;
+  background-position: center !important;
+  filter: grayscale(100%) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 1 !important;
+}
+
+.hero-overlay {
+  position: absolute !important;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.45) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 16px !important;
+  text-align: center !important;
+}
+
+.hero-overlay h1 {
+  color: #ffffff !important;
+  font-size: 1.9rem !important;
+  font-weight: 800 !important;
+  line-height: 1.25 !important;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.8) !important;
+  margin-bottom: 6px !important;
+}
+
+.hero-subtitle {
+  color: #f1f5f9 !important;
+  font-size: 0.85rem !important;
+  font-weight: 500 !important;
+}
+
+/* =========================================================
+   GRID DE BOTONES / TARJETAS
+   ========================================================= */
+.actions-section {
+  padding: 24px 20px !important;
+  width: 100% !important;
+  max-width: 1000px !important;
+}
+
+.actions-section h3 {
+  font-size: 1.3rem !important;
+  font-weight: 800 !important;
+  color: var(--text-main) !important;
+  margin-bottom: 18px !important;
+  text-align: left !important;
+}
+
+.buttons-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 14px !important;
+  width: 100% !important;
+}
+
+.action-card {
+  background-color: transparent !important;
+  border: 1.5px solid var(--card-border) !important;
+  border-radius: 16px !important;
+  padding: 16px 10px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  cursor: pointer !important;
+  min-height: 110px !important;
+  width: 100% !important;
+}
+
+.action-card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.15) !important;
+  border-color: var(--text-main) !important;
+}
+
+.card-title {
+  font-weight: 800 !important;
+  font-size: 0.98rem !important;
+  color: var(--text-main) !important;
+  margin-bottom: 6px !important;
+  line-height: 1.2 !important;
+}
+
+.card-desc {
+  font-size: 0.72rem !important;
+  color: var(--text-sub) !important;
+  line-height: 1.25 !important;
+}
+
+/* =========================================================
+   FOOTER INFERIOR
+   ========================================================= */
+.app-footer {
+  background-color: var(--footer-bg) !important;
+  padding: 16px 40px !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-top: auto !important;
+  width: 100% !important;
+}
+
+.footer-contact p {
+  font-size: 0.8rem !important;
+  font-weight: 600 !important;
+  color: var(--text-main) !important;
+  margin-bottom: 4px !important;
+}
+
+.footer-logo {
+  height: 46px !important;
+  width: auto !important;
+  object-fit: contain !important;
+}
+
+/* =========================================================
+   MODALES Y TABLAS
+   ========================================================= */
+.modal-overlay {
+  display: none;
+  position: fixed !important;
+  top: 0; left: 0;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: rgba(0, 0, 0, 0.75) !important;
+  z-index: 100000 !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+.modal-overlay.active {
+  display: flex !important;
+}
+
+.modal-content {
+  background: var(--modal-bg) !important;
+  color: var(--modal-text) !important;
+  padding: 20px !important;
+  border-radius: 16px !important;
+  width: 92vw !important;
+  max-width: 1100px !important;
+  max-height: 88vh !important;
+  overflow-y: auto !important;
+}
+
+.modal-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  border-bottom: 1px solid var(--table-border) !important;
+  padding-bottom: 8px !important;
+  margin-bottom: 12px !important;
+}
+
+.modal-close {
+  background: none !important;
+  border: none !important;
+  font-size: 24px !important;
+  cursor: pointer !important;
+  color: var(--modal-text) !important;
+}
+
+.table-responsive {
+  width: 100% !important;
+  overflow-x: auto !important;
+  margin-top: 12px !important;
+  border: 1px solid var(--table-border) !important;
+  border-radius: 8px !important;
+}
+
+.tabla-modal {
+  width: 100% !important;
+  min-width: 750px !important;
+  border-collapse: collapse !important;
+}
+
+.tabla-modal th, .tabla-modal td {
+  border: 1px solid var(--table-border) !important;
+  padding: 8px !important;
+  text-align: left !important;
+  color: var(--modal-text) !important;
+}
+
+.tabla-modal th {
+  background-color: var(--table-th-bg) !important;
+}
+
+.btn-modal {
+  padding: 6px 14px !important;
+  border: none !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  font-weight: bold !important;
+}
+
+.btn-crear { background-color: #28a745 !important; color: white !important; }
+.btn-editar { background-color: #ffc107 !important; color: black !important; }
+.btn-eliminar { background-color: #dc3545 !important; color: white !important; }
+.btn-cancelar { background-color: #6c757d !important; color: white !important; }
+
+/* RESPONSIVO */
+@media screen and (max-width: 650px) {
+  .buttons-grid {
+    grid-template-columns: 1fr !important;
+  }
+  header.Barra, .app-footer {
+    padding: 14px 20px !important;
+  }
+}
+
+/* =========================================================
+   AJUSTE DE ANCHO COMPLETO - SÓLO PARA TABLAS DE GESTIÓN
+   ========================================================= */
+
+/* Modales que contienen tablas de gestión (Productos, Usuarios, etc.) */
+.modal-content:has(.tabla-modal) {
+  width: 92% !important;
+  max-width: 1280px !important;
+  padding: 24px !important;
+  box-sizing: border-box !important;
+}
+
+/* Aplicación exclusiva a la tabla de datos dentro del modal */
+.modal-content .table-responsive {
+  width: 100% !important;
+  overflow-x: hidden !important; /* Mantiene la tabla visible sin scrollbar horizontal */
+  margin-top: 14px !important;
+  border-radius: 12px !important;
+}
+
+.modal-content table.tabla-modal {
+  width: 100% !important;
+  min-width: 0 !important;
+  table-layout: auto !important;
+  font-size: 0.82rem !important;
+}
+
+/* Espaciado compacto y ajuste automático sólo en celdas de gestión */
+.modal-content table.tabla-modal th, 
+.modal-content table.tabla-modal td {
+  padding: 8px 6px !important;
+  white-space: normal !important;
+  word-wrap: break-word !important;
+}
+
+/* Ajuste específico para la columna de botones de acción */
+.modal-content table.tabla-modal th:last-child, 
+.modal-content table.tabla-modal td:last-child {
+  width: 210px !important;
+  text-align: center !important;
+  white-space: nowrap !important; /* Mantiene los botones alineados */
+}
+
+.modal-content table.tabla-modal .btn-modal {
+  padding: 5px 8px !important;
+  font-size: 0.72rem !important;
+  border-radius: 5px !important;
+}
+
+/* =========================================================
+   FORMULARIO VERTICAL APILADO (UNA COLUMNA)
+   ========================================================= */
+
+/* Contenedor del modal de formulario */
+.modal-form-container,
+.modal-content:has(form) {
+  max-width: 580px !important;
+  width: 90% !important;
+  padding: 24px 28px !important;
+}
+
+/* Estructura vertical apilada de una sola columna */
+.form-grid,
+.modal-content form {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 14px !important;
+}
+
+/* Cada campo con su etiqueta arriba e input abajo */
+.form-group,
+.modal-content form p,
+.modal-content form div {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  width: 100% !important;
+  gap: 6px !important;
+  margin: 0 !important;
+}
+
+/* Forzar que todos los campos y desplegables ocupen el 100% del ancho */
+.modal-content form input[type="text"],
+.modal-content form input[type="file"],
+.modal-content form select,
+.modal-content form textarea,
+.form-control {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 10px 12px !important;
+  font-size: 0.88rem !important;
+  border: 1px solid var(--card-border, #cbd5e1) !important;
+  border-radius: 8px !important;
+  background-color: var(--card-bg, #ffffff) !important;
+  color: var(--text-main, #0f172a) !important;
+  outline: none !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+/* Foco elegante para campos activos */
+.modal-content form input:focus,
+.modal-content form select:focus,
+.modal-content form textarea:focus {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+}
+
+/* Textos de ayuda y etiquetas apilados correctamente */
+.modal-content form label,
+.modal-content form span {
+  font-size: 0.82rem !important;
+  font-weight: 600 !important;
+  color: var(--text-main, #334155) !important;
+  display: block !important;
+  text-align: left !important;
+}
+
+.form-help,
+.modal-content form small {
+  font-size: 0.74rem !important;
+  font-weight: normal !important;
+  color: var(--text-sub, #64748b) !important;
+  margin-top: -2px !important;
+}
+
+/* Botón de acción al final de la columna */
+.btn-guardar-main,
+.modal-content form button[type="submit"] {
+  width: 100% !important;
+  padding: 12px !important;
+  margin-top: 10px !important;
+  background-color: #10b981 !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-size: 0.92rem !important;
+  border: none !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  transition: background-color 0.2s ease !important;
+}
+
+.btn-guardar-main:hover,
+.modal-content form button[type="submit"]:hover {
+  background-color: #059669 !important;
+}
+
+/* =========================================================
+   OCULTAMIENTO DE CAMPOS CON MÁXIMA PRIORIDAD
+   ========================================================= */
+.oculto-dinamico {
+  display: none !important;
+}
+
+/* Asegurar que las cajas de grupo de formulario respeten el ocultamiento de JS */
+.modal-content form .form-group[style*="display: none"] {
+  display: none !important;
+}
+
+.modal-content form .form-group[style*="display: block"] {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+}
