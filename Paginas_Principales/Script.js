@@ -890,3 +890,86 @@ window.abrirModalFormularioProducto = function() {
 document.addEventListener('DOMContentLoaded', () => {
     window.ajustarFormularioProducto();
 });
+
+
+// Abrir el modal del perfil
+window.abrirModalVerPerfil = function(event) {
+    if (event) event.preventDefault();
+    
+    // Cierra el menú desplegable de Lucía
+    const dropdown = document.getElementById('menuContent');
+    if (dropdown) dropdown.classList.remove('show');
+
+    // Abre el modal de perfil
+    const modal = document.getElementById('modalVerPerfil');
+    if (modal) modal.classList.add('active');
+};
+
+// Cierre general de modales
+window.cerrarModal = function(idModal) {
+    const modal = document.getElementById(idModal);
+    if (modal) modal.classList.remove('active');
+};
+
+// =========================================================
+// CARGA Y EDICIÓN CORRECTA DEL PERFIL EN SCRIPT.JS
+// =========================================================
+window.abrirEditarPerfilPropio = function() {
+    // 1. Cierra la ventana del perfil
+    cerrarModal('modalVerPerfil');
+
+    // 2. Abre el modal de edición de usuario
+    const modalForm = document.getElementById('modalFormularioUsuario');
+    if (!modalForm) return;
+    
+    modalForm.classList.add('active');
+
+    // 3. Cambia el título de la ventana
+    const titulo = document.getElementById('tituloFormUsuario');
+    if (titulo) titulo.textContent = 'Editar Mi Perfil';
+
+    // 4. Carga de datos reales sin etiquetas PHP escritas como texto
+    const user = window.USUARIO_ACTUAL || {};
+
+    const inputCedulaOriginal = document.getElementById('cedula_original');
+    const inputCedula = document.getElementById('cedula');
+    const inputNombre = document.getElementById('nombre');
+    const inputApellido = document.getElementById('apellido');
+    const inputCorreo = document.getElementById('correo');
+    const inputPass = document.getElementById('contrasena');
+    const helpPass = document.getElementById('helpPass');
+
+    if (inputCedulaOriginal) inputCedulaOriginal.value = user.cedula || '';
+    if (inputCedula) inputCedula.value = user.cedula || '';
+    if (inputNombre) inputNombre.value = user.nombre || '';
+    if (inputApellido) inputApellido.value = user.apellido || '';
+    if (inputCorreo) inputCorreo.value = user.correo || '';
+    if (inputPass) inputPass.value = ''; // Se deja en blanco para no sobreescribir si no cambia
+    if (helpPass) helpPass.style.display = 'block';
+
+    // 5. Ocultar los campos que no deben modificarse (Cédula, Rol y Especialidad)
+    const campoCedula = inputCedula ? inputCedula.closest('.form-group') : null;
+    const campoRol = document.getElementById('rol') ? document.getElementById('rol').closest('.form-group') : null;
+    const campoEspecialidad = document.getElementById('especialidad') ? document.getElementById('especialidad').closest('.form-group') : null;
+
+    if (campoCedula) campoCedula.style.setProperty('display', 'none', 'important');
+    if (campoRol) campoRol.style.setProperty('display', 'none', 'important');
+    if (campoEspecialidad) campoEspecialidad.style.setProperty('display', 'none', 'important');
+};
+
+window.abrirModalFormulario = function() {
+    const modalForm = document.getElementById('modalFormularioUsuario');
+    if (modalForm) modalForm.classList.add('active');
+
+    const titulo = document.getElementById('tituloFormUsuario');
+    if (titulo) titulo.textContent = 'Usuario';
+
+    // Mostrar Cédula, Rol y Especialidad
+    const campoCedula = document.getElementById('cedula')?.closest('.form-group');
+    const campoRol = document.getElementById('rol')?.closest('.form-group');
+    const campoEspecialidad = document.getElementById('especialidad')?.closest('.form-group');
+
+    if (campoCedula) campoCedula.style.setProperty('display', 'flex', 'important');
+    if (campoRol) campoRol.style.setProperty('display', 'flex', 'important');
+    if (campoEspecialidad) campoEspecialidad.style.setProperty('display', 'flex', 'important');
+};

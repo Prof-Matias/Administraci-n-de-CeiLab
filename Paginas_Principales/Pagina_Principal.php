@@ -22,8 +22,8 @@ if (!isset($_SESSION['Rol'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="Diseño_Principal.css">
-    <link rel="stylesheet" href="Diseño2.css">
+    <link rel="stylesheet" href="Diseño_Principal.css?v=2">
+    <link rel="stylesheet" href="Diseño2.css?v=2">
     <link rel="stylesheet" href="animaciones.css">
     <title>CeiLab - Gestión Principal</title>
 </head>
@@ -57,7 +57,7 @@ if (!isset($_SESSION['Rol'])) {
                         <?php echo htmlspecialchars($_SESSION['Nombre']); ?>
                     </button>
                     <div class="dropdown-content" id="menuContent">
-                        <a href="">Ver Perfil</a>
+                        <a href="#" onclick="abrirModalVerPerfil(event)">Ver Perfil</a>
                         <a href="../Index.php" class="logout-link">Cerrar Sesión</a>
                     </div>
                 </div>
@@ -360,8 +360,63 @@ if (!isset($_SESSION['Rol'])) {
             </div>
         </div>
     </div>
+    
+<!-- VENTANA MODAL: VER PERFIL DE USUARIO -->
+<!-- VENTANA MODAL: VER PERFIL DE USUARIO -->
+<div class="modal-overlay" id="modalVerPerfil">
+    <div class="modal-content perfil-card-modal">
+        <div class="modal-header">
+            <h3>Perfil de Usuario</h3>
+            <button type="button" class="modal-close" onclick="cerrarModal('modalVerPerfil')">&times;</button>
+        </div>
+        
+        <div class="perfil-card-body">
+            <!-- Encabezado con Avatar -->
+            <div class="perfil-avatar-section">
+                <div class="avatar-circle">
+                    <?php echo strtoupper(substr($_SESSION['Nombre'], 0, 1)); ?>
+                </div>
+                <h4><?php echo htmlspecialchars($_SESSION['Nombre'] . ' ' . ($_SESSION['Apellido'] ?? '')); ?></h4>
+                <span class="badge-rol"><?php echo htmlspecialchars($_SESSION['Rol']); ?></span>
+            </div>
 
-    <script src="Script.js?v=2"></script>
+            <!-- Lista de Datos en Filas Separadas -->
+            <div class="perfil-details-list">
+                <div class="perfil-item">
+                    <span class="item-label">Cédula de Identidad</span>
+                    <span class="item-value"><?php echo htmlspecialchars($_SESSION['Cedula'] ?? $_SESSION['CI'] ?? '10000001'); ?></span>
+                </div>
+
+                <div class="perfil-item">
+                    <span class="item-label">Correo Electrónico</span>
+                    <span class="item-value"><?php echo htmlspecialchars($_SESSION['Correo'] ?? $_SESSION['Email'] ?? 'lucia.fernandez@cerpdeleste.edu.uy'); ?></span>
+                </div>
+
+                <div class="perfil-item">
+                    <span class="item-label">Especialidad / Cargo</span>
+                    <span class="item-value"><?php echo htmlspecialchars($_SESSION['Especialidad'] ?? 'Sin especificar'); ?></span>
+                </div>
+            </div>
+
+            <!-- Acciones -->
+            <button type="button" class="btn-editar-perfil-main" onclick="abrirEditarPerfilPropio()">
+                Editar mis Datos
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    window.USUARIO_ACTUAL = {
+        cedula: "<?php echo $_SESSION['Cedula'] ?? $_SESSION['CI'] ?? ''; ?>",
+        nombre: "<?php echo $_SESSION['Nombre'] ?? ''; ?>",
+        apellido: "<?php echo $_SESSION['Apellido'] ?? ''; ?>",
+        correo: "<?php echo $_SESSION['Correo'] ?? $_SESSION['Email'] ?? ''; ?>",
+        especialidad: "<?php echo $_SESSION['Especialidad'] ?? ''; ?>",
+        rol: "<?php echo $_SESSION['Rol'] ?? ''; ?>"
+    };
+</script>
+    <script src="Script.js?v=3"></script>
 
 </body>
 </html>
