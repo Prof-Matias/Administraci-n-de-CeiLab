@@ -101,6 +101,44 @@ class Modelo_Producto {
         }
     }
 
+    // Unidades de este material que están hoy fuera del CeiLab: entregadas en préstamos ACTIVOS y sin devolver
+    public function cantidadEntregada($idMaterial) {
+        $sql = "SELECT COALESCE(SUM(pm.cantidad), 0) AS cantidad,
+                       GROUP_CONCAT(DISTINCT pm.id_solicitud ORDER BY pm.id_solicitud SEPARATOR ', #') AS solicitudes
+                  FROM prestamo_material pm
+                  JOIN solicitud s ON s.id_solicitud = pm.id_solicitud
+                 WHERE pm.id_material = ? AND pm.fecha_devolucion IS NULL AND s.estado = 'ACTIVO'";
+        $stmt = $this->conexion->prepare($sql);
+        $stmt->execute([$idMaterial]);
+        $fila = $stmt->fetch(PDO::FETCH_ASSOC);
+        return ['cantidad' => (int)$fila['cantidad'], 'solicitudes' => $fila['solicitudes']];
+    }
+
+    // Unidades de un material (por nombre) comprometidas en préstamos APROBADOS que todavía no se entregaron
+    public function cantidadComprometida($nombre) {
+        $sql = "SELECT COALESCE(SUM(pp.cantidad), 0) AS cantidad,
+                       GROUP_CONCAT(DISTINCT pp.id_solicitud ORDER BY pp.id_solicitud SEPARATOR ', #') AS solicitudes
+                  FROM prestamo_pedido pp
+                  JOIN solicitud s ON s.id_solicitud = pp.id_solicitud
+                 WHERE s.estado = 'APROBADO' AND pp.nombre_material = ?";
+        $stmt = $this->conexion->prepare($sql);
+        $stmt->execute([$nombre]);
+        $fila = $stmt->fetch(PDO::FETCH_ASSOC);
+        return ['cantidad' => (int)$fila['cantidad'], 'solicitudes' => $fila['solicitudes']];
+    }
+
+    // Números de los préstamos APROBADOS o ACTIVOS que piden este material (los pedidos se guardan por nombre)
+    public function solicitudesAbiertasPorNombre($nombre) {
+        $sql = "SELECT DISTINCT pp.id_solicitud
+                  FROM prestamo_pedido pp
+                  JOIN solicitud s ON s.id_solicitud = pp.id_solicitud
+                 WHERE s.estado IN ('APROBADO', 'ACTIVO') AND pp.nombre_material = ?
+                 ORDER BY pp.id_solicitud";
+        $stmt = $this->conexion->prepare($sql);
+        $stmt->execute([$nombre]);
+        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    }
+
     // Verifica de forma simple si el producto está prestado o reservado
     public function esProductoComprometido($id_material) {
         $sql = "SELECT id_material 
@@ -143,7 +181,7 @@ public function darDeBajaConMotivo($id, $motivo, $ciResponsable = null) {
     $exito = $stmt->execute([$estadoNuevo, $motivo, $id]);
 
     if ($exito) {
-        $this->registrarHistorialEstado($id, $estadoAnterior, $estadoNuevo, 'DAR_DE_BAJA', $ciResponsable, null, $motivo);
+        HistorialEstado::registrarHistorialEstado($this->conexion, $id, $estadoAnterior, $estadoNuevo, 'DAR_DE_BAJA', $ciResponsable, null, $motivo);
     }
 
     return $exito;
@@ -216,29 +254,13 @@ public function reactivarProducto($id, $ciResponsable = null) {
     $exito = $stmt->execute([$estadoNuevo, $id]);
 
     if ($exito) {
-        $this->registrarHistorialEstado($id, $estadoAnterior, $estadoNuevo, 'REACTIVAR', $ciResponsable, null, 'Reactivación manual de material');
+        HistorialEstado::registrarHistorialEstado($this->conexion, $id, $estadoAnterior, $estadoNuevo, 'REACTIVAR', $ciResponsable, null, 'Reactivación manual de material');
     }
 
     return $exito;
 }
 
-// Función auxiliar para registrar cualquier cambio de estado en la tabla del historial
-public function registrarHistorialEstado($idMaterial, $estadoAnterior, $estadoNuevo, $evento, $ciResponsable, $idSolicitud = null, $motivo = null) {
-    // Si tu tabla en la base de datos se llama distinto (ej: historial_cambio_estado), ajusta el nombre aquí:
-    $sql = "INSERT INTO historial_estado_material 
-            (id_material, estado_anterior, estado_nuevo, evento, fecha, ci_responsable, id_solicitud, motivo) 
-            VALUES (?, ?, ?, ?, NOW(), ?, ?, ?)";
-    $stmt = $this->conexion->prepare($sql);
-    return $stmt->execute([
-        $idMaterial,
-        $estadoAnterior,
-        $estadoNuevo,
-        $evento,
-        $ciResponsable,
-        $idSolicitud,
-        $motivo
-    ]);
-}
+
 
     // Obtiene el historial de cambios de estado ordenado del más reciente al más antiguo
     public function obtenerHistorialProducto($idMaterial) {

@@ -897,3 +897,278 @@ body.dark-mode .badge-rol {
   background-color: rgba(59, 130, 246, 0.2) !important;
   color: #60a5fa !important;
 }
+
+/* ==========================================================================
+   ESTILOS DE LA GRILLA Y TARJETAS DEL CATÁLOGO DE PRODUCTOS
+   ========================================================================== */
+
+.grid-productos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.tarjeta-producto, .producto-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 18px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tarjeta-producto:hover, .producto-card:hover {
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Estilos para los campos de cantidad y botones dentro de la tarjeta */
+.tarjeta-producto input.cant-pedido, .producto-card input.cant-pedido {
+    width: 60px;
+    padding: 6px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    text-align: center;
+    margin-right: 8px;
+}
+
+.tarjeta-producto button, .producto-card button {
+    background-color: #0022d2;
+    color: white;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.carrito {
+    margin-top: 25px;
+    padding: 20px;
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    display: block !important;
+    text-align: left;
+}
+
+.carrito h4 {
+    margin-top: 0;
+    color: #0f172a;
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+}
+
+.carrito {
+    margin-top: 30px;
+    padding: 20px;
+    background-color: #f1f5f9;
+    border-top: 3px solid #0022d2;
+    border-radius: 8px;
+}
+
+/* =========================================================
+   MODAL DE PRÉSTAMOS: CATÁLOGO CON SCROLL Y CARRITO FIJO
+   ========================================================= */
+
+/* 1. Convertimos el contenido del modal en un contenedor flexible en columna */
+.modal-content:has(#contenedor-productos-cliente) {
+    display: flex !important;
+    flex-direction: column !important;
+    max-height: 88vh !important;
+    overflow: hidden !important; /* Desactiva el scroll global feo */
+    padding: 24px !important;
+}
+
+/* 2. Hacemos que SOLO la grilla de productos tenga scroll interno */
+.modal-content:has(#contenedor-productos-cliente) .grid-productos {
+    flex: 1 1 auto !important;
+    overflow-y: auto !important;
+    max-height: 52vh !important;
+    padding-right: 6px !important;
+    margin-bottom: 15px !important;
+}
+
+/* 3. El carrito se queda fijo y anclado al pie del modal, siempre a la vista */
+.modal-content:has(#contenedor-productos-cliente) .carrito {
+    flex-shrink: 0 !important;
+    margin-top: 0 !important;
+    padding: 15px !important;
+    background-color: var(--card-bg, #f1f5f9) !important;
+    border-top: 3px solid #0022d2 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* =========================================================
+   FORZAR VISIBILIDAD DEL CARRITO EN EL MODAL DE PRÉSTAMOS
+   ========================================================= */
+
+/* 1. La caja del modal se flexiona verticalmente */
+#modalSolicitarPrestamo .modal-content {
+    display: flex !important;
+    flex-direction: column !important;
+    max-height: 85vh !important;
+    overflow: hidden !important; /* Mantiene todo dentro de la tarjeta blanca */
+}
+
+/* 2. LIMITAR LA GRILLA: Esto libera espacio abajo para el carrito */
+#modalSolicitarPrestamo #contenedor-productos-cliente.grid-productos {
+    max-height: 350px !important; /* Altura fija para que la grilla no tape el carrito */
+    overflow-y: auto !important;  /* Scroll solo para los productos */
+    margin-bottom: 20px !important;
+    padding-right: 8px !important;
+    flex-shrink: 1 !important;
+}
+
+/* 3. EL CARRITO: Fuerza su espacio visual visible */
+#modalSolicitarPrestamo .carrito {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    min-height: 140px !important; /* Garantiza el bloque de espacio visible */
+    background-color: #f8fafc !important;
+    border-top: 2px solid #0022d2 !important;
+    padding: 15px !important;
+    margin-top: 10px !important;
+    flex-shrink: 0 !important; /* Evita que los productos lo aplasten */
+}
+
+/* ==========================================================================
+   ETIQUETAS DE ESTADO (tabla de productos e historial de materiales)
+   ========================================================================== */
+.badge-estado {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    line-height: 1.4;
+    white-space: nowrap;
+    border: 1px solid transparent;
+}
+.badge-disponible    { background: #e3f4e8; color: #1e6b35; border-color: #b9e0c5; }
+.badge-prestado      { background: #e4ecfb; color: #1f4b99; border-color: #bccdef; }
+.badge-mantenimiento { background: #fff3d6; color: #8a5a00; border-color: #f1d99b; }
+.badge-baja          { background: #f1f1f1; color: #666666; border-color: #d6d6d6; }
+.badge-secondary     { background: #eef0f3; color: #4b5563; border-color: #d5d9e0; }
+
+body.dark-mode .badge-disponible    { background: #14351f; color: #7be0a0; border-color: #1f5a33; }
+body.dark-mode .badge-prestado      { background: #172a4d; color: #8fb4ff; border-color: #243f73; }
+body.dark-mode .badge-mantenimiento { background: #44350f; color: #ffd374; border-color: #6b5316; }
+body.dark-mode .badge-baja          { background: #2b2b2b; color: #b5b5b5; border-color: #444444; }
+body.dark-mode .badge-secondary     { background: #2f3337; color: #c9ced4; border-color: #454b52; }
+
+
+/* ==========================================================================
+   CATÁLOGO DEL CLIENTE: tarjeta sin stock (agotado / en mantenimiento) y aviso de bloqueo
+   La tarjeta se ve apagada (gris) pero el botón queda por encima, nítido y legible,
+   igual que las acciones de una fila dada de baja en «Gestionar Productos».
+   ========================================================================== */
+.tarjeta-producto.tarjeta-agotada {
+    background: #f1f3f5;
+    border-color: #d5d9de;
+    box-shadow: none;
+}
+.tarjeta-producto.tarjeta-agotada img,
+.tarjeta-producto.tarjeta-agotada .tarjeta-cuerpo h4,
+.tarjeta-producto.tarjeta-agotada .tarjeta-cuerpo p {
+    opacity: 0.55;
+    color: #6c757d;
+}
+.tarjeta-producto.tarjeta-agotada img {
+    filter: grayscale(1);
+}
+.tarjeta-producto.tarjeta-agotada .btn-sin-stock {
+    opacity: 1 !important;
+    background-color: #6c757d !important;
+    color: #ffffff !important;
+    cursor: not-allowed;
+    position: relative;
+    z-index: 1;
+}
+.tarjeta-producto button:disabled:not(.btn-sin-stock),
+.tarjeta-producto input.cant-pedido:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.aviso-bloqueo-prestamo {
+    display: none;
+    flex-shrink: 0;
+    margin-bottom: 14px;
+    padding: 10px 14px;
+    background: #fff3d6;
+    color: #8a5a00;
+    border: 1px solid #f1d99b;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+body.dark-mode .tarjeta-producto.tarjeta-agotada { background: #2a2d30; border-color: #3d4247; }
+body.dark-mode .tarjeta-producto.tarjeta-agotada img,
+body.dark-mode .tarjeta-producto.tarjeta-agotada .tarjeta-cuerpo h4,
+body.dark-mode .tarjeta-producto.tarjeta-agotada .tarjeta-cuerpo p { color: #a9afb5; }
+body.dark-mode .aviso-bloqueo-prestamo { background: #44350f; color: #ffd374; border-color: #6b5316; }
+
+/* =========================================================
+  ADAPTACIÓN DE TARJETAS DE PRODUCTOS PARA MODO OSCURO
+   ========================================================= */
+
+.tarjeta-producto, .producto-card {
+    background-color: var(--card-bg, #ffffff) !important;
+    border: 1px solid var(--card-border, #cbd5e1) !important;
+    color: var(--text-main, #0f172a) !important;
+}
+
+/* Asegurar que los textos internos de la tarjeta hereden el color correcto */
+.tarjeta-producto h4, .producto-card h4,
+.tarjeta-producto p, .producto-card p,
+.tarjeta-producto span, .producto-card span {
+    color: var(--text-main) !important;
+}
+
+/* Campos de cantidad dentro de las tarjetas */
+.tarjeta-producto input.cant-pedido, .producto-card input.cant-pedido {
+    background-color: var(--card-bg, #ffffff) !important;
+    color: var(--text-main, #0f172a) !important;
+    border: 1px solid var(--card-border, #cbd5e1) !important;
+}
+
+/* =========================================================
+   ESTILOS Y CONTRASTE DEL CARRITO (MODO CLARO Y OSCURO)
+   ========================================================= */
+
+.carrito {
+    background-color: #f8fafc !important;
+    border: 1px solid #cbd5e1 !important;
+    border-top: 3px solid #0022d2 !important;
+    border-radius: 10px !important;
+    padding: 18px !important;
+    color: #0f172a !important;
+}
+
+.carrito h4 {
+    color: #0f172a !important;
+    font-weight: 700 !important;
+}
+
+/* Destacado específico para el Modo Oscuro */
+body.dark-mode .carrito {
+    background-color: #111827 !important; /* Fondo oscuro sutilmente más contrastado */
+    border: 1px solid #374151 !important;
+    border-top: 3px solid #3b82f6 !important; /* Línea azul brillante para destacar */
+    color: #f9fafb !important;
+}
+
+body.dark-mode .carrito h4,
+body.dark-mode .carrito p,
+body.dark-mode .carrito li,
+body.dark-mode .carrito label {
+    color: #f9fafb !important;
+}

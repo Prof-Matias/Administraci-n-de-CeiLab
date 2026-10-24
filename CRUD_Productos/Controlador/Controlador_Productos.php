@@ -147,6 +147,16 @@ try {
 
         $nombreOriginal = $productoActual['nombre']; // Guardamos el nombre actual antes de modificar
         $nuevoNombre    = trim($_POST['nombre'] ?? $nombreOriginal);
+
+        // Los pedidos de préstamo se guardan por nombre: no se renombra un material que está en préstamos aprobados o entregados
+        if ($nuevoNombre !== $nombreOriginal) {
+            $abiertos = $modelo->solicitudesAbiertasPorNombre($nombreOriginal);
+            if ($abiertos) {
+                echo json_encode(['success' => false, 'message' => "No se puede cambiar el nombre de «{$nombreOriginal}»: está en los préstamos #"
+                    . implode(', #', $abiertos) . ' (aprobados o entregados). Esperá a que se finalicen o se cancelen.']);
+                break;
+            }
+        }
         $descripcion    = $_POST['descripcion'] ?? $productoActual['descripcion'];
         $categoria      = $_POST['categoria'] ?? $productoActual['categoria'];
         $tipoControl    = $productoActual['tipo_control'];
@@ -160,6 +170,15 @@ try {
             break;
             }
 
+        // Un equipo prestado no puede cambiar de número de serie: el préstamo lo identifica por él
+        if ($idSerieFinal !== $productoActual['id_serie'] && $productoActual['estado'] === 'PRESTADO') {
+            $entregada = $modelo->cantidadEntregada($id);
+            echo json_encode(['success' => false, 'message' => "La serie {$productoActual['id_serie']} está prestada"
+                . ($entregada['solicitudes'] ? " (préstamo #{$entregada['solicitudes']})" : '')
+                . ': no se puede cambiar su número de serie hasta que la devuelvan.']);
+            break;
+        }
+
         // Validar duplicado de serie en otro registro
         $productoDuplicado = $modelo->obtenerProductoPorSerie($idSerieFinal, $id);
         if ($productoDuplicado) {
@@ -171,7 +190,32 @@ try {
         $cantidadDisponible = (int)$productoActual['cantidad_disponible'];
         } else {
         $cantidadTotal = (int)($_POST['cantidad_total'] ?? $productoActual['cantidad_total']);
-        $cantidadDisponible = min($cantidadTotal, (int)$productoActual['cantidad_disponible']);
+        if ($cantidadTotal < 0) {
+            echo json_encode(['success' => false, 'message' => 'La cantidad total no puede ser negativa.']);
+            break;
+        }
+
+        // Lo entregado en préstamos activos sigue fuera del CeiLab: el total no puede quedar por debajo
+        $entregada = $modelo->cantidadEntregada($id);
+        if ($cantidadTotal < $entregada['cantidad']) {
+            echo json_encode(['success' => false, 'message' => "No se puede bajar el total a {$cantidadTotal}: hay {$entregada['cantidad']} unidades "
+                . "entregadas en préstamos activos (#{$entregada['solicitudes']}). Esperá a que las devuelvan o editá esos préstamos."]);
+            break;
+        }
+
+        // El disponible se recalcula: lo que hay en total menos lo que está entregado.
+        // (Antes nunca subía al aumentar el total, y un stock en 0 se quedaba en 0.)
+        $cantidadDisponible = $cantidadTotal - $entregada['cantidad'];
+
+        // Si se baja el total, tampoco puede faltar para los préstamos aprobados que todavía no se entregaron
+        if ($cantidadTotal < (int)$productoActual['cantidad_total']) {
+            $comprometida = $modelo->cantidadComprometida($productoActual['nombre']);
+            if ($cantidadDisponible < $comprometida['cantidad']) {
+                echo json_encode(['success' => false, 'message' => "Con un total de {$cantidadTotal} quedarían {$cantidadDisponible} disponibles, "
+                    . "pero hay {$comprometida['cantidad']} comprometidas en préstamos aprobados (#{$comprometida['solicitudes']})."]);
+                break;
+            }
+        }
         }
 
         // Procesar imagen

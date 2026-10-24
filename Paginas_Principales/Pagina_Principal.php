@@ -22,7 +22,7 @@ if (!isset($_SESSION['Rol'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="Diseño_Principal.css?v=2">
+    <link rel="stylesheet" href="Diseño_Principal.css?v=4">
     <link rel="stylesheet" href="Diseño2.css?v=2">
     <link rel="stylesheet" href="animaciones.css">
     <title>CeiLab - Gestión Principal</title>
@@ -87,7 +87,7 @@ if (!isset($_SESSION['Rol'])) {
                         <span class="card-title">Gestionar Productos</span>
                         <span class="card-desc">Carga, edita o quita equipos del inventario.</span>
                     </button>
-                    <button type="button" class="action-card" id="Prestamo">
+                    <button type="button" class="action-card" id="Prestamo" onclick="abrirModalGestionPrestamos('')">
                         <span class="card-title">Gestionar Préstamos</span>
                         <span class="card-desc">Controla las entregas y devoluciones.</span>
                     </button>
@@ -95,14 +95,15 @@ if (!isset($_SESSION['Rol'])) {
                         <span class="card-title">Gestionar Reservas</span>
                         <span class="card-desc">Revisa el calendario de reservas semanales.</span>
                     </button>
-                    <button type="button" class="action-card" id="Solicitud">
+                    <button type="button" class="action-card" id="Solicitud" onclick="abrirModalGestionPrestamos('PENDIENTE')">
                         <span class="card-title">Ver Solicitudes</span>
                         <span class="card-desc">Atiende las peticiones pendientes.</span>
                     </button>
-                    <button type="button" class="action-card" id="Historial">
+                    <button type="button" class="action-card" id="Historial" onclick="abrirHistorialGeneral()">
                         <span class="card-title">Ver Historial</span>
                         <span class="card-desc">Consulta el registro general de movimientos.</span>
                     </button>
+
                 <?php elseif ($_SESSION['Rol'] == "CLIENTE"): ?>
                     <!-- Opciones para Clientes -->
                     <button type="button" class="action-card" id="SolicitarPres" onclick="abrirModalSolicitarPrestamo()">
@@ -117,6 +118,11 @@ if (!isset($_SESSION['Rol'])) {
                         <span class="card-title">Consultar Catálogo</span>
                         <span class="card-desc">Consulta el catálogo para saber qué días están disponibles u ocupados los equipos.</span>
                     </button>
+                    <!-- NUEVA TARJETA ESTILIZADA PARA CLIENTE -->
+                    <button type="button" class="action-card" id="MisPrestamos" onclick="abrirModalMisPrestamos()">
+                        <span class="card-title">Mis Préstamos</span>
+                        <span class="card-desc">Revisa el historial y estado de tus solicitudes activas o pasadas.</span>
+                    </button>
                 <?php endif; ?>
             </div>
         </section>
@@ -124,12 +130,12 @@ if (!isset($_SESSION['Rol'])) {
         <!-- FOOTER INFERIOR DE LA MAQUETA -->
         <footer class="app-footer">
             <div class="footer-contact">
-                <p>🌐 cerpdeleste.com</p>
-                <p>📞 099 345 123</p>
-                <p>✉️ example@gmail.com</p>
+                <a href="https://cerpdeleste.cfe.edu.uy/"><p>🌐Página del Cerp del Este</p></a>
+                <p>📞Teléfonos: 4225 4422 / 4225 4430 / 4225 4431</p>
+                <p>✉️ cerpdeleste.cfe@gmail.com o cerpdeleste@cfe.edu.uy.</p>
             </div>
             <div class="footer-brand">
-                <img src="../Material_Visual/Logo2.png" alt="Logo CeRP del Este" class="footer-logo">
+                <a href="https://cerpdeleste.cfe.edu.uy/"><img src="../Material_Visual/Logo2.png" alt="Logo CeRP del Este" class="footer-logo"></a>
             </div>
         </footer>
 
@@ -138,16 +144,6 @@ if (!isset($_SESSION['Rol'])) {
     <!-- ==========================================================================
          VENTANAS MODALES (SISTEMA INTERNO)
          ========================================================================== -->
-    <div class="modal-overlay" id="modalSolicitarPrestamo">
-        <div class="modal-content" style="max-width: 1200px;">
-            <div class="modal-header">
-                <h3>Catálogo de Materiales - Solicitar Préstamo</h3>
-                <button class="modal-close" onclick="cerrarModal('modalSolicitarPrestamo')">&times;</button>
-            </div>
-            <div id="contenedor-productos-cliente" class="grid-productos"></div>
-        </div>
-    </div>
-
     <div class="modal-overlay" id="modalGestionUsuarios">
         <div class="modal-content">
             <div class="modal-header">
@@ -406,6 +402,34 @@ if (!isset($_SESSION['Rol'])) {
     </div>
 </div>
 
+
+<!-- ==========================================================================
+         MODAL: CATÁLOGO DE PRODUCTOS (VISTA CLIENTE)
+         ========================================================================== -->
+    <div class="modal-overlay" id="modalSolicitarPrestamo">
+        <div class="modal-content" style="max-width: 1200px;">
+            <div class="modal-header">
+                <h3>Catálogo de Materiales - Solicitar Préstamo</h3>
+                <button class="modal-close" onclick="cerrarModal('modalSolicitarPrestamo')">&times;</button>
+            </div>
+            
+            <div id="avisoBloqueoPrestamo" class="aviso-bloqueo-prestamo"></div>
+
+            <div id="contenedor-productos-cliente" class="grid-productos">
+                <!-- Las tarjetas de productos se renderizan dinámicamente aquí -->
+            </div>
+
+            <!-- v7: el cliente arma un pedido por tipo de material; el administrador asigna las series al entregar -->
+            <div class="carrito">
+                <h4>Tu pedido</h4>
+                <div id="carritoPrestamo"><p><i>Todavía no agregaste materiales.</i></p></div>
+            </div>
+        </div>
+    </div>
+
+<!-- ==========================================================================
+    CARGA DE SCRIPTS Y CONFIGURACIÓN GLOBAL
+    ========================================================================== -->
 <script>
     window.USUARIO_ACTUAL = {
         cedula: "<?php echo $_SESSION['Cedula'] ?? $_SESSION['CI'] ?? ''; ?>",
@@ -416,7 +440,12 @@ if (!isset($_SESSION['Rol'])) {
         rol: "<?php echo $_SESSION['Rol'] ?? ''; ?>"
     };
 </script>
-    <script src="Script.js?v=3"></script>
+
+<!-- 1. Primero cargamos el Script general de la página donde viven toggleDropdown y funciones base -->
+<script src="Script.js?v=5"></script>
+
+<!-- 2. Luego incluimos la vista de préstamos (que define abrirModalSolicitarPrestamo y los fetch) UNA SOLA VEZ -->
+<?php include __DIR__ . '/../CRUD_Prestamos/Vista/Vista_Prestamos.php'; ?>
 
 </body>
 </html>

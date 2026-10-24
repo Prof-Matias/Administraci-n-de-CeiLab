@@ -95,5 +95,74 @@ final class EstadoMaterial {
     }
 }
 
+final class EstadoSolicitud {
+    const PENDIENTE  = 'PENDIENTE';
+    const APROBADO   = 'APROBADO';
+    const RECHAZADO  = 'RECHAZADO';
+    const ACTIVO     = 'ACTIVO';
+    const FINALIZADO = 'FINALIZADO';
+    const CANCELADO  = 'CANCELADO';
+
+    const TODOS = [self::PENDIENTE, self::APROBADO, self::RECHAZADO, self::ACTIVO, self::FINALIZADO, self::CANCELADO];
+
+    const APROBAR  = 'APROBAR';
+    const RECHAZAR = 'RECHAZAR';
+    const ENTREGAR = 'ENTREGAR';
+    const FINALIZAR = 'FINALIZAR';
+    const CANCELAR = 'CANCELAR';
+
+    const TRANSICIONES = [
+        self::PENDIENTE  => [self::APROBAR => self::APROBADO, self::RECHAZAR => self::RECHAZADO, self::CANCELAR => self::CANCELADO],
+        self::APROBADO   => [self::ENTREGAR => self::ACTIVO, self::CANCELAR => self::CANCELADO],
+        self::ACTIVO     => [self::FINALIZAR => self::FINALIZADO],
+        self::RECHAZADO  => [],
+        self::FINALIZADO => [],
+        self::CANCELADO  => [],
+    ];
+
+    const ETIQUETAS = [
+        self::PENDIENTE  => 'pendiente',
+        self::APROBADO   => 'aprobada',
+        self::RECHAZADO  => 'rechazada',
+        self::ACTIVO     => 'activa (ya entregada)',
+        self::FINALIZADO => 'finalizada',
+        self::CANCELADO  => 'cancelada',
+    ];
+
+    public static function destino($estadoActual, $evento) {
+        if (!isset(self::TRANSICIONES[$estadoActual][$evento])) {
+            throw new ErrorNegocio(sprintf(
+                'La solicitud está %s: no se puede %s.',
+                self::ETIQUETAS[$estadoActual] ?? strtolower($estadoActual),
+                strtolower($evento)
+            ));
+        }
+        return self::TRANSICIONES[$estadoActual][$evento];
+    }
+}
+
+final class HistorialEstado {
+    /**
+     * Registra un cambio de estado de un material en historial_estado_material.
+     * Es estática y recibe la conexión PDO: así la pueden usar tanto Modelo_Prestamo
+     * como Modelo_Producto con la misma conexión (y la misma transacción, si hay una abierta).
+     */
+    public static function registrarHistorialEstado(PDO $conexion, $idMaterial, $estadoAnterior, $estadoNuevo,
+                                                    $evento, $ciResponsable, $idSolicitud = null, $motivo = null) {
+        $sql = "INSERT INTO historial_estado_material
+                    (id_material, estado_anterior, estado_nuevo, evento, fecha, ci_responsable, id_solicitud, motivo)
+                VALUES (?, ?, ?, ?, NOW(), ?, ?, ?)";
+        $stmt = $conexion->prepare($sql);
+        return $stmt->execute([
+            $idMaterial,
+            $estadoAnterior,
+            $estadoNuevo,
+            $evento,
+            $ciResponsable,
+            $idSolicitud,
+            $motivo
+        ]);
+    }
+}
 
 ?>

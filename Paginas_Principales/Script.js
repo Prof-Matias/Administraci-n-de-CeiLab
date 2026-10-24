@@ -1,4 +1,4 @@
-   // Rutas globales a los controladores PHP
+// Rutas globales a los controladores PHP
         const RUTA_CONTROLADOR = '../CRUD_Usuarios/Controlador/Controlador_Usuarios.php';
         const RUTA_CONTROLADOR_PRODUCTOS = '../CRUD_Productos/Controlador/Controlador_Productos.php';
         const RUTA_VERIFICADOR = '../Login_logica/Validar_Cedula.php';
@@ -64,71 +64,102 @@
             }
         });
 
-        /* ==========================================================================
-           MÓDULO VISTA CLIENTE (TARJETAS DE PRÉSTAMO)
-           ========================================================================== */
-        async function abrirModalSolicitarPrestamo() {
+    /* ==========================================================================
+        MÓDULO VISTA CLIENTE (TARJETAS DE PRÉSTAMO Y CARRITO V7)
+    ========================================================================== */
+            async function abrirModalSolicitarPrestamo() {
             const modal = document.getElementById('modalSolicitarPrestamo');
-            if (modal) modal.classList.add('active');
-            await cargarProductosCliente();
-        }
+            if (modal) {
+                modal.classList.add('active');
+            }
 
-        async function cargarProductosCliente() {
-            try {
-                const res = await fetch(`${RUTA_CONTROLADOR_PRODUCTOS}?action=catalogo`);
-                const textoRespuesta = await res.text();
-                
-                let productos;
-                try {
-                    productos = JSON.parse(textoRespuesta);
-                } catch (e) {
-                    console.error("Respuesta del servidor no válida:", textoRespuesta);
-                    return;
-                }
+            // Averigua si el cliente ya tiene un préstamo aprobado o entregado (en ese caso no puede pedir otro)
+            if (typeof verificarPrestamoActivo === 'function') {
+                await verificarPrestamoActivo();
+            }
 
-                const contenedor = document.getElementById('contenedor-productos-cliente');
-                if (!contenedor) return; 
+            // Fuerza a pintar el carrito vacío o con los ítems actuales al abrir
+            if (typeof dibujarCarrito === 'function') {
+                dibujarCarrito();
+            }
 
-                if (!Array.isArray(productos) || productos.length === 0) {
-                    contenedor.innerHTML = `<p style="text-align:center; width:100%; grid-column: 1 / -1;">No hay productos disponibles en este momento.</p>`;
-                    return;
-                }
-
-                contenedor.innerHTML = productos.map(p => {
-                    const fotoLimpia = p.foto_material ? p.foto_material.replace(/^\/+/, '') : '';
-                    const fotoRuta = fotoLimpia ? `../CRUD_Productos/${fotoLimpia}` : '';
-                    const stock = parseInt(p.cantidad_disponible) || 0;
-                    
-                    let btnHtml = '';
-                    if (stock > 0 && (p.estado || '').toUpperCase() !== 'EN_MANTENIMIENTO') {
-                        btnHtml = `<button onclick="iniciarProcesoPrestamo(${p.id_material}, '${p.nombre}')" class="btn-prestamo">Solicitar Préstamo</button>`;
-                    } else {
-                        btnHtml = `<button class="btn-prestamo btn-sin-stock" disabled>Agotado / No Disponible</button>`;
-                    }
-
-                    return `
-                        <div class="tarjeta-producto">
-                            <img src="${fotoRuta}" alt="${p.nombre}" onerror="this.src=''; this.style.display='none';">
-                            <div class="tarjeta-cuerpo">
-                                <td>${p.id_serie ? `<code>${p.id_serie}</code>` : '<small>por cantidad</small>'}</td>
-                                <h4>${p.nombre}</h4>
-                                <p><strong>Categoría:</strong> ${p.categoria || '-'}</p>
-                                <p><strong>Descripción:</strong> ${p.descripcion || '-'}</p>
-                                <p><strong>Disponibles:</strong> ${stock}</p>
-                                ${btnHtml}
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-
-            } catch (error) {
-                console.error("Error al cargar el catálogo de cliente:", error);
+            // Carga los productos del catálogo
+            if (typeof cargarProductosCliente === 'function') {
+                await cargarProductosCliente();
             }
         }
 
-        function iniciarProcesoPrestamo(idProducto, nombreProducto) {
-            alert(`Iniciando solicitud para el material: ${nombreProducto} (ID: ${idProducto})\n\n(Funcionalidad en desarrollo)`);
-        }
+            async function cargarProductosCliente() {
+                try {
+                    const res = await fetch(`${RUTA_CONTROLADOR_PRODUCTOS}?action=catalogo`);
+                    const textoRespuesta = await res.text();
+                    
+                    let productos;
+                    try {
+                        productos = JSON.parse(textoRespuesta);
+                    } catch (e) {
+                        console.error("Respuesta del servidor no válida:", textoRespuesta);
+                        alert("Error al cargar el catálogo:\n" + textoRespuesta.substring(0, 300));
+                        return;
+                    }
+
+                    const contenedor = document.getElementById('contenedor-productos-cliente');
+                    if (!contenedor) return; 
+
+                    if (!Array.isArray(productos) || productos.length === 0) {
+                        contenedor.innerHTML = `<p style="text-align:center; width:100%; grid-column: 1 / -1;">No hay productos disponibles en este momento.</p>`;
+                        return;
+                    }
+
+                    contenedor.innerHTML = productos.map(p => {
+                        const fotoLimpia = p.foto_material ? p.foto_material.replace(/^\/+/, '') : '';
+                        const fotoRuta = fotoLimpia ? `../CRUD_Productos/${fotoLimpia}` : '';
+                        
+                        // v7: El catálogo agrupa por nombre y maneja unidades "libres"
+                        const libres = parseInt(p.libres) || 0;
+                        const estadoDisp = p.disponibilidad || (libres > 0 ? 'Disponible' : 'Agotado');
+
+                        let accion = '';
+                        if (libres > 0) {
+                            accion = `
+                                <div style="display: flex; gap: 8px; margin-top: 10px; align-items: center;">
+                                    <input type="number" class="cant-pedido" data-nombre="${esc(p.nombre)}" min="1" max="${libres}" value="1" style="width: 60px; padding: 6px;">
+                                    <button onclick="agregarAlPedido(${esc(JSON.stringify(p.nombre))}, ${libres})" class="btn-prestamo" style="margin-top: 0; flex-grow: 1;">Agregar al pedido</button>
+                                </div>`;
+                        } else {
+                            accion = `<button class="btn-prestamo btn-sin-stock" disabled style="margin-top: 10px; width: 100%;">${esc(estadoDisp)}</button>`;
+                        }
+
+                        return `
+                            <div class="tarjeta-producto${libres > 0 ? '' : ' tarjeta-agotada'}">
+                                <img src="${esc(fotoRuta)}" alt="${esc(p.nombre)}" onerror="this.src=''; this.style.display='none';">
+                                <div class="tarjeta-cuerpo">
+                                    <h4>${esc(p.nombre)}</h4>
+                                    <p><strong>Categoría:</strong> ${esc(p.categoria || '-')}</p>
+                                    <p><strong>Descripción:</strong> ${esc(p.descripcion || '-')}</p>
+                                    <p><strong>Disponibles ahora:</strong> ${libres} (Total: ${esc(p.total)})</p>
+                                    ${accion}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+
+                    // Dibuja o actualiza el carrito de la interfaz
+                    if (typeof dibujarCarrito === 'function') {
+                        dibujarCarrito();
+                    }
+
+                    // Si el cliente ya tiene un préstamo aprobado/entregado, deshabilita los botones de pedir
+                    if (typeof aplicarBloqueoCatalogo === 'function') {
+                        aplicarBloqueoCatalogo();
+                    }
+
+                } catch (error) {
+                    console.error("Error al cargar el catálogo de cliente:", error);
+                }
+            }
+
+            
 
         /* ==========================================================================
            MÓDULO USUARIOS & TELÉFONOS
@@ -427,13 +458,7 @@ async function cargarProductos() {
             // Estilos para atenuar únicamente la información cuando el producto esté dado de baja
             const estiloDato = esBaja ? 'opacity: 0.55; color: #6c757d;' : '';
 
-            let badgeClase = 'badge-secondary';
-            if (estadoUpper === 'DISPONIBLE') badgeClase = 'badge-disponible';
-            else if (estadoUpper === 'EN_MANTENIMIENTO') badgeClase = 'badge-mantenimiento';
-            else if (estadoUpper === 'DADO_DE_BAJA') badgeClase = 'badge-baja';
-            else if (estadoUpper === 'PRESTADO') badgeClase = 'badge-prestado';
-
-            const etiquetaEstado = `<span class="badge-estado ${badgeClase}">${p.estado || '-'}</span>`;
+            const etiquetaEstado = badgeEstadoMaterial(p.estado);
             const detalleMotivo = (esBaja && p.motivo_baja) 
                 ? `<br><small style="color: #6c757d; font-style: italic; display: block; margin-top: 4px;">Motivo: ${p.motivo_baja}</small>` 
                 : '';
@@ -487,6 +512,24 @@ async function cargarProductos() {
     }
 }
 
+// Devuelve la etiqueta (pastilla de color) de un estado de material
+function badgeEstadoMaterial(estado) {
+    const e = String(estado || '').toUpperCase();
+    const clases = {
+        DISPONIBLE: 'badge-disponible',
+        PRESTADO: 'badge-prestado',
+        EN_MANTENIMIENTO: 'badge-mantenimiento',
+        DADO_DE_BAJA: 'badge-baja'
+    };
+    const textos = {
+        DISPONIBLE: 'Disponible',
+        PRESTADO: 'Prestado',
+        EN_MANTENIMIENTO: 'En mantenimiento',
+        DADO_DE_BAJA: 'Dado de baja'
+    };
+    return `<span class="badge-estado ${clases[e] || 'badge-secondary'}">${textos[e] || estado || '-'}</span>`;
+}
+
 // Consulta vía AJAX el historial del producto e inserta las filas en el modal
 async function verHistorialProducto(idMaterial) {
     try {
@@ -502,8 +545,8 @@ async function verHistorialProducto(idMaterial) {
             tbody.innerHTML = historial.map(h => `
                 <tr>
                     <td><small>${h.fecha || '-'}</small></td>
-                    <td><span class="badge-estado badge-secondary">${h.estado_anterior || 'INICIAL'}</span></td>
-                    <td><span class="badge-estado badge-disponible">${h.estado_nuevo || '-'}</span></td>
+                    <td>${h.estado_anterior ? badgeEstadoMaterial(h.estado_anterior) : '<span class="badge-estado badge-secondary">Inicial</span>'}</td>
+                    <td>${badgeEstadoMaterial(h.estado_nuevo)}</td>
                     <td><b>${h.evento || '-'}</b></td>
                     <td>${h.ci_responsable || '<small>Sistema</small>'}</td>
                     <td>${h.motivo || '-'}</td>
@@ -715,7 +758,7 @@ async function verHistorialProducto(idMaterial) {
                 alert("Error de conexión al procesar la baja con el servidor.");
             }
         }
-        // =========================================================
+// =========================================================
 // CORRECCIÓN GLOBAL: DROPDOWN Y MODO OSCURO
 // =========================================================
 
