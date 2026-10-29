@@ -1,10 +1,14 @@
 <?php
 
-
+session_start();
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/../Modelo/Modelo_Usuario.php';
 
 $action = $_GET['action'] ?? '';
+
+// Datos de la sesión actual
+$rolSesion    = $_SESSION['Rol'] ?? '';
+$cedulaSesion = (string)($_SESSION['Cedula'] ?? $_SESSION['CI'] ?? '');
 
 switch ($action) {
 
@@ -33,13 +37,12 @@ switch ($action) {
 
             if (empty($cedula) || empty($nombre) || empty($apellido) || empty($contrasenia)) {
                 echo json_encode([
-                    'success' => false, 
+                    'success' => false,
                     'message' => 'Cédula, nombre, apellido y contraseña son campos obligatorios.'
                 ]);
                 exit();
             }
 
-            // Validar teléfonos (Obligatorio al menos uno en ALTA)
             $telefonosValidos = [];
             if (is_array($telefonos)) {
                 foreach ($telefonos as $tel) {
@@ -85,13 +88,12 @@ switch ($action) {
 
             if (empty($cedula) || empty($nombre) || empty($apellido)) {
                 echo json_encode([
-                    'success' => false, 
+                    'success' => false,
                     'message' => 'Cédula, nombre y apellido son campos obligatorios.'
                 ]);
                 exit();
             }
 
-            // Validar teléfonos (Opcionales en EDICIÓN)
             $telefonosValidos = [];
             if (is_array($telefonos)) {
                 foreach ($telefonos as $tel) {
@@ -106,7 +108,7 @@ switch ($action) {
                 }
             }
 
-            $passFinal = !empty($contrasenia) ? $contrasenia : $contraseniaAct;
+            $passFinal   = !empty($contrasenia) ? $contrasenia : $contraseniaAct;
             $cambiarPass = !empty($contrasenia);
 
             $modelo = new Modelo_Usuario();
@@ -120,9 +122,51 @@ switch ($action) {
         }
         break;
 
+    // ---- BAJA LÓGICA: desactivar / reactivar cuenta ----
+    case 'cambiarEstado':
+        if ($rolSesion !== 'ADMINISTRADOR') {
+            echo json_encode(['success' => false, 'message' => 'No tenés permisos para esta acción.']);
+            exit();
+        }
+
+        $input  = json_decode(file_get_contents('php://input'), true);
+        $cedula = preg_replace('/[^0-9]/', '', $input['cedula'] ?? '');
+        $estado = strtoupper(trim($input['estado'] ?? ''));
+
+        if ($cedula === '' || !in_array($estado, ['ACTIVA', 'INACTIVA'], true)) {
+            echo json_encode(['success' => false, 'message' => 'Datos inválidos.']);
+            exit();
+        }
+
+        // Un admin no puede desactivar su propia cuenta
+        if ($estado === 'INACTIVA' && $cedula === $cedulaSesion) {
+            echo json_encode(['success' => false, 'message' => 'No podés desactivar tu propia cuenta.']);
+            exit();
+        }
+
+        $modelo = new Modelo_Usuario();
+        $ok = $modelo->cambiarEstadoCuenta($cedula, $estado);
+
+        echo json_encode([
+            'success' => $ok,
+            'message' => $ok
+                ? ($estado === 'INACTIVA' ? 'Cuenta desactivada.' : 'Cuenta reactivada.')
+                : 'No se pudo cambiar el estado de la cuenta.'
+        ]);
+        break;
+
     case 'eliminar':
+        if ($rolSesion !== 'ADMINISTRADOR') {
+            echo json_encode(['success' => false, 'message' => 'No tenés permisos para esta acción.']);
+            exit();
+        }
+
         $cedula = $_GET['cedula'] ?? $_POST['cedula'] ?? '';
         if (!empty($cedula)) {
+            if ((string)$cedula === $cedulaSesion) {
+                echo json_encode(['success' => false, 'message' => 'No podés eliminar tu propia cuenta.']);
+                exit();
+            }
             $modelo = new Modelo_Usuario();
             $resultado = $modelo->eliminarUsuario($cedula);
             echo json_encode(['success' => $resultado]);

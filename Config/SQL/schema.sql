@@ -23,13 +23,14 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- USUARIO
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `usuario` (
-  `ci`           varchar(8)   NOT NULL,
-  `nombre`       varchar(50)  NOT NULL,
-  `apellido`     varchar(50)  NOT NULL,
-  `contrasenia`  varchar(255) NOT NULL,
-  `email`        varchar(100) NOT NULL,
-  `rol`          varchar(20)  NOT NULL CHECK (`rol` IN ('ADMINISTRADOR', 'CLIENTE')),
-  `especialidad` varchar(100) DEFAULT NULL,
+  `ci`            varchar(8)   NOT NULL,
+  `nombre`        varchar(50)  NOT NULL,
+  `apellido`      varchar(50)  NOT NULL,
+  `contrasenia`   varchar(255) NOT NULL,
+  `email`         varchar(100) NOT NULL,
+  `rol`           varchar(20)  NOT NULL CHECK (`rol` IN ('ADMINISTRADOR', 'CLIENTE')),
+  `especialidad`  varchar(100) DEFAULT NULL,
+  `estado_cuenta` varchar(20)  NOT NULL DEFAULT 'ACTIVA' CHECK (`estado_cuenta` IN ('ACTIVA', 'INACTIVA')),
   PRIMARY KEY (`ci`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -52,7 +53,7 @@ CREATE TABLE IF NOT EXISTS `telefono` (
 -- Los equipos de un mismo tipo comparten el nombre: el catálogo
 -- del cliente los agrupa por nombre.
 --
---En PROCESO
+-- En PROCESO
 -- estado (ver Config/Estados.php): 
 --   DISPONIBLE -> PRESTADO          (entrega de un préstamo; solo SERIE)
 --   PRESTADO   -> DISPONIBLE        (devolución sin daños)
@@ -79,30 +80,32 @@ CREATE TABLE IF NOT EXISTS `material` (
   PRIMARY KEY (`id_material`),
   UNIQUE KEY `uq_material_serie` (`id_serie`),
   KEY `idx_material_nombre_estado` (`nombre`, `estado`),
+  
   -- SERIE: tiene serie y es una sola unidad; CANTIDAD: no tiene serie
   CONSTRAINT `chk_material_tipo` CHECK (
         (`tipo_control` = 'SERIE'    AND `id_serie` IS NOT NULL AND `cantidad_total` = 1)
-    OR (`tipo_control` = 'CANTIDAD' AND `id_serie` IS NULL)),
+     OR (`tipo_control` = 'CANTIDAD' AND `id_serie` IS NULL)),
+  
   CONSTRAINT `chk_material_cantidades` CHECK (
         `cantidad_total` >= 0 AND `cantidad_disponible` BETWEEN 0 AND `cantidad_total`),
-  -- Una línea de consumibles nunca está PRESTADA como un todo (Esto significa que si el estado es PRESTADO y hablamos de un material que el tipo_control es de SERIE, 
-  -- entonces cuenta como uno solo y no la cantidad total de consumibles que hay en la línea. Por eso se hace esta restricción)
+  
+  -- Una línea de consumibles nunca está PRESTADA como un todo
   CONSTRAINT `chk_material_prestado` CHECK (
         `estado` <> 'PRESTADO' OR `tipo_control` = 'SERIE'),
+  
   -- En un equipo, el disponible acompaña al estado
   CONSTRAINT `chk_material_serie_disp` CHECK (
         `tipo_control` = 'CANTIDAD'
-    OR `cantidad_disponible` = (CASE WHEN `estado` = 'DISPONIBLE' THEN 1 ELSE 0 END)),
+     OR `cantidad_disponible` = (CASE WHEN `estado` = 'DISPONIBLE' THEN 1 ELSE 0 END)),
+  
   -- La baja lógica guarda cuándo se hizo
   CONSTRAINT `chk_material_baja` CHECK (
-        (`estado` = 'DADO_DE_BAJA') = (`fecha_baja` IS NOT NULL))
+        (`estado` = 'DADO_DE_BAJA' AND `fecha_baja` IS NOT NULL)
+     OR (`estado` <> 'DADO_DE_BAJA' AND `fecha_baja` IS NULL))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- ------------------------------------------------------------
 -- HISTORIAL_ESTADO_MATERIAL  (v7, nueva)
--- Una fila por cada cambio de estado de un material: quién, cuándo,
--- por qué y, si corresponde, en qué préstamo. Es la traza que pide
--- RNF7 y la tabla donde se evalúa el estado de cada unidad.
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `historial_estado_material` (
   `id_cambio`       int(11) NOT NULL AUTO_INCREMENT,
@@ -124,9 +127,6 @@ CREATE TABLE IF NOT EXISTS `historial_estado_material` (
 
 -- ------------------------------------------------------------
 -- SOLICITUD
--- estado: PENDIENTE -> APROBADO | RECHAZADO | CANCELADO
---         APROBADO  -> ACTIVO (entrega) | CANCELADO
---         ACTIVO    -> FINALIZADO (devolución de todo lo prestado)
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `solicitud` (
   `id_solicitud`     int(11) NOT NULL AUTO_INCREMENT,
@@ -157,8 +157,6 @@ CREATE TABLE IF NOT EXISTS `prestamo` (
 
 -- ------------------------------------------------------------
 -- PRESTAMO_PEDIDO  (v7, nueva)
--- Lo que el cliente pidió, por nombre de material y cantidad
--- («2 Ceibalitas»). Todavía no hay unidades asignadas.
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `prestamo_pedido` (
   `id_solicitud`    int(11) NOT NULL,
@@ -169,10 +167,6 @@ CREATE TABLE IF NOT EXISTS `prestamo_pedido` (
 
 -- ------------------------------------------------------------
 -- PRESTAMO_MATERIAL  (v7)
--- Lo que se entregó. La completa el administrador
--- al entregar: una fila por cada equipo (SERIE, cantidad = 1) o
--- por cada línea de consumibles (CANTIDAD). Al devolver se anota
--- la fecha, cuánto volvió y en qué estado quedó el equipo.
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `prestamo_material` (
   `id_solicitud`      int(11) NOT NULL,
@@ -213,20 +207,19 @@ CREATE TABLE IF NOT EXISTS `reserva_material` (
 
 -- ------------------------------------------------------------
 -- HISTORIAL_SOLICITUD
--- (estado puede ser NULL; si tiene valor, debe ser uno válido)
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `historial_solicitud` (
-  `id_historial`     int(11) NOT NULL AUTO_INCREMENT,
-  `id_solicitud_origen` int(11) DEFAULT NULL,  -- v7: solicitud archivada
-  `tipo`             varchar(50) DEFAULT NULL,
-  `fecha_archivo`    datetime DEFAULT NULL,
-  `estado`           varchar(30) DEFAULT NULL
-                    CHECK (`estado` IS NULL OR `estado` IN ('PENDIENTE', 'APROBADO', 'RECHAZADO', 'ACTIVO', 'FINALIZADO', 'CANCELADO')),
-  `fecha_solicitud`  datetime DEFAULT NULL,
-  `fecha_validacion` datetime DEFAULT NULL,
-  `motivo_rechazo`   text DEFAULT NULL,
-  `ci_cliente`       varchar(8) NOT NULL,
-  `ci_administrador` varchar(8) DEFAULT NULL,
+  `id_historial`        int(11) NOT NULL AUTO_INCREMENT,
+  `id_solicitud_origen` int(11) DEFAULT NULL,
+  `tipo`                varchar(50) DEFAULT NULL,
+  `fecha_archivo`       datetime DEFAULT NULL,
+  `estado`              varchar(30) DEFAULT NULL
+                        CHECK (`estado` IS NULL OR `estado` IN ('PENDIENTE', 'APROBADO', 'RECHAZADO', 'ACTIVO', 'FINALIZADO', 'CANCELADO')),
+  `fecha_solicitud`     datetime DEFAULT NULL,
+  `fecha_validacion`    datetime DEFAULT NULL,
+  `motivo_rechazo`      text DEFAULT NULL,
+  `ci_cliente`          varchar(8) NOT NULL,
+  `ci_administrador`    varchar(8) DEFAULT NULL,
   PRIMARY KEY (`id_historial`),
   KEY `ci_cliente` (`ci_cliente`),
   KEY `ci_administrador` (`ci_administrador`),

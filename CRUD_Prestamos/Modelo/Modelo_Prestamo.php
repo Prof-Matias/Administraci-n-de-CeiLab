@@ -1,6 +1,5 @@
 <?php
 /**
- * Modelo_Prestamo.php  (v7)
  *
  * Ciclo de un préstamo:
  *   1. solicitar  (cliente)  -> PENDIENTE. Pide por nombre: «2 Ceibalitas».

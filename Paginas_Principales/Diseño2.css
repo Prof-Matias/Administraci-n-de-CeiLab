@@ -668,3 +668,28 @@ body.dark-mode .badge-rol {
   color: #60a5fa !important;
 }
 
+/* ---- Baja lógica de usuarios ---- */
+.tabla-modal tr.fila-inactiva td {
+    background-color: #f1f3f5;
+    color: #9ca3af;
+}
+.tabla-modal tr.fila-inactiva td:not(.celda-acciones) {
+    opacity: 0.6;
+}
+.tabla-modal tr.fila-inactiva td.celda-acciones {
+    opacity: 1;
+}
+
+.btn-desactivar {
+    background-color: #f59e0b;
+    color: #fff;
+}
+.btn-modal:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+body.dark-mode .tabla-modal tr.fila-inactiva td {
+    background-color: #2a2d34;
+    color: #6b7280;
+}

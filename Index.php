@@ -49,7 +49,7 @@
         </div>
       <?php endif; ?>
 
-      <?php if (isset($_GET['error']) && $_GET['error'] == "usuario_eliminado"): ?>
+      <?php if (isset($_GET['error']) && $_GET['error'] == "desactivada"): ?>
         <div class="alert alert-danger mt-2" role="alert">
           La sesión ha expirado o la cuenta ya no existe.
         </div>

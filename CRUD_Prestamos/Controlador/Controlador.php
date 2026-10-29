@@ -1,8 +1,5 @@
 <?php
 /**
- * Controlador de préstamos (v7). Responde JSON:
- *   { "success": true,  "data": ... }
- *   { "success": false, "message": "...", "errores": ["...", ...] }
  *
  * Acciones del cliente:        catalogo*, solicitar, mis_prestamos, prestamo_bloqueante, cancelar
  * Acciones del administrador:  listar, detalle, aprobar, rechazar,

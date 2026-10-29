@@ -204,45 +204,78 @@
         }
 
         async function cargarUsuarios() {
-            try {
-                const res = await fetch(`${RUTA_CONTROLADOR}?action=listar`);
-                const usuarios = await res.json();
+    try {
+        const res = await fetch(`${RUTA_CONTROLADOR}?action=listar`);
+        const usuarios = await res.json();
 
-                const tbody = document.getElementById('bodyTablaUsuarios');
-                if (!tbody) return;
+        const tbody = document.getElementById('bodyTablaUsuarios');
+        if (!tbody) return;
 
-                if (!Array.isArray(usuarios) || usuarios.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;">No hay usuarios registrados.</td></tr>`;
-                    return;
-                }
-
-                tbody.innerHTML = usuarios.map(u => {
-                    const cedulaVal = u.ci || u.cedula || '-';
-                    const telefonosTexto = (Array.isArray(u.telefonos) && u.telefonos.length > 0) 
-                        ? u.telefonos.join(', ') 
-                        : '-';
-
-                    return `
-                        <tr>
-                            <td>${cedulaVal}</td>
-                            <td>${u.nombre || '-'}</td>
-                            <td>${u.apellido || '-'}</td>
-                            <td>${u.email || u.correo || '-'}</td>
-                            <td>${telefonosTexto}</td>
-                            <td>${u.rol || '-'}</td>
-                            <td>${u.especialidad || '-'}</td>
-                            <td style="white-space: nowrap;">
-                                <button class="btn-modal btn-editar" onclick="editarUsuario('${cedulaVal}')">Editar</button>
-                                <button class="btn-modal btn-eliminar" onclick="eliminarUsuario('${cedulaVal}')">Eliminar</button>
-                            </td>
-                        </tr>
-                    `;
-                }).join('');
-            } catch (error) {
-                console.error("Error al cargar lista de usuarios:", error);
-            }
+        if (!Array.isArray(usuarios) || usuarios.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;">No hay usuarios registrados.</td></tr>`;
+            return;
         }
 
+        tbody.innerHTML = usuarios.map(u => {
+            const cedulaVal = u.ci || u.cedula || '-';
+            const telefonosTexto = (Array.isArray(u.telefonos) && u.telefonos.length > 0)
+                ? u.telefonos.join(', ')
+                : '-';
+
+            const inactiva = String(u.estado_cuenta || '').trim().toUpperCase() === 'INACTIVA';
+
+            const botonEstado = inactiva
+                ? `<button class="btn-modal btn-crear" onclick="cambiarEstadoUsuario('${cedulaVal}', 'ACTIVA')">Reactivar</button>`
+                : `<button class="btn-modal btn-desactivar" onclick="cambiarEstadoUsuario('${cedulaVal}', 'INACTIVA')">Desactivar</button>`;
+
+            const botonEditar = inactiva
+                ? `<button class="btn-modal btn-editar" disabled>Editar</button>`
+                : `<button class="btn-modal btn-editar" onclick="editarUsuario('${cedulaVal}')">Editar</button>`;
+
+            return `
+                <tr class="${inactiva ? 'fila-inactiva' : ''}">
+                    <td>${cedulaVal}</td>
+                    <td>${u.nombre || '-'}</td>
+                    <td>${u.apellido || '-'}</td>
+                    <td>${u.email || u.correo || '-'}</td>
+                    <td>${telefonosTexto}</td>
+                    <td>${u.rol || '-'}</td>
+                    <td>${u.especialidad || '-'}</td>
+                    <td class="celda-acciones" style="white-space: nowrap;">
+                        ${botonEditar}
+                        ${botonEstado}
+                        <button class="btn-modal btn-eliminar" onclick="eliminarUsuario('${cedulaVal}')">Eliminar</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error("Error al cargar lista de usuarios:", error);
+    }
+}
+
+async function cambiarEstadoUsuario(cedula, nuevoEstado) {
+    const accion = nuevoEstado === 'INACTIVA' ? 'desactivar' : 'reactivar';
+    if (!confirm(`¿Seguro que querés ${accion} esta cuenta?`)) return;
+
+    try {
+        const res = await fetch(`${RUTA_CONTROLADOR}?action=cambiarEstado`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cedula: cedula, estado: nuevoEstado })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            cargarUsuarios();
+        } else {
+            alert(data.message || 'No se pudo cambiar el estado de la cuenta.');
+        }
+    } catch (error) {
+        console.error("Error al cambiar estado:", error);
+        alert('Error de conexión con el servidor.');
+    }
+}
         function abrirModalFormulario() {
             esEdicion = false;
             const form = document.getElementById('formUsuario');

@@ -23,7 +23,7 @@ if (!isset($_SESSION['Rol'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="Diseño_Principal.css?v=4">
-    <link rel="stylesheet" href="Diseño2.css?v=2">
+    <link rel="stylesheet" href="Diseño2.css?v=3">
     <link rel="stylesheet" href="animaciones.css">
     <title>CeiLab - Gestión Principal</title>
 </head>
@@ -162,7 +162,7 @@ if (!isset($_SESSION['Rol'])) {
                             <th>Teléfono(s)</th>
                             <th>Rol</th>
                             <th>Especialidad</th>
-                            <th style="width: 160px;">Acciones</th>
+                            <th style="width: 280px;">Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="bodyTablaUsuarios"></tbody>
@@ -357,53 +357,52 @@ if (!isset($_SESSION['Rol'])) {
         </div>
     </div>
     
-<!-- VENTANA MODAL: VER PERFIL DE USUARIO -->
-<!-- VENTANA MODAL: VER PERFIL DE USUARIO -->
-<div class="modal-overlay" id="modalVerPerfil">
-    <div class="modal-content perfil-card-modal">
-        <div class="modal-header">
-            <h3>Perfil de Usuario</h3>
-            <button type="button" class="modal-close" onclick="cerrarModal('modalVerPerfil')">&times;</button>
-        </div>
-        
-        <div class="perfil-card-body">
-            <!-- Encabezado con Avatar -->
-            <div class="perfil-avatar-section">
-                <div class="avatar-circle">
-                    <?php echo strtoupper(substr($_SESSION['Nombre'], 0, 1)); ?>
-                </div>
-                <h4><?php echo htmlspecialchars($_SESSION['Nombre'] . ' ' . ($_SESSION['Apellido'] ?? '')); ?></h4>
-                <span class="badge-rol"><?php echo htmlspecialchars($_SESSION['Rol']); ?></span>
+    <!-- VENTANA MODAL: VER PERFIL DE USUARIO -->
+    <div class="modal-overlay" id="modalVerPerfil">
+        <div class="modal-content perfil-card-modal">
+            <div class="modal-header">
+                <h3>Perfil de Usuario</h3>
+                <button type="button" class="modal-close" onclick="cerrarModal('modalVerPerfil')">&times;</button>
             </div>
-
-            <!-- Lista de Datos en Filas Separadas -->
-            <div class="perfil-details-list">
-                <div class="perfil-item">
-                    <span class="item-label">Cédula de Identidad</span>
-                    <span class="item-value"><?php echo htmlspecialchars($_SESSION['Cedula'] ?? $_SESSION['CI'] ?? '10000001'); ?></span>
+            
+            <div class="perfil-card-body">
+                <!-- Encabezado con Avatar -->
+                <div class="perfil-avatar-section">
+                    <div class="avatar-circle">
+                        <?php echo strtoupper(substr($_SESSION['Nombre'], 0, 1)); ?>
+                    </div>
+                    <h4><?php echo htmlspecialchars($_SESSION['Nombre'] . ' ' . ($_SESSION['Apellido'] ?? '')); ?></h4>
+                    <span class="badge-rol"><?php echo htmlspecialchars($_SESSION['Rol']); ?></span>
                 </div>
 
-                <div class="perfil-item">
-                    <span class="item-label">Correo Electrónico</span>
-                    <span class="item-value"><?php echo htmlspecialchars($_SESSION['Correo'] ?? $_SESSION['Email'] ?? 'lucia.fernandez@cerpdeleste.edu.uy'); ?></span>
+                <!-- Lista de Datos en Filas Separadas -->
+                <div class="perfil-details-list">
+                    <div class="perfil-item">
+                        <span class="item-label">Cédula de Identidad</span>
+                        <span class="item-value"><?php echo htmlspecialchars($_SESSION['Cedula'] ?? $_SESSION['CI'] ?? '10000001'); ?></span>
+                    </div>
+
+                    <div class="perfil-item">
+                        <span class="item-label">Correo Electrónico</span>
+                        <span class="item-value"><?php echo htmlspecialchars($_SESSION['Correo'] ?? $_SESSION['Email'] ?? 'lucia.fernandez@cerpdeleste.edu.uy'); ?></span>
+                    </div>
+
+                    <div class="perfil-item">
+                        <span class="item-label">Especialidad / Cargo</span>
+                        <span class="item-value"><?php echo htmlspecialchars($_SESSION['Especialidad'] ?? 'Sin especificar'); ?></span>
+                    </div>
                 </div>
 
-                <div class="perfil-item">
-                    <span class="item-label">Especialidad / Cargo</span>
-                    <span class="item-value"><?php echo htmlspecialchars($_SESSION['Especialidad'] ?? 'Sin especificar'); ?></span>
-                </div>
+                <!-- Acciones -->
+                <button type="button" class="btn-editar-perfil-main" onclick="abrirEditarPerfilPropio()">
+                    Editar mis Datos
+                </button>
             </div>
-
-            <!-- Acciones -->
-            <button type="button" class="btn-editar-perfil-main" onclick="abrirEditarPerfilPropio()">
-                Editar mis Datos
-            </button>
         </div>
     </div>
-</div>
 
 
-<!-- ==========================================================================
+    <!-- ==========================================================================
          MODAL: CATÁLOGO DE PRODUCTOS (VISTA CLIENTE)
          ========================================================================== -->
     <div class="modal-overlay" id="modalSolicitarPrestamo">
@@ -442,7 +441,7 @@ if (!isset($_SESSION['Rol'])) {
 </script>
 
 <!-- 1. Primero cargamos el Script general de la página donde viven toggleDropdown y funciones base -->
-<script src="Script.js?v=5"></script>
+<script src="Script.js?v=6"></script>
 
 <!-- 2. Luego incluimos la vista de préstamos (que define abrirModalSolicitarPrestamo y los fetch) UNA SOLA VEZ -->
 <?php include __DIR__ . '/../CRUD_Prestamos/Vista/Vista_Prestamos.php'; ?>
