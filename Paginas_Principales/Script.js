@@ -244,7 +244,6 @@
                     <td class="celda-acciones" style="white-space: nowrap;">
                         ${botonEditar}
                         ${botonEstado}
-                        <button class="btn-modal btn-eliminar" onclick="eliminarUsuario('${cedulaVal}')">Eliminar</button>
                     </td>
                 </tr>
             `;
@@ -264,7 +263,17 @@ async function cambiarEstadoUsuario(cedula, nuevoEstado) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ cedula: cedula, estado: nuevoEstado })
         });
-        const data = await res.json();
+
+        const textoRespuesta = await res.text(); // Capturamos el texto crudo
+        let data;
+        try {
+            data = JSON.parse(textoRespuesta); // Intentamos convertirlo a JSON
+        } catch (e) {
+            // Si no es JSON, mostramos el error real que envió PHP en la pantalla
+            console.error("Respuesta cruda del servidor:", textoRespuesta);
+            alert("Error de PHP:\n" + textoRespuesta.substring(0, 400));
+            return;
+        }
 
         if (data.success) {
             cargarUsuarios();
@@ -272,9 +281,10 @@ async function cambiarEstadoUsuario(cedula, nuevoEstado) {
             alert(data.message || 'No se pudo cambiar el estado de la cuenta.');
         }
     } catch (error) {
-        console.error("Error al cambiar estado:", error);
-        alert('Error de conexión con el servidor.');
+        console.error("Error de red:", error);
+        alert('Error de red o de conexión.');
     }
+
 }
         function abrirModalFormulario() {
             esEdicion = false;

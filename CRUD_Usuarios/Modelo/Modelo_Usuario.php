@@ -159,13 +159,19 @@ class Modelo_Usuario {
         }
     }
 
-    public function eliminarUsuario($ci) {
-        try {
-            $stmt = $this->conexion->prepare("DELETE FROM usuario WHERE ci = ?");
-            return $stmt->execute([$ci]);
-        } catch (PDOException $e) {
-            return false;
-        }
+        /**
+     * Verifica si el usuario tiene un préstamo activo (ya entregado).
+     * Retorna el array con el id_solicitud o false si no tiene ninguno.
+     */
+    public function obtenerPrestamoActivo($cedula) {
+        $st = $this->conexion->prepare(
+            "SELECT id_solicitud 
+            FROM solicitud 
+            WHERE ci_cliente = ? AND estado = 'ACTIVO' 
+            LIMIT 1"
+        );
+        $st->execute([$cedula]);
+        return $st->fetch(PDO::FETCH_ASSOC);
     }
 }
 

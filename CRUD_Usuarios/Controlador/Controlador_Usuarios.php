@@ -124,58 +124,51 @@ switch ($action) {
 
     // ---- BAJA LÓGICA: desactivar / reactivar cuenta ----
     case 'cambiarEstado':
-        if ($rolSesion !== 'ADMINISTRADOR') {
-            echo json_encode(['success' => false, 'message' => 'No tenés permisos para esta acción.']);
+    if ($rolSesion !== 'ADMINISTRADOR') {
+        echo json_encode(['success' => false, 'message' => 'No tenés permisos para esta acción.']);
+        exit();
+    }
+
+    $input  = json_decode(file_get_contents('php://input'), true);
+    $cedula = preg_replace('/[^0-9]/', '', $input['cedula'] ?? '');
+    $estado = strtoupper(trim($input['estado'] ?? ''));
+
+    if ($cedula === '' || !in_array($estado, ['ACTIVA', 'INACTIVA'], true)) {
+        echo json_encode(['success' => false, 'message' => 'Datos inválidos.']);
+        exit();
+    }
+
+    // Un admin no puede desactivar su propia cuenta
+    if ($estado === 'INACTIVA' && $cedula === $cedulaSesion) {
+        echo json_encode(['success' => false, 'message' => 'No podés desactivar tu propia cuenta.']);
+        exit();
+    }
+
+    $modelo = new Modelo_Usuario();
+
+    // ── NUEVA RESTRICCIÓN: Validar si intenta desactivar y tiene préstamos activos ──
+    if ($estado === 'INACTIVA') {
+        $prestamoActivo = $modelo->obtenerPrestamoActivo($cedula);
+        if ($prestamoActivo) {
+            $idPrestamo = $prestamoActivo['id_solicitud'];
+            echo json_encode([
+                'success' => false, 
+                'message' => "No se puede dar de baja a este usuario porque tiene préstamos pendientes (ID del préstamo: #{$idPrestamo})."
+            ]);
             exit();
         }
+    }
+    // ─────────────────────────────────────────────────────────────────────────────
 
-        $input  = json_decode(file_get_contents('php://input'), true);
-        $cedula = preg_replace('/[^0-9]/', '', $input['cedula'] ?? '');
-        $estado = strtoupper(trim($input['estado'] ?? ''));
+    $ok = $modelo->cambiarEstadoCuenta($cedula, $estado);
 
-        if ($cedula === '' || !in_array($estado, ['ACTIVA', 'INACTIVA'], true)) {
-            echo json_encode(['success' => false, 'message' => 'Datos inválidos.']);
-            exit();
-        }
+    echo json_encode([
+        'success' => $ok,
+        'message' => $ok
+            ? ($estado === 'INACTIVA' ? 'Cuenta desactivada.' : 'Cuenta reactivada.')
+            : 'No se pudo cambiar el estado de la cuenta.'
+    ]);
+    break;
 
-        // Un admin no puede desactivar su propia cuenta
-        if ($estado === 'INACTIVA' && $cedula === $cedulaSesion) {
-            echo json_encode(['success' => false, 'message' => 'No podés desactivar tu propia cuenta.']);
-            exit();
-        }
-
-        $modelo = new Modelo_Usuario();
-        $ok = $modelo->cambiarEstadoCuenta($cedula, $estado);
-
-        echo json_encode([
-            'success' => $ok,
-            'message' => $ok
-                ? ($estado === 'INACTIVA' ? 'Cuenta desactivada.' : 'Cuenta reactivada.')
-                : 'No se pudo cambiar el estado de la cuenta.'
-        ]);
-        break;
-
-    case 'eliminar':
-        if ($rolSesion !== 'ADMINISTRADOR') {
-            echo json_encode(['success' => false, 'message' => 'No tenés permisos para esta acción.']);
-            exit();
-        }
-
-        $cedula = $_GET['cedula'] ?? $_POST['cedula'] ?? '';
-        if (!empty($cedula)) {
-            if ((string)$cedula === $cedulaSesion) {
-                echo json_encode(['success' => false, 'message' => 'No podés eliminar tu propia cuenta.']);
-                exit();
-            }
-            $modelo = new Modelo_Usuario();
-            $resultado = $modelo->eliminarUsuario($cedula);
-            echo json_encode(['success' => $resultado]);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Cédula no proporcionada.']);
-        }
-        break;
-
-    default:
-        echo json_encode(['success' => false, 'message' => 'Acción no válida.']);
-        break;
+    
 }
