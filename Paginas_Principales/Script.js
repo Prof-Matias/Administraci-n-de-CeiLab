@@ -1,3 +1,127 @@
+/* SISTEMA DE MODALES REEMPLAZO DE LOCALHOST*/
+(function () {
+    'use strict';
+
+    let cola = Promise.resolve();
+    function encolar(fn) {
+        const p = cola.then(fn, fn);
+        cola = p.catch(() => {});
+        return p;
+    }
+
+    const ICONOS = { info: 'i', ok: '✓', error: '!', aviso: '!', pregunta: '?' };
+    const TITULOS = { info: 'Información', ok: 'Listo', error: 'Error', aviso: 'Atención', pregunta: 'Confirmar' };
+
+    function adivinarTipo(msg) {
+        const t = String(msg).toLowerCase();
+        if (/\berror\b|no se pudo|no se encontr|inesperada|fall[oó]|conexi[oó]n|obligatori/.test(t)) return 'error';
+        if (/con [eé]xito|correctamente|registrada|actualizado|enviada|guardado|devoluci[oó]n (completa|parcial)/.test(t)) return 'ok';
+        if (/marc[aá] al menos|solo se pueden|no hay datos|hay \d+ libres|debe /.test(t)) return 'aviso';
+        return 'info';
+    }
+
+    function mostrar({ mensaje, tipo, titulo, aceptar, cancelar, peligro, entrada, placeholder }) {
+        return encolar(() => new Promise(resolve => {
+            const previo = document.activeElement;
+
+            const overlay = document.createElement('div');
+            overlay.className = 'cl-dlg-overlay';
+            const dlg = document.createElement('div');
+            dlg.className = `cl-dlg cl-dlg-${tipo}`;
+            dlg.setAttribute('role', cancelar ? 'alertdialog' : 'dialog');
+            dlg.setAttribute('aria-modal', 'true');
+
+            const head = document.createElement('div');
+            head.className = 'cl-dlg-head';
+            const ico = document.createElement('span');
+            ico.className = 'cl-dlg-icono';
+            ico.textContent = ICONOS[tipo] || 'i';
+            const tit = document.createElement('span');
+            tit.textContent = titulo || TITULOS[tipo] || 'Aviso';
+            head.append(ico, tit);
+
+            const body = document.createElement('div');
+            body.className = 'cl-dlg-body';
+            body.textContent = String(mensaje ?? '');
+            let input = null;
+            if (entrada) {
+                input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'cl-dlg-input';
+                input.placeholder = placeholder || '';
+                body.appendChild(input);
+            }
+
+            const foot = document.createElement('div');
+            foot.className = 'cl-dlg-foot';
+            let btnCancelar = null;
+            if (cancelar) {
+                btnCancelar = document.createElement('button');
+                btnCancelar.type = 'button';
+                btnCancelar.className = 'cl-dlg-btn cl-sec';
+                btnCancelar.textContent = cancelar;
+                foot.appendChild(btnCancelar);
+            }
+            const btnOk = document.createElement('button');
+            btnOk.type = 'button';
+            btnOk.className = 'cl-dlg-btn' + (peligro ? ' cl-peligro' : '');
+            btnOk.textContent = aceptar;
+            foot.appendChild(btnOk);
+
+            dlg.append(head, body, foot);
+            overlay.appendChild(dlg);
+            document.body.appendChild(overlay);
+
+            function cerrar(valor) {
+                document.removeEventListener('keydown', teclas, true);
+                overlay.remove();
+                if (previo && typeof previo.focus === 'function') { try { previo.focus(); } catch (e) {} }
+                resolve(valor);
+            }
+            const valorAceptar = () => (entrada ? input.value : true);
+            const valorCancelar = () => (entrada ? null : (cancelar ? false : true));
+
+            function teclas(e) {
+                if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cerrar(valorCancelar()); }
+                else if (e.key === 'Enter' && e.target !== btnCancelar) { e.preventDefault(); e.stopPropagation(); cerrar(valorAceptar()); }
+                else if (e.key === 'Tab') {
+                    const foc = [...dlg.querySelectorAll('input,button')];
+                    const i = foc.indexOf(document.activeElement);
+                    e.preventDefault();
+                    foc[(i + (e.shiftKey ? -1 : 1) + foc.length) % foc.length].focus();
+                }
+            }
+            document.addEventListener('keydown', teclas, true);
+
+            btnOk.addEventListener('click', () => cerrar(valorAceptar()));
+            if (btnCancelar) btnCancelar.addEventListener('click', () => cerrar(valorCancelar()));
+            overlay.addEventListener('mousedown', e => { if (e.target === overlay && cancelar) cerrar(valorCancelar()); });
+
+            (input || btnOk).focus();
+        }));
+    }
+
+    // API pública global
+    window.avisar = (msg, o = {}) => mostrar({
+        mensaje: msg, tipo: o.tipo || adivinarTipo(msg), titulo: o.titulo,
+        aceptar: o.textoAceptar || 'Aceptar'
+    }).then(() => undefined);
+
+    window.confirmar = (msg, o = {}) => mostrar({
+        mensaje: msg, tipo: 'pregunta', titulo: o.titulo, peligro: o.peligro,
+        aceptar: o.textoAceptar || 'Aceptar', cancelar: o.textoCancelar || 'Cancelar'
+    });
+
+    window.pedirTexto = (msg, o = {}) => mostrar({
+        mensaje: msg, tipo: 'pregunta', titulo: o.titulo, peligro: o.peligro, entrada: true,
+        placeholder: o.placeholder, aceptar: o.textoAceptar || 'Aceptar', cancelar: o.textoCancelar || 'Cancelar'
+    });
+
+    // Sobrescribe alert() nativo para redirigirlo al modal sin 'localhost'
+    window.alert = function (msg) { window.avisar(msg); };
+})();
+
+
 // Rutas globales a los controladores PHP
         const RUTA_CONTROLADOR = '../CRUD_Usuarios/Controlador/Controlador_Usuarios.php';
         const RUTA_CONTROLADOR_PRODUCTOS = '../CRUD_Productos/Controlador/Controlador_Productos.php';
@@ -252,10 +376,15 @@
         console.error("Error al cargar lista de usuarios:", error);
     }
 }
-
 async function cambiarEstadoUsuario(cedula, nuevoEstado) {
     const accion = nuevoEstado === 'INACTIVA' ? 'desactivar' : 'reactivar';
-    if (!confirm(`¿Seguro que querés ${accion} esta cuenta?`)) return;
+    
+    // Reemplazo de confirm() nativo por window.confirmar()
+    const estaSeguro = await window.confirmar(`¿Seguro que querés ${accion} esta cuenta?`, {
+        titulo: 'Confirmar cambio de estado',
+        peligro: accion === 'desactivar'
+    });
+    if (!estaSeguro) return;
 
     try {
         const res = await fetch(`${RUTA_CONTROLADOR}?action=cambiarEstado`, {
@@ -264,64 +393,26 @@ async function cambiarEstadoUsuario(cedula, nuevoEstado) {
             body: JSON.stringify({ cedula: cedula, estado: nuevoEstado })
         });
 
-        const textoRespuesta = await res.text(); // Capturamos el texto crudo
+        const textoRespuesta = await res.text();
         let data;
         try {
-            data = JSON.parse(textoRespuesta); // Intentamos convertirlo a JSON
+            data = JSON.parse(textoRespuesta);
         } catch (e) {
-            // Si no es JSON, mostramos el error real que envió PHP en la pantalla
             console.error("Respuesta cruda del servidor:", textoRespuesta);
-            alert("Error de PHP:\n" + textoRespuesta.substring(0, 400));
+            window.avisar("Error de PHP:\n" + textoRespuesta.substring(0, 400));
             return;
         }
 
         if (data.success) {
             cargarUsuarios();
         } else {
-            alert(data.message || 'No se pudo cambiar el estado de la cuenta.');
+            window.avisar(data.message || 'No se pudo cambiar el estado de la cuenta.');
         }
     } catch (error) {
         console.error("Error de red:", error);
-        alert('Error de red o de conexión.');
+        window.avisar('Error de red o de conexión.');
     }
-
 }
-        function abrirModalFormulario() {
-            esEdicion = false;
-            const form = document.getElementById('formUsuario');
-            if (form) form.reset();
-
-            const cedulaOrig = document.getElementById('cedula_original');
-            if (cedulaOrig) cedulaOrig.value = '';
-
-            const cedulaInput = document.getElementById('cedula');
-            if (cedulaInput) cedulaInput.readOnly = false;
-
-            const errorCedula = document.getElementById('errorCedula');
-            if (errorCedula) errorCedula.style.display = 'none';
-
-            const listaTel = document.getElementById('lista-telefonos');
-            if (listaTel) {
-                listaTel.innerHTML = '';
-                agregarCampoTelefono('', true);
-            }
-
-            const labelTel = document.getElementById('labelTelefonos');
-            if (labelTel) labelTel.innerText = 'Teléfono(s) *';
-
-            const titulo = document.getElementById('tituloFormUsuario');
-            if (titulo) titulo.innerText = 'Nuevo Usuario';
-
-            const helpPass = document.getElementById('helpPass');
-            if (helpPass) helpPass.style.display = 'none';
-
-            const passInput = document.getElementById('contrasena');
-            if (passInput) passInput.required = true;
-
-            const modal = document.getElementById('modalFormularioUsuario');
-            if (modal) modal.classList.add('active');
-        }
-
         async function editarUsuario(cedula) {
             esEdicion = true;
             try {
@@ -442,23 +533,29 @@ async function cambiarEstadoUsuario(cedula, nuevoEstado) {
             }
         }
 
-        async function eliminarUsuario(cedula) {
-            if (confirm('¿Desea eliminar el usuario seleccionado?')) {
-                try {
-                    const res = await fetch(`${RUTA_CONTROLADOR}?action=eliminar&cedula=${cedula}`);
-                    const data = await res.json();
-                    if (data.success) {
-                        alert("Usuario eliminado correctamente.");
-                        cargarUsuarios();
-                    } else {
-                        alert(data.message || 'No se pudo eliminar el usuario.');
-                    }
-                } catch (error) {
-                    console.error("Error al eliminar usuario:", error);
-                    alert("Error de conexión al intentar eliminar el usuario.");
-                }
+       async function eliminarUsuario(cedula) {
+    const confirmado = await window.confirmar('¿Desea eliminar el usuario seleccionado?', {
+        titulo: 'Eliminar usuario',
+        peligro: true,
+        textoAceptar: 'Eliminar'
+    });
+
+    if (confirmado) {
+        try {
+            const res = await fetch(`${RUTA_CONTROLADOR}?action=eliminar&cedula=${cedula}`);
+            const data = await res.json();
+            if (data.success) {
+                window.avisar("Usuario eliminado correctamente.");
+                cargarUsuarios();
+            } else {
+                window.avisar(data.message || 'No se pudo eliminar el usuario.');
             }
+        } catch (error) {
+            console.error("Error al eliminar usuario:", error);
+            window.avisar("Error de conexión al intentar eliminar el usuario.");
         }
+    }
+}
 
         /* ==========================================================================
            MÓDULO PRODUCTOS / MATERIALES (ADMINISTRADOR)
@@ -509,19 +606,20 @@ async function cargarProductos() {
             // Botón de historial visible en todos los estados
             const btnHistorial = `<button class="btn-modal" style="background-color: #0284c7; color: white;" onclick="verHistorialProducto(${p.id_material})">Historial</button>`;
 
-            let botonesAccion = '';
-            if (!esBaja) {
-                botonesAccion = `
-                    <button class="btn-modal btn-editar" onclick="editarProducto(${p.id_material})">Editar</button>
-                    <button class="btn-modal btn-eliminar" onclick="BajarMaterial(${p.id_material})">Dar de Baja</button>
-                    ${btnHistorial}
-                `;
-            } else {
-                botonesAccion = `
-                    <button class="btn-modal btn-crear" style="background-color: #28a745;" onclick="reactivarMaterial(${p.id_material})">Reactivar</button>
-                    ${btnHistorial}
-                `;
-            }
+            // Dentro de la función cargarProductos(), actualiza la generación de botones:
+let botonesAccion = '';
+if (!esBaja) {
+    botonesAccion = `
+        <button class="btn-modal btn-editar" onclick="editarProducto(${p.id_material})">Editar</button>
+        <button class="btn-modal" style="background-color: #d97706; color: white;" onclick="abrirModalCambiarEstado(${p.id_material}, '${p.estado}')">Cambiar Estado</button>
+        ${btnHistorial}
+    `;
+} else {
+    botonesAccion = `
+        <button class="btn-modal btn-crear" style="background-color: #28a745;" onclick="reactivarMaterial(${p.id_material})">Reactivar</button>
+        ${btnHistorial}
+    `;
+}
 
             return `
                 <tr style="${esBaja ? 'background-color: #f8f9fa;' : ''}">
@@ -610,30 +708,32 @@ async function verHistorialProducto(idMaterial) {
 }
 
         async function reactivarMaterial(idMaterial) {
-            if (!confirm("¿Estás seguro de que deseas reactivar este producto y restablecerlo como DISPONIBLE?")) {
-                return;
-            }
+    const confirmado = await window.confirmar("¿Estás seguro de que deseas reactivar este producto y restablecerlo como DISPONIBLE?", {
+        titulo: 'Reactivar Producto'
+    });
 
-            try {
-                const res = await fetch(`${RUTA_CONTROLADOR_PRODUCTOS}?action=reactivar`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id_material: idMaterial })
-                });
+    if (!confirmado) return;
 
-                const resultado = await res.json();
+    try {
+        const res = await fetch(`${RUTA_CONTROLADOR_PRODUCTOS}?action=reactivar`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id_material: idMaterial })
+        });
 
-                if (resultado.success) {
-                    alert(resultado.message || "Producto reactivado con éxito.");
-                    cargarProductos();
-                } else {
-                    alert(resultado.message || "No se pudo reactivar el producto.");
-                }
-            } catch (error) {
-                console.error("Error al reactivar:", error);
-                alert("Error de conexión al intentar reactivar el producto.");
-            }
+        const resultado = await res.json();
+
+        if (resultado.success) {
+            window.avisar(resultado.message || "Producto reactivado con éxito.");
+            cargarProductos();
+        } else {
+            window.avisar(resultado.message || "No se pudo reactivar el producto.");
         }
+    } catch (error) {
+        console.error("Error al reactivar:", error);
+        window.avisar("Error de conexión al intentar reactivar el producto.");
+    }
+}
 
         function ajustarFormularioProducto() {
             const tipoSelect = document.getElementById('prod_tipo');
@@ -773,34 +873,39 @@ async function verHistorialProducto(idMaterial) {
         }
 
         async function BajarMaterial(idMaterial) {
-            const motivo = prompt("Ingrese el motivo de la baja del material:");
-            
-            if (motivo === null) return; 
-            if (motivo.trim() === "") {
-                alert("Debe especificar un motivo obligatoriamente.");
-                return;
-            }
+    // Reemplazo de prompt() nativo por window.pedirTexto()
+    const motivo = await window.pedirTexto("Ingrese el motivo de la baja del material:", {
+        titulo: 'Dar de baja material',
+        placeholder: 'Escriba el motivo aquí...',
+        peligro: true
+    });
+    
+    if (motivo === null) return; // Si apretó Cancelar
+    if (motivo.trim() === "") {
+        window.avisar("Debe especificar un motivo obligatoriamente.");
+        return;
+    }
 
-            try {
-                const res = await fetch(`${RUTA_CONTROLADOR_PRODUCTOS}?action=darDeBaja`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id_material: idMaterial, motivo_baja: motivo })
-                });
-                
-                const resultado = await res.json();
+    try {
+        const res = await fetch(`${RUTA_CONTROLADOR_PRODUCTOS}?action=darDeBaja`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id_material: idMaterial, motivo_baja: motivo })
+        });
+        
+        const resultado = await res.json();
 
-                if (resultado.success) {
-                    alert(resultado.message || "Material dado de baja correctamente.");
-                    cargarProductos();
-                } else {
-                    alert(resultado.message || resultado.mensaje || "No se pudo procesar la baja.");
-                }
-            } catch (error) {
-                console.error("Error al dar de baja:", error);
-                alert("Error de conexión al procesar la baja con el servidor.");
-            }
+        if (resultado.success) {
+            window.avisar(resultado.message || "Material dado de baja correctamente.");
+            cargarProductos();
+        } else {
+            window.avisar(resultado.message || resultado.mensaje || "No se pudo procesar la baja.");
         }
+    } catch (error) {
+        console.error("Error al dar de baja:", error);
+        window.avisar("Error de conexión al procesar la baja con el servidor.");
+    }
+}
 
     // Funcion para el modal de imprimir stock
         async function abrirModalStockStock() {
@@ -1197,3 +1302,137 @@ window.abrirModalFormulario = function() {
     if (campoRol) campoRol.style.setProperty('display', 'flex', 'important');
     if (campoEspecialidad) campoEspecialidad.style.setProperty('display', 'flex', 'important');
 };
+
+/**
+ * Despliega un modal flotante estilizado para cambiar el estado del material
+ */
+async function abrirModalCambiarEstado(idMaterial, estadoActual) {
+    const estados = [
+        { valor: 'DISPONIBLE', etiqueta: 'DISPONIBLE' },
+        { valor: 'EN_MANTENIMIENTO', etiqueta: 'EN MANTENIMIENTO' },
+        { valor: 'DADO_DE_BAJA', etiqueta: 'DADO DE BAJA' }
+    ];
+
+    const opcionesHTML = estados.map(e => 
+        `<option value="${e.valor}" ${e.valor === estadoActual ? 'selected' : ''}>${e.etiqueta}</option>`
+    ).join('');
+
+    const contenidoModal = `
+        <div style="display: flex; flex-direction: column; gap: 16px; text-align: left;">
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+                <label for="modal_nuevo_estado" style="font-weight: 600; font-size: 13px; color: #334155;">
+                    Nuevo Estado
+                </label>
+                <select id="modal_nuevo_estado" class="cl-dlg-input" style="margin: 0; padding: 10px 12px; cursor: pointer; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; width: 100%; box-sizing: border-box; background-color: #fff;">
+                    ${opcionesHTML}
+                </select>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+                <label for="modal_motivo_estado" style="font-weight: 600; font-size: 13px; color: #334155;">
+                    Motivo del cambio
+                </label>
+                <textarea id="modal_motivo_estado" class="cl-dlg-input" rows="3" placeholder="Escriba la razón o detalle del cambio..." style="margin: 0; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; resize: vertical; min-height: 80px; width: 100%; box-sizing: border-box; font-family: inherit;"></textarea>
+            </div>
+        </div>
+    `;
+
+    const resultado = await new Promise(resolve => {
+        const overlay = document.createElement('div');
+        overlay.className = 'cl-dlg-overlay';
+
+        const dlg = document.createElement('div');
+        dlg.className = 'cl-dlg cl-dlg-pregunta';
+        dlg.setAttribute('role', 'dialog');
+        dlg.style.maxWidth = '420px';
+        dlg.style.width = '90%';
+
+        dlg.innerHTML = `
+            <div class="cl-dlg-head" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 14px 18px; display: flex; align-items: center; gap: 10px;">
+                <span class="cl-dlg-icono" style="background: #0284c7; color: #fff; width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold;">?</span>
+                <span style="font-weight: 600; font-size: 16px; color: #0f172a;">Cambiar Estado del Material #${idMaterial}</span>
+            </div>
+            <div class="cl-dlg-body" style="padding: 20px 18px;">
+                ${contenidoModal}
+            </div>
+            <div class="cl-dlg-foot" style="padding: 12px 18px; display: flex; justify-content: flex-end; gap: 10px; background: #f8fafc; border-top: 1px solid #e2e8f0;">
+                <button type="button" class="cl-dlg-btn cl-sec" id="btnCancelarEstado" style="padding: 8px 16px; border-radius: 6px; font-weight: 500;">Cancelar</button>
+                <button type="button" class="cl-dlg-btn" id="btnGuardarEstado" style="padding: 8px 16px; border-radius: 6px; font-weight: 500; background: #0284c7;">Guardar Cambio</button>
+            </div>
+        `;
+
+        overlay.appendChild(dlg);
+        document.body.appendChild(overlay);
+
+        const selectEstado = dlg.querySelector('#modal_nuevo_estado');
+        const txtMotivo = dlg.querySelector('#modal_motivo_estado');
+        const btnGuardar = dlg.querySelector('#btnGuardarEstado');
+        const btnCancelar = dlg.querySelector('#btnCancelarEstado');
+
+        txtMotivo.focus();
+
+        const cerrar = (val) => {
+            overlay.remove();
+            resolve(val);
+        };
+
+        btnCancelar.addEventListener('click', () => cerrar(null));
+        btnGuardar.addEventListener('click', () => {
+            const nuevoEstado = selectEstado.value;
+            const motivo = txtMotivo.value.trim();
+
+            if (!motivo) {
+                window.avisar("Debe ingresar un motivo para registrar el cambio de estado.");
+                return;
+            }
+
+            cerrar({ estado: nuevoEstado, motivo: motivo });
+        });
+    });
+
+    if (resultado) {
+        await guardarNuevoEstadoMaterial(idMaterial, resultado.estado, resultado.motivo);
+    }
+}
+
+/**
+ * Petición enviada enviando las claves necesarias para PHP
+ */
+async function guardarNuevoEstadoMaterial(idMaterial, nuevoEstado, motivo) {
+    // Diagnóstico en consola para confirmar qué valor se envía desde el navegador
+    console.log("Enviando a PHP -> ID:", idMaterial, "| Nuevo Estado:", nuevoEstado, "| Motivo:", motivo);
+
+    try {
+        const res = await fetch(`${RUTA_CONTROLADOR_PRODUCTOS}?action=darDeBaja`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                id_material: idMaterial, 
+                nuevo_estado: nuevoEstado,
+                estado: nuevoEstado,
+                motivo_baja: motivo,
+                motivo: motivo
+            })
+        });
+
+        const textoRespuesta = await res.text();
+        let resultado;
+        try {
+            resultado = JSON.parse(textoRespuesta);
+        } catch (e) {
+            console.error("Respuesta no válida del servidor:", textoRespuesta);
+            window.avisar("Error del servidor (PHP):\n" + textoRespuesta.substring(0, 300));
+            return;
+        }
+
+        if (resultado.success) {
+            window.avisar(resultado.message || "Estado del material actualizado con éxito.");
+            cargarProductos();
+        } else {
+            window.avisar(resultado.message || resultado.mensaje || "No se pudo actualizar el estado.");
+        }
+    } catch (error) {
+        console.error("Error al actualizar estado:", error);
+        window.avisar("Error de conexión al procesar el cambio de estado.");
+    }
+}

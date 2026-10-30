@@ -458,9 +458,7 @@ if (!isset($_SESSION['Rol'])) {
         </div>
     </div>
 
-<!-- ==========================================================================
-    CARGA DE SCRIPTS Y CONFIGURACIÓN GLOBAL
-    ========================================================================== -->
+
 <script>
     window.USUARIO_ACTUAL = {
         cedula: "<?php echo $_SESSION['Cedula'] ?? $_SESSION['CI'] ?? ''; ?>",
@@ -474,6 +472,7 @@ if (!isset($_SESSION['Rol'])) {
 
 <!-- 1. Primero cargamos el Script general de la página donde viven toggleDropdown y funciones base -->
 <script src="Script.js?v=6"></script>
+
 
 <!-- 2. Luego incluimos la vista de préstamos (que define abrirModalSolicitarPrestamo y los fetch) UNA SOLA VEZ -->
 <?php include __DIR__ . '/../CRUD_Prestamos/Vista/Vista_Prestamos.php'; ?>

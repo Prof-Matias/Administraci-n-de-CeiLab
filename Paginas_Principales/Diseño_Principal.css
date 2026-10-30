@@ -1172,3 +1172,203 @@ body.dark-mode .carrito li,
 body.dark-mode .carrito label {
     color: #f9fafb !important;
 }
+
+
+  /* Fondo oscuro que cubre toda la pantalla.
+   El z-index es el máximo posible para que quede por encima de cualquier modal. */
+.cl-dlg-overlay {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 2147483647 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(2px);
+    animation: clFade 0.15s ease-out;
+}
+
+/* Caja de la ventana */
+.cl-dlg {
+    width: 100%;
+    max-width: 440px;
+    background: #fff;
+    color: #1e293b;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    animation: clPop 0.18s ease-out;
+}
+
+/* Encabezado: ícono + título */
+.cl-dlg-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 20px;
+    font-weight: 700;
+    font-size: 1.05rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.cl-dlg-icono {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 1rem;
+}
+
+/* Color del ícono según el tipo de mensaje */
+.cl-dlg-info     .cl-dlg-icono { background: #0284c7; }
+.cl-dlg-ok       .cl-dlg-icono { background: #16a34a; }
+.cl-dlg-error    .cl-dlg-icono { background: #dc2626; }
+.cl-dlg-aviso    .cl-dlg-icono { background: #d97706; }
+.cl-dlg-pregunta .cl-dlg-icono { background: #0284c7; }
+
+/* Cuerpo: mensaje (y campo de texto cuando se pide un motivo) */
+.cl-dlg-body {
+    padding: 18px 20px;
+    max-height: 50vh;
+    overflow: auto;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.cl-dlg-input {
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 12px;
+    padding: 10px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: #fff;
+    color: inherit;
+    font: inherit;
+}
+
+.cl-dlg-input:focus {
+    outline: 2px solid #0284c7;
+    outline-offset: 0;
+    border-color: #0284c7;
+}
+
+/* Pie: botones */
+.cl-dlg-foot {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 12px 20px 18px;
+}
+
+.cl-dlg-btn {
+    padding: 9px 18px;
+    border: 0;
+    border-radius: 8px;
+    background: #0284c7;
+    color: #fff;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.cl-dlg-btn:hover {
+    opacity: 0.9;
+}
+
+.cl-dlg-btn:focus-visible {
+    outline: 2px solid #0f172a;
+    outline-offset: 2px;
+}
+
+.cl-dlg-btn.cl-sec {        /* Cancelar */
+    background: #6c757d;
+}
+
+.cl-dlg-btn.cl-peligro {    /* Acciones destructivas (eliminar, rechazar...) */
+    background: #dc3545;
+}
+
+/* Animaciones */
+@keyframes clFade {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes clPop {
+    from {
+        opacity: 0;
+        transform: translateY(-8px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+/* Corrección de estructura y eliminación de scrollbars */
+.cl-dlg {
+    max-width: 420px !important;
+    width: 90% !important;
+    max-height: 90vh !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+}
+
+/* Forzar que el cuerpo se alinee a la izquierda y no genere scroll innecesario */
+.cl-dlg-body {
+    padding: 20px 24px !important;
+    text-align: left !important;
+    overflow-y: auto !important;
+    max-height: calc(90vh - 120px) !important;
+    box-sizing: border-box !important;
+}
+
+/* Reset de labels para que el texto quede pegado a la izquierda arriba del input */
+.cl-dlg-body label {
+    display: block !important;
+    text-align: left !important;
+    width: 100% !important;
+    margin-bottom: 6px !important;
+    font-weight: 600 !important;
+    font-size: 13px !important;
+    color: #334155 !important;
+}
+
+/* Ajuste uniforme de select, input y textarea */
+.cl-dlg-body select.cl-dlg-input,
+.cl-dlg-body textarea.cl-dlg-input {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 0 16px 0 !important;
+    padding: 10px 12px !important;
+    box-sizing: border-box !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 6px !important;
+    font-size: 14px !important;
+    font-family: inherit !important;
+    background-color: #ffffff !important;
+}
+
+.cl-dlg-body textarea.cl-dlg-input {
+    min-height: 80px !important;
+    resize: vertical !important;
+    margin-bottom: 0 !important;
+}
+
+/* Pie del modal alineado correctamente */
+.cl-dlg-foot {
+    padding: 14px 20px !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+    gap: 10px !important;
+    background-color: #f8fafc !important;
+    border-top: 1px solid #e2e8f0 !important;
+}

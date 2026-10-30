@@ -88,6 +88,69 @@ class Modelo_Producto {
         return $stmt->execute([$nuevoEstado, $id_material]);
     }
 
+    /**
+     * Permite cambiar dinámicamente el estado de un producto (DISPONIBLE, EN_MANTENIMIENTO, DADO_DE_BAJA)
+     * registrando el cambio en el historial y gestionando la cantidad disponible.
+     */
+    public function cambiarEstadoMaterial($id, $nuevoEstado, $motivo, $ciResponsable = null) {
+        $producto = $this->obtenerProductoPorID($id);
+        if (!$producto) return false;
+
+        $estadoAnterior = $producto['estado'];
+        
+        // Si el estado no cambió y no hay motivo relevante, evitamos procesar innecesariamente
+        if ($estadoAnterior === $nuevoEstado) return true;
+
+        // Definimos la cantidad disponible según el nuevo estado elegido
+        if ($nuevoEstado === EstadoMaterial::DADO_DE_BAJA || $nuevoEstado === EstadoMaterial::EN_MANTENIMIENTO) {
+            $cantidadDisponible = 0;
+        } else if ($nuevoEstado === EstadoMaterial::DISPONIBLE) {
+            $cantidadDisponible = ($producto['tipo_control'] === 'SERIE') ? 1 : $producto['cantidad_total'];
+        } else {
+            $cantidadDisponible = $producto['cantidad_disponible'];
+        }
+
+        // Si se da de baja se registran los campos de fecha_baja y motivo_baja
+        if ($nuevoEstado === EstadoMaterial::DADO_DE_BAJA) {
+            $sql = "UPDATE material 
+                    SET estado = ?, cantidad_disponible = ?, motivo_baja = ?, fecha_baja = NOW() 
+                    WHERE id_material = ?";
+            $stmt = $this->conexion->prepare($sql);
+            $exito = $stmt->execute([$nuevoEstado, $cantidadDisponible, $motivo, $id]);
+        } else {
+            $sql = "UPDATE material 
+                    SET estado = ?, cantidad_disponible = ?, motivo_baja = NULL, fecha_baja = NULL 
+                    WHERE id_material = ?";
+            $stmt = $this->conexion->prepare($sql);
+            $exito = $stmt->execute([$nuevoEstado, $cantidadDisponible, $id]);
+        }
+
+        // Si la actualización fue exitosa, registramos el movimiento en la tabla de historial
+        if ($exito) {
+            $evento = ($nuevoEstado === EstadoMaterial::DADO_DE_BAJA) ? 'DAR_DE_BAJA' : 'CAMBIO_ESTADO';
+            
+            if (class_exists('HistorialEstado') && method_exists('HistorialEstado', 'registrarHistorialEstado')) {
+                HistorialEstado::registrarHistorialEstado(
+                    $this->conexion, 
+                    $id, 
+                    $estadoAnterior, 
+                    $nuevoEstado, 
+                    $evento, 
+                    $ciResponsable, 
+                    null, 
+                    $motivo
+                );
+            }
+        }
+
+        return $exito;
+    }
+
+    // Mantenemos la función darDeBajaConMotivo reutilizando la nueva lógica general
+    public function darDeBajaConMotivo($id, $motivo, $ciResponsable = null) {
+        return $this->cambiarEstadoMaterial($id, EstadoMaterial::DADO_DE_BAJA, $motivo, $ciResponsable);
+    }
+
     // Función para eliminar productos
     public function eliminarProducto($id) {
         try {
@@ -160,32 +223,12 @@ class Modelo_Producto {
                   )
               )";
 
-    $stmt = $this->conexion->prepare($sql);
-    $stmt->execute([$id_material]);
+        $stmt = $this->conexion->prepare($sql);
+        $stmt->execute([$id_material]);
 
-    // Si fetch() obtiene una fila, retorna true; si no encuentra nada, devuelve false.
-    return $stmt->fetch() !== false;
-}
-
-public function darDeBajaConMotivo($id, $motivo, $ciResponsable = null) {
-    $producto = $this->obtenerProductoPorID($id);
-    if (!$producto) return false;
-
-    $estadoAnterior = $producto['estado'];
-    $estadoNuevo    = EstadoMaterial::DADO_DE_BAJA;
-
-    $sql = "UPDATE material 
-            SET estado = ?, cantidad_disponible = 0, motivo_baja = ?, fecha_baja = NOW() 
-            WHERE id_material = ?";
-    $stmt = $this->conexion->prepare($sql);
-    $exito = $stmt->execute([$estadoNuevo, $motivo, $id]);
-
-    if ($exito) {
-        HistorialEstado::registrarHistorialEstado($this->conexion, $id, $estadoAnterior, $estadoNuevo, 'DAR_DE_BAJA', $ciResponsable, null, $motivo);
+        return $stmt->fetch() !== false;
     }
 
-    return $exito;
-}
     // Función para obtener el catálogo de productos
     public function catalogo() {
         $sql = "SELECT m.nombre,
@@ -222,7 +265,6 @@ public function darDeBajaConMotivo($id, $motivo, $ciResponsable = null) {
         
         return $filas;
     }
-    
 
     // Método para actualizar los datos compartidos de un grupo de productos por su nombre
     public function actualizarGrupoPorNombre($nombreOriginal, $nuevoNombre, $descripcion, $categoria, $foto) {
@@ -231,36 +273,12 @@ public function darDeBajaConMotivo($id, $motivo, $ciResponsable = null) {
             WHERE LOWER(nombre) = LOWER(?)";
         $stmt = $this->conexion->prepare($sql);
         return $stmt->execute([$nuevoNombre, $descripcion, $categoria, $foto, trim($nombreOriginal)]);
-}
-
-// Método para reactivar un producto registrando en el historial
-public function reactivarProducto($id, $ciResponsable = null) {
-    $producto = $this->obtenerProductoPorID($id);
-    if (!$producto) return false;
-
-    $estadoAnterior = $producto['estado'];
-    $estadoNuevo    = 'DISPONIBLE';
-
-    $sql = "UPDATE material 
-            SET estado = ?,
-                cantidad_disponible = CASE 
-                    WHEN tipo_control = 'SERIE' THEN 1 
-                    ELSE cantidad_total 
-                END,
-                motivo_baja = NULL,
-                fecha_baja = NULL 
-            WHERE id_material = ?";
-    $stmt = $this->conexion->prepare($sql);
-    $exito = $stmt->execute([$estadoNuevo, $id]);
-
-    if ($exito) {
-        HistorialEstado::registrarHistorialEstado($this->conexion, $id, $estadoAnterior, $estadoNuevo, 'REACTIVAR', $ciResponsable, null, 'Reactivación manual de material');
     }
 
-    return $exito;
-}
-
-
+    // Método para reactivar un producto registrando en el historial
+    public function reactivarProducto($id, $ciResponsable = null) {
+        return $this->cambiarEstadoMaterial($id, EstadoMaterial::DISPONIBLE, 'Reactivación manual de material', $ciResponsable);
+    }
 
     // Obtiene el historial de cambios de estado ordenado del más reciente al más antiguo
     public function obtenerHistorialProducto($idMaterial) {
@@ -273,10 +291,10 @@ public function reactivarProducto($id, $ciResponsable = null) {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-        /**
+    /**
      * Obtiene el reporte de stock actual y calcula los materiales comprometidos.
      */
-        public function obtenerReporteStock() {
+    public function obtenerReporteStock() {
         $st = $this->conexion->query(
             "SELECT nombre, 
                     SUM(cantidad_total) AS cantidad_total, 
@@ -353,6 +371,4 @@ public function reactivarProducto($id, $ciResponsable = null) {
         return $materiales;
     }
 }
-
-
 ?>
