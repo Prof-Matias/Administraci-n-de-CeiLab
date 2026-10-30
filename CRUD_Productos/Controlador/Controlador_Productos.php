@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../Modelo/Modelo_Productos.php';
 
+
 header('Content-Type: application/json; charset=utf-8');
 
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
@@ -317,7 +318,16 @@ try {
         }
         break;
 
+    case 'reporte_stock':
+    $modelo = new Modelo_Producto(); // Asegúrate de que el nombre de la clase sea el correcto en tu archivo
+    $stock = $modelo->obtenerReporteStock();
 
+    echo json_encode([
+        'success' => true,
+        'stock' => $stock
+    ]);
+    exit();
+    
     }
 
 } catch (Exception $e) {

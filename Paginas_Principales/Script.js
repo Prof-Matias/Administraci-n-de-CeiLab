@@ -801,6 +801,144 @@ async function verHistorialProducto(idMaterial) {
                 alert("Error de conexión al procesar la baja con el servidor.");
             }
         }
+
+    // Funcion para el modal de imprimir stock
+        async function abrirModalStockStock() {
+        const r = await pedirJSON(`${RUTA_CONTROLADOR_PRODUCTOS}?action=reporte_stock`);
+        if (!r || !r.success) return;
+
+        const tbody = document.getElementById('bodyImprimirStock');
+        tbody.innerHTML = r.stock.length ? r.stock.map(s => {
+            let textoAprobados = `${s.count_aprobados}`;
+            if (s.series_aprobadas && s.series_aprobadas.length > 0) {
+                textoAprobados += ` <small style="color: #475569;">(${s.series_aprobadas.join(', ')})</small>`;
+            }
+
+            let textoPrestados = `${s.count_prestados}`;
+            if (s.series_prestadas && s.series_prestadas.length > 0) {
+                textoPrestados += ` <small style="color: #475569;">(${s.series_prestadas.join(', ')})</small>`;
+            }
+
+            return `
+                <tr>
+                    <td><b>${esc(s.nombre)}</b></td>
+                    <td>${s.cantidad_total}</td>
+                    <td>${s.cantidad_disponible}</td>
+                    <td>
+                        <span style="color: ${s.comprometidos > 0 ? '#d97706' : 'inherit'}; font-weight: ${s.comprometidos > 0 ? 'bold' : 'normal'};">
+                            ${s.comprometidos}
+                        </span>
+                    </td>
+                    <td>
+                        <span style="color: ${s.count_aprobados > 0 ? '#d97706' : 'inherit'}; font-weight: ${s.count_aprobados > 0 ? 'bold' : 'normal'};">
+                            ${textoAprobados}
+                        </span>
+                    </td>
+                    <td>
+                        <span style="color: ${s.count_prestados > 0 ? '#2563eb' : 'inherit'}; font-weight: ${s.count_prestados > 0 ? 'bold' : 'normal'};">
+                            ${textoPrestados}
+                        </span>
+                    </td>
+                </tr>
+            `;
+        }).join('') : '<tr><td colspan="6" style="text-align:center;">No hay materiales registrados.</td></tr>';
+
+        document.getElementById('modalImprimirStock').classList.add('active');
+    }
+
+    function imprimirHistorialGeneral() {
+    // Obtenemos el contenedor o el HTML interno del cuerpo de la tabla y título
+    const contenidoTabla = document.getElementById('bodyHistorialGeneral').innerHTML;
+    
+    if (!contenidoTabla || contenidoTabla.includes('Todavía no hay movimientos')) {
+        alert('No hay datos para imprimir.');
+        return;
+    }
+
+    const ventanaImpresion = window.open('', '_blank', 'width=900,height=650');
+    
+    ventanaImpresion.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Historial General de Movimientos - CeiLab</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    color: #1e293b;
+                    margin: 20px;
+                }
+                h2 {
+                    text-align: center;
+                    color: #0f172a;
+                    margin-bottom: 5px;
+                }
+                .subtitulo {
+                    text-align: center;
+                    font-size: 13px;
+                    color: #64748b;
+                    margin-bottom: 25px;
+                }
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-top: 10px;
+                }
+                th, td {
+                    border: 1px solid #cbd5e1;
+                    padding: 8px 10px;
+                    font-size: 12px;
+                    text-align: left;
+                    vertical-align: middle;
+                }
+                th {
+                    background-color: #f1f5f9;
+                    color: #334155;
+                    font-weight: bold;
+                }
+                small {
+                    color: #64748b;
+                }
+                code {
+                    background: #f8fafc;
+                    padding: 2px 4px;
+                    border-radius: 4px;
+                    font-family: monospace;
+                }
+            </style>
+        </head>
+        <body>
+            <h2>Historial General de Movimientos - Inventario CeiLab</h2>
+            <div class="subtitulo">Generado el: ${new Date().toLocaleString()}</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Material</th>
+                        <th>Evento</th>
+                        <th>De</th>
+                        <th>A</th>
+                        <th>Préstamo</th>
+                        <th>Solicitante</th>
+                        <th>Responsable</th>
+                        <th>Motivo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${contenidoTabla}
+                </tbody>
+            </table>
+            <script>
+                window.onload = function() {
+                    window.print();
+                    window.close();
+                }
+            </script>
+        </body>
+        </html>
+    `);
+    ventanaImpresion.document.close();
+}
 // =========================================================
 // CORRECCIÓN GLOBAL: DROPDOWN Y MODO OSCURO
 // =========================================================

@@ -273,6 +273,85 @@ public function reactivarProducto($id, $ciResponsable = null) {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+        /**
+     * Obtiene el reporte de stock actual y calcula los materiales comprometidos.
+     */
+        public function obtenerReporteStock() {
+        $st = $this->conexion->query(
+            "SELECT nombre, 
+                    SUM(cantidad_total) AS cantidad_total, 
+                    SUM(cantidad_disponible) AS cantidad_disponible,
+                    MIN(tipo_control) AS tipo_control
+            FROM material 
+            GROUP BY nombre 
+            ORDER BY nombre ASC"
+        );
+        $materiales = $st->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($materiales as &$mat) {
+            $nombreMat = $mat['nombre'];
+            $tipoControl = $mat['tipo_control'];
+
+            $mat['series_aprobadas'] = [];
+            $mat['series_prestadas'] = [];
+
+            if ($tipoControl === 'SERIE') {
+                // --- APROBADOS ---
+                $stAprobados = $this->conexion->prepare(
+                    "SELECT m.id_serie 
+                    FROM material m
+                    JOIN prestamo_material pm ON pm.id_material = m.id_material
+                    JOIN solicitud s ON s.id_solicitud = pm.id_solicitud
+                    WHERE m.nombre = ? AND s.estado = 'APROBADO' 
+                    AND m.id_serie IS NOT NULL AND m.id_serie != ''"
+                );
+                $stAprobados->execute([$nombreMat]);
+                $mat['series_aprobadas'] = $stAprobados->fetchAll(PDO::FETCH_COLUMN);
+
+                // --- PRESTADOS (ACTIVOS) ---
+                $stPrestados = $this->conexion->prepare(
+                    "SELECT m.id_serie 
+                    FROM material m
+                    JOIN prestamo_material pm ON pm.id_material = m.id_material
+                    JOIN solicitud s ON s.id_solicitud = pm.id_solicitud
+                    WHERE m.nombre = ? AND s.estado = 'ACTIVO' 
+                    AND m.id_serie IS NOT NULL AND m.id_serie != ''"
+                );
+                $stPrestados->execute([$nombreMat]);
+                $mat['series_prestadas'] = $stPrestados->fetchAll(PDO::FETCH_COLUMN);
+
+                $mat['count_aprobados'] = count($mat['series_aprobadas']);
+                $mat['count_prestados'] = count($mat['series_prestadas']);
+            } else {
+                // Consumibles por cantidad
+                $stCantAp = $this->conexion->prepare(
+                    "SELECT SUM(pm.cantidad) 
+                    FROM prestamo_material pm
+                    JOIN material m ON m.id_material = pm.id_material
+                    JOIN solicitud s ON s.id_solicitud = pm.id_solicitud
+                    WHERE m.nombre = ? AND s.estado = 'APROBADO'"
+                );
+                $stCantAp->execute([$nombreMat]);
+                $mat['count_aprobados'] = (int)($stCantAp->fetchColumn() ?: 0);
+
+                $stCantPr = $this->conexion->prepare(
+                    "SELECT SUM(pm.cantidad) 
+                    FROM prestamo_material pm
+                    JOIN material m ON m.id_material = pm.id_material
+                    JOIN solicitud s ON s.id_solicitud = pm.id_solicitud
+                    WHERE m.nombre = ? AND s.estado = 'ACTIVO'"
+                );
+                $stCantPr->execute([$nombreMat]);
+                $mat['count_prestados'] = (int)($stCantPr->fetchColumn() ?: 0);
+            }
+
+            // Total comprometidos general
+            $mat['comprometidos'] = $mat['count_aprobados'] + $mat['count_prestados'];
+        }
+        unset($mat);
+
+        return $materiales;
+    }
 }
 
 

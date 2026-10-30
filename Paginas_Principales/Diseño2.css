@@ -693,3 +693,29 @@ body.dark-mode .tabla-modal tr.fila-inactiva td {
     background-color: #2a2d34;
     color: #6b7280;
 }
+
+/* Botón moderno de impresión y PDF */
+.btn-imprimir-modal {
+    background-color: #16a34a;
+    color: #ffffff;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.btn-imprimir-modal:hover {
+    background-color: #15803d;
+}
+
+/* Contenedor del pie del modal para alinear los botones */
+.modal-footer-acciones {
+    margin-top: 20px;
+    text-align: right;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}

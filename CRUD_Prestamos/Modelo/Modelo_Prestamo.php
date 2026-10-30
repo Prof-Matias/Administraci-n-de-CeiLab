@@ -159,15 +159,23 @@ class Modelo_Prestamo {
     /** Últimos movimientos de estado de todos los materiales (historial general del administrador). */
     public function historialGeneral($limite = 300) {
         $limite = max(1, min(1000, (int)$limite));
-        $st = $this->conexion->query(
+        $st = $this->conexion->prepare(
             "SELECT h.fecha, h.evento, h.estado_anterior, h.estado_nuevo, h.id_solicitud, h.motivo,
                     m.nombre AS material, m.id_serie,
-                    CONCAT(u.nombre, ' ', u.apellido) AS responsable
-               FROM historial_estado_material h
-               JOIN material m ON m.id_material = h.id_material
-               LEFT JOIN usuario u ON u.ci = h.ci_responsable
-              ORDER BY h.fecha DESC, h.id_cambio DESC
-              LIMIT $limite");
+                    CONCAT(u.nombre, ' ', u.apellido) AS responsable,
+                    sol.ci_cliente AS solicitante_ci,
+                    CONCAT(c.nombre, ' ', c.apellido) AS solicitante_nombre
+            FROM historial_estado_material h
+            JOIN material m ON m.id_material = h.id_material
+            LEFT JOIN usuario u ON u.ci = h.ci_responsable
+            LEFT JOIN solicitud sol ON sol.id_solicitud = h.id_solicitud
+            LEFT JOIN usuario c ON c.ci = sol.ci_cliente
+            ORDER BY h.fecha DESC, h.id_cambio DESC
+            LIMIT :limite"
+        );
+        // Usamos bindValue con PDO::PARAM_INT para mantener la seguridad frente a inyecciones SQL en el LIMIT
+        $st->bindValue(':limite', $limite, PDO::PARAM_INT);
+        $st->execute();
         return $st->fetchAll(PDO::FETCH_ASSOC);
     }
 

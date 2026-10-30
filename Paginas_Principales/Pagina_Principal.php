@@ -243,6 +243,7 @@ if (!isset($_SESSION['Rol'])) {
                 <button class="modal-close" onclick="cerrarModal('modalGestionProductos')">&times;</button>
             </div>
             <button class="btn-modal btn-crear" onclick="abrirModalFormularioProducto()">+ Nuevo Producto</button>
+            <button class="btn-modal btn-editar" onclick="abrirModalStockStock()">Imprimir Stock</button>
             <div class="table-responsive">
                 <table class="tabla-modal">
                     <thead>
@@ -332,6 +333,37 @@ if (!isset($_SESSION['Rol'])) {
             </div>
         </div>
     </div>
+
+    <!-- MODAL: VISTA PREVIA DE IMPRESIÓN DE STOCK -->
+<div class="modal-overlay" id="modalImprimirStock" style="z-index:1300;">
+    <div class="modal-content" style="max-width:750px; max-height:85vh; overflow-y:auto;">
+        <div class="modal-header">
+            <h3>Control de Stock Actual - Inventario CeiLab</h3>
+            <button class="modal-close" onclick="cerrarModal('modalImprimirStock')">&times;</button>
+        </div>
+        
+        <div class="table-responsive" style="margin-top: 15px;">
+            <table class="tabla-modal">
+                <thead>
+                    <tr>
+                        <th>Material</th>
+                        <th>Total</th>
+                        <th>Disponible</th>
+                        <th>Comprometidos</th>
+                        <th>Aprobados</th>
+                        <th>Prestados</th>
+                    </tr>
+                </thead>
+                <tbody id="bodyImprimirStock"></tbody>
+            </table>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+            <button class="btn-modal btn-crear" onclick="window.print()">Imprimir / Guardar PDF</button>
+            <button class="btn-modal btn-cancelar" onclick="cerrarModal('modalImprimirStock')">Cerrar</button>
+        </div>
+    </div>
+</div>
 
     <div class="modal-overlay" id="modalHistorialProducto" style="z-index: 1200;">
         <div class="modal-content" style="max-width: 750px;">

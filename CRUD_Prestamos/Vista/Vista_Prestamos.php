@@ -85,9 +85,24 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
             <h3>Historial general de movimientos</h3>
             <button class="modal-close" onclick="cerrarModal('modalHistorialGeneral')">&times;</button>
         </div>
+        <div class="modal-footer-acciones">
+        <button type="button" class="btn-imprimir-modal" onclick="imprimirHistorialGeneral()">Imprimir / Guardar PDF</button>
+        </div>
         <div class="table-responsive">
             <table class="tabla-modal">
-                <thead><tr><th>Fecha</th><th>Material</th><th>Evento</th><th>De</th><th>A</th><th>Préstamo</th><th>Responsable</th><th>Motivo</th></tr></thead>
+                <thead>
+    <tr>
+        <th>Fecha</th>
+        <th>Producto</th>
+        <th>Evento</th>
+        <th>De</th>
+        <th>A</th>
+        <th>Préstamo</th>
+        <th>Solicitante</th>
+        <th>Admin Responsable</th>
+        <th>Motivo</th>
+    </tr>
+</thead>
                 <tbody id="bodyHistorialGeneral"></tbody>
             </table>
         </div>
@@ -440,15 +455,33 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
     async function abrirHistorialGeneral() {
         const r = await pedirJSON(`${RUTA_CONTROLADOR_PRESTAMOS}?action=historial_general`);
         if (!r) return;
-        document.getElementById('bodyHistorialGeneral').innerHTML = r.data.length ? r.data.map(h => `
-            <tr><td>${fecha(h.fecha)}</td>
-                <td><b>${esc(h.material)}</b>${h.id_serie ? '<br><small>' + esc(h.id_serie) + '</small>' : ''}</td>
-                <td>${esc(h.evento)}</td>
-                <td>${h.estado_anterior ? chipEstado(h.estado_anterior) : '—'}</td><td>${chipEstado(h.estado_nuevo)}</td>
-                <td>${h.id_solicitud ? '#' + h.id_solicitud : '—'}</td><td>${esc(h.responsable || '—')}</td><td>${esc(h.motivo || '')}</td></tr>`).join('')
-            : '<tr><td colspan="8" style="text-align:center;">Todavía no hay movimientos registrados.</td></tr>';
+
+        const lista = r.data || r.historial || [];
+
+        document.getElementById('bodyHistorialGeneral').innerHTML = lista.length ? lista.map(h => {
+            // Formatear el solicitante (Nombre y Cédula)
+            let solicitanteHtml = '—';
+            if (h.solicitante_ci) {
+                solicitanteHtml = `${esc(h.solicitante_nombre)}<br><small style="color: #64748b;">CI: ${esc(h.solicitante_ci)}</small>`;
+            }
+
+            return `
+                <tr>
+                    <td>${fecha(h.fecha)}</td>
+                    <td><b>${esc(h.material)}</b>${h.id_serie ? '<br><small style="color: #64748b;">' + esc(h.id_serie) + '</small>' : '<br><small style="color: #64748b;">Por cantidad</small>'}</td>
+                    <td><code>${esc(h.evento)}</code></td>
+                    <td>${h.estado_anterior ? chipEstado(h.estado_anterior) : '—'}</td>
+                    <td>${chipEstado(h.estado_nuevo)}</td>
+                    <td>${h.id_solicitud ? '#' + h.id_solicitud : '—'}</td>
+                    <td>${solicitanteHtml}</td>
+                    <td>${esc(h.responsable || '—')}</td>
+                    <td>${esc(h.motivo || '')}</td>
+                </tr>`;
+        }).join('') : '<tr><td colspan="9" style="text-align:center;">Todavía no hay movimientos registrados.</td></tr>';
+
         document.getElementById('modalHistorialGeneral').classList.add('active');
     }
+
 <?php else: ?>
     /* =====================================================================
        CLIENTE
