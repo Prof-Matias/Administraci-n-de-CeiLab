@@ -117,12 +117,77 @@ try {
         case 'historial_material':
             ok($modelo->historialMaterial((int)($_GET['id_material'] ?? 0)));
             break;
+        case 'guardarDesdeAdmin':
+            if ($action === 'guardarDesdeAdmin') {
+    // 1. Limpiar buffer e inhibir salida HTML para asegurar JSON puro
+    if (ob_get_length()) ob_clean();
+    ini_set('html_errors', 0);
+    ini_set('display_errors', 0);
+    header('Content-Type: application/json; charset=utf-8');
+
+    try {
+        // 2. Leer la petición enviada por Script.js
+        $input = file_get_contents('php://input');
+        $data  = json_decode($input, true);
+
+        if (!$data || empty($data['ci_cliente'])) {
+            echo json_encode(['success' => false, 'message' => 'Debes seleccionar un cliente obligatoriamente.']);
+            exit();
+        }
+
+        $ciCliente = trim($data['ci_cliente']);
+        $materia   = !empty($data['materia']) ? trim($data['materia']) : 'General';
+        $horas     = !empty($data['horas']) ? (int)$data['horas'] : 2;
+        $items     = !empty($data['items']) && is_array($data['items']) ? $data['items'] : [];
+
+        if (empty($items)) {
+            echo json_encode(['success' => false, 'message' => 'Debes incluir al menos un material en el pedido.']);
+            exit();
+        }
+
+        // Cédula del administrador logueado en sesión (o por defecto la del sistema)
+        $ciAdmin = $_SESSION['usuario']['ci'] ?? $_SESSION['ci'] ?? $ciCliente;
+
+        $modelo = new Modelo_Prestamo();
+
+        // PASO A: Crear la solicitud inicial en estado PENDIENTE
+        // (Respetando exactamente los 4 parámetros de tu modelo)
+        $idSolicitud = $modelo->solicitar($ciCliente, $materia, $horas, $items);
+
+        if (!$idSolicitud) {
+            echo json_encode(['success' => false, 'message' => 'No se pudo crear la solicitud de préstamo.']);
+            exit();
+        }
+
+        // PASO B: Auto-aprobar la solicitud de inmediato (pasa a estado APROBADO)
+        if (!empty($data['auto_aprobar'])) {
+            $modelo->aprobar($idSolicitud, $ciAdmin);
+        }
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'Préstamo administrativo creado y aprobado exitosamente.'
+        ]);
+
+    } catch (ErrorNegocio $e) {
+        echo json_encode([
+            'success' => false,
+            'message' => $e->getMessage()
+        ]);
+    } catch (Throwable $e) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Error en el servidor: ' . $e->getMessage()
+        ]);
+    }
+    exit();
+}
 
         case 'historial_general':
             ok($modelo->historialGeneral());
             break;
 
-        default:
+            default:
             responderError(400, 'Acción no reconocida.');
     }
 } catch (ErrorNegocio $e) {
@@ -135,3 +200,6 @@ try {
     echo json_encode(['success' => false, 'message' => 'Error interno al procesar el préstamo.'],
                      JSON_UNESCAPED_UNICODE);
 }
+
+
+?>

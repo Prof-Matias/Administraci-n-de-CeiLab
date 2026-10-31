@@ -601,7 +601,6 @@ input:checked + .slider .moon { opacity: 1 !important; }
 /* Aplicación exclusiva a la tabla de datos dentro del modal */
 .modal-content .table-responsive {
   width: 100% !important;
-  overflow-x: hidden !important; /* Mantiene la tabla visible sin scrollbar horizontal */
   margin-top: 14px !important;
   border-radius: 12px !important;
 }
@@ -979,7 +978,6 @@ body.dark-mode .badge-rol {
     display: flex !important;
     flex-direction: column !important;
     max-height: 88vh !important;
-    overflow: hidden !important; /* Desactiva el scroll global feo */
     padding: 24px !important;
 }
 
@@ -1371,4 +1369,203 @@ body.dark-mode .carrito label {
     gap: 10px !important;
     background-color: #f8fafc !important;
     border-top: 1px solid #e2e8f0 !important;
+}
+
+/* Forzar que la cabecera del formulario admin quede sobre cualquier tabla o tarjeta */
+#panel-admin-prestamo-head {
+    position: relative !important;
+    z-index: 9999 !important;
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 8px !important;
+    padding: 16px !important;
+    margin-bottom: 20px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Asegurar que el contenedor del modal permita capas superpuestas sin recortarlas */
+#modalSolicitarPrestamo .modal-cuerpo,
+#modalSolicitarPrestamo .modal-body {
+    overflow: visible !important;
+}
+
+/* Ajuste de z-index de las tablas en caso de que tengan posición relativa */
+#modalSolicitarPrestamo table,
+#contenedor-productos-cliente {
+    position: relative !important;
+    z-index: 1 !important;
+}
+/* Forzar que el modal flote por encima de tablas y tarjetas */
+.modal.active {
+    display: flex !important;
+    z-index: 99999 !important; /* Capa superior absoluta */
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+/* Forzar capa máxima para el modal de préstamos */
+#modalSolicitarPrestamo {
+    z-index: 999999 !important;
+}
+
+#modalSolicitarPrestamo .modal-contenido,
+#modalSolicitarPrestamo .modal-dialog,
+#modalSolicitarPrestamo > div {
+    position: relative !important;
+    z-index: 1000000 !important;
+}
+
+/* Overlay completo en la capa superior */
+.modal-admin-overlay {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 999999 !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Caja principal del modal */
+.modal-admin-contenedor {
+    background: #ffffff;
+    width: 90%;
+    max-width: 950px;
+    max-height: 90vh;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.modal-admin-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-admin-header h3 {
+    margin: 0;
+    color: #0f172a;
+    font-size: 18px;
+}
+
+.modal-admin-cerrar {
+    font-size: 24px;
+    cursor: pointer;
+    color: #64748b;
+}
+
+.modal-admin-body {
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Panel de selección superior */
+.panel-admin-datos {
+    display: flex;
+    gap: 12px;
+    background: #f8fafc;
+    padding: 14px;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+}
+
+.campo-admin label {
+    display: block;
+    font-size: 12px;
+    font-weight: bold;
+    color: #1e293b;
+    margin-bottom: 4px;
+}
+
+.campo-admin select, .campo-admin input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 13px;
+    background: #fff;
+    box-sizing: border-box;
+}
+
+/* Grilla del catálogo */
+.catalogo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+    max-height: 280px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.card-producto-admin {
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 12px;
+    background: #fff;
+}
+
+.card-producto-admin h5 {
+    margin: 0 0 6px 0;
+    font-size: 15px;
+}
+
+.card-producto-admin p {
+    margin: 2px 0;
+    font-size: 12px;
+    color: #475569;
+}
+
+/* Caja Tu Pedido */
+.caja-tu-pedido {
+    border: 1.5px solid #0284c7;
+    border-radius: 8px;
+    padding: 14px;
+    background: #fafafa;
+}
+
+.caja-tu-pedido h4 {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    color: #0369a1;
+}
+
+.modal-admin-footer {
+    padding: 14px 20px;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.btn-cancelar-admin {
+    background: #e2e8f0;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.btn-confirmar-admin {
+    background: #16a34a;
+    color: white;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
 }

@@ -1,14 +1,5 @@
 <?php
 /**
- * Vista_Prestamos.php  (v7)
- * Se incluye al final de Paginas_Principales/Pagina_Principal.php.
- *
- *  Administrador: «Gestionar Préstamos» / «Ver Solicitudes»
- *    lista por estado -> detalle -> aprobar / rechazar / entregar (series) / devolver
- *  Cliente: pedido desde el catálogo y «Mis préstamos»
- *
- * Toda la validación de estados la hace el servidor (Config/Estados.php);
- * esta vista solo muestra lo que el servidor permite y sus mensajes.
  */
 $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
 ?>
@@ -41,11 +32,16 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
         </div>
         <div class="filtros-estado" id="filtrosPrestamos"></div>
         <div class="table-responsive">
+            <button type="button" class="btn-modal btn-crear" onclick="adminAbrirModalNuevoPrestamo()">
+    + Nuevo Préstamo
+</button>
             <table class="tabla-modal">
+                
                 <thead>
                     <tr><th>#</th><th>Estado</th><th>Cliente</th><th>Pedido</th><th>Materia</th><th>Horas</th><th>Solicitado</th><th>Acciones</th></tr>
                 </thead>
                 <tbody id="bodyTablaPrestamos"></tbody>
+                
             </table>
         </div>
     </div>

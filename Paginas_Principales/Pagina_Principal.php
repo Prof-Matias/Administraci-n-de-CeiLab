@@ -218,7 +218,23 @@ if (!isset($_SESSION['Rol'])) {
                 </div>
                 <div class="form-group">
                     <label>Especialidad</label>
-                    <input type="text" id="especialidad" name="especialidad">
+                    <select id="especialidad" name="especialidad" >
+                        <option value="" disabled selected>Selecciona una opción</option>
+                        <option value="Informatica">Informatica</option>
+                        <option value="Biologia">Biologia</option>
+                        <option value="Quimica">Quimica</option>
+                        <option value="Historia">Historia</option>
+                        <option value="Literatura">Literatura</option>
+                        <option value="Idioma_español">Idioma español</option>
+                        <option value="Derecho">Derecho</option>
+                        <option value="Filosofia">Filosofia</option>
+                        <option value="Ingles">Ingles</option>
+                        <option value="Matematica">Matematica</option>
+                        <option value="Sociologia">Sociologia</option>
+                        <option value="Geografia">Geografia</option>
+                        <option value="Educador_Social">Educador Social</option>
+
+                </select>
                 </div>
                 <button type="submit" class="btn-modal btn-crear" style="width: 100%; margin-top: 10px;">Guardar Usuario</button>
             </form>
@@ -458,6 +474,71 @@ if (!isset($_SESSION['Rol'])) {
         </div>
     </div>
 
+    <!-- MODAL EXCLUSIVO PARA NUEVO PRÉSTAMO DESDE ADMINISTRACIÓN -->
+<div id="modalPrestamoAdmin" class="modal-admin-overlay" style="display: none;">
+    <div class="modal-admin-contenedor">
+        <!-- Cabecera -->
+        <div class="modal-admin-header">
+            <h3>Nuevo Préstamo (Administración)</h3>
+            <span class="modal-admin-cerrar" onclick="adminCerrarModal()">&times;</span>
+        </div>
+
+        <!-- Cuerpo del Modal -->
+        <div class="modal-admin-body">
+            <!-- Formulario Superior (Cliente, Materia, Horas) -->
+            <div class="panel-admin-datos">
+                <div class="campo-admin" style="flex: 2;">
+                    <label>Seleccionar Cliente / Usuario *</label>
+                    <select id="admin_select_cliente" onchange="PedidoAdminState.clienteCedula = this.value;">
+                        <option value="">-- Cargando usuarios... --</option>
+                    </select>
+                </div>
+                <div class="campo-admin" style="flex: 1;">
+                    <label>Materia / Motivo</label>
+                    <select  id="admin_input_materia" placeholder="Ej: Física" oninput="PedidoAdminState.materia = this.value;">
+                                    <option value="" disabled selected>Selecciona una opción</option>
+                        <option value="Informatica">Informatica</option>
+                        <option value="Biologia">Biologia</option>
+                        <option value="Quimica">Quimica</option>
+                        <option value="Historia">Historia</option>
+                        <option value="Literatura">Literatura</option>
+                        <option value="Idioma_español">Idioma español</option>
+                        <option value="Derecho">Derecho</option>
+                        <option value="Filosofia">Filosofia</option>
+                        <option value="Ingles">Ingles</option>
+                        <option value="Matematica">Matematica</option>
+                        <option value="Sociologia">Sociologia</option>
+                        <option value="Geografia">Geografia</option>
+                        <option value="Educador_Social">Educador Social</option>
+                </select>
+                </div>
+                <div class="campo-admin" style="flex: 1;">
+                    <label>Duración (Horas)</label>
+                    <input type="number" id="admin_input_horas" value="2" min="1" max="24" onchange="PedidoAdminState.horas = parseInt(this.value) || 2;">
+                </div>
+            </div>
+
+            <!-- Catálogo de Productos -->
+            <div id="admin-catalogo-productos" class="catalogo-grid">
+                <!-- Se dibuja dinámicamente -->
+            </div>
+
+            <!-- Resumen del Pedido (Tu Pedido) -->
+            <div class="caja-tu-pedido">
+                <h4>Tu pedido</h4>
+                <div id="admin-resumen-items">
+                    <p class="texto-vacio">Todavía no agregaste materiales.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pie con Botón de Confirmación -->
+        <div class="modal-admin-footer">
+            <button type="button" class="btn-cancelar-admin" onclick="adminCerrarModal()">Cancelar</button>
+            <button type="button" class="btn-confirmar-admin" onclick="adminProcesarSolicitudDirecta()">✓ Registrar Préstamo Directo</button>
+        </div>
+    </div>
+</div>
 
 <script>
     window.USUARIO_ACTUAL = {
@@ -471,7 +552,7 @@ if (!isset($_SESSION['Rol'])) {
 </script>
 
 <!-- 1. Primero cargamos el Script general de la página donde viven toggleDropdown y funciones base -->
-<script src="Script.js?v=6"></script>
+<script src="Script.js?v=2"></script>
 
 
 <!-- 2. Luego incluimos la vista de préstamos (que define abrirModalSolicitarPrestamo y los fetch) UNA SOLA VEZ -->
