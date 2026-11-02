@@ -489,7 +489,6 @@ input:checked + .slider .moon { opacity: 1 !important; }
 /* Aplicación exclusiva a la tabla de datos dentro del modal */
 .modal-content .table-responsive {
   width: 100% !important;
-  overflow-x: hidden !important; /* Mantiene la tabla visible sin scrollbar horizontal */
   margin-top: 14px !important;
   border-radius: 12px !important;
 }
@@ -668,3 +667,527 @@ body.dark-mode .badge-rol {
   color: #60a5fa !important;
 }
 
+/* ---- Baja lógica de usuarios ---- */
+.tabla-modal tr.fila-inactiva td {
+    background-color: #f1f3f5;
+    color: #9ca3af;
+}
+.tabla-modal tr.fila-inactiva td:not(.celda-acciones) {
+    opacity: 0.6;
+}
+.tabla-modal tr.fila-inactiva td.celda-acciones {
+    opacity: 1;
+}
+
+.btn-desactivar {
+    background-color: #f50b0b;
+    color: #fff;
+}
+.btn-modal:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+body.dark-mode .tabla-modal tr.fila-inactiva td {
+    background-color: #2a2d34;
+    color: #6b7280;
+}
+
+/* Botón moderno de impresión y PDF */
+.btn-imprimir-modal {
+    background-color: #16a34a;
+    color: #ffffff;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.btn-imprimir-modal:hover {
+    background-color: #15803d;
+}
+
+/* Contenedor del pie del modal para alinear los botones */
+.modal-footer-acciones {
+    margin-top: 20px;
+    text-align: right;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+
+  /* Fondo oscuro que cubre toda la pantalla.
+   El z-index es el máximo posible para que quede por encima de cualquier modal. */
+.cl-dlg-overlay {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 2147483647 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(2px);
+    animation: clFade 0.15s ease-out;
+}
+
+/* Caja de la ventana */
+.cl-dlg {
+    width: 100%;
+    max-width: 440px;
+    background: #fff;
+    color: #1e293b;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    animation: clPop 0.18s ease-out;
+}
+
+/* Encabezado: ícono + título */
+.cl-dlg-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 20px;
+    font-weight: 700;
+    font-size: 1.05rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.cl-dlg-icono {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 1rem;
+}
+
+/* Color del ícono según el tipo de mensaje */
+.cl-dlg-info     .cl-dlg-icono { background: #0284c7; }
+.cl-dlg-ok       .cl-dlg-icono { background: #16a34a; }
+.cl-dlg-error    .cl-dlg-icono { background: #dc2626; }
+.cl-dlg-aviso    .cl-dlg-icono { background: #d97706; }
+.cl-dlg-pregunta .cl-dlg-icono { background: #0284c7; }
+
+/* Cuerpo: mensaje (y campo de texto cuando se pide un motivo) */
+.cl-dlg-body {
+    padding: 18px 20px;
+    max-height: 50vh;
+    overflow: auto;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.cl-dlg-input {
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 12px;
+    padding: 10px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: #fff;
+    color: inherit;
+    font: inherit;
+}
+
+.cl-dlg-input:focus {
+    outline: 2px solid #0284c7;
+    outline-offset: 0;
+    border-color: #0284c7;
+}
+
+/* Pie: botones */
+.cl-dlg-foot {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 12px 20px 18px;
+}
+
+.cl-dlg-btn {
+    padding: 9px 18px;
+    border: 0;
+    border-radius: 8px;
+    background: #0284c7;
+    color: #fff;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.cl-dlg-btn:hover {
+    opacity: 0.9;
+}
+
+.cl-dlg-btn:focus-visible {
+    outline: 2px solid #0f172a;
+    outline-offset: 2px;
+}
+
+.cl-dlg-btn.cl-sec {        /* Cancelar */
+    background: #6c757d;
+}
+
+.cl-dlg-btn.cl-peligro {    /* Acciones destructivas (eliminar, rechazar...) */
+    background: #dc3545;
+}
+
+/* Animaciones */
+@keyframes clFade {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes clPop {
+    from {
+        opacity: 0;
+        transform: translateY(-8px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+/* Corrección de estructura y eliminación de scrollbars */
+.cl-dlg {
+    max-width: 420px !important;
+    width: 90% !important;
+    max-height: 90vh !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+}
+
+/* Forzar que el cuerpo se alinee a la izquierda y no genere scroll innecesario */
+.cl-dlg-body {
+    padding: 20px 24px !important;
+    text-align: left !important;
+    overflow-y: auto !important;
+    max-height: calc(90vh - 120px) !important;
+    box-sizing: border-box !important;
+}
+
+/* Reset de labels para que el texto quede pegado a la izquierda arriba del input */
+.cl-dlg-body label {
+    display: block !important;
+    text-align: left !important;
+    width: 100% !important;
+    margin-bottom: 6px !important;
+    font-weight: 600 !important;
+    font-size: 13px !important;
+    color: #334155 !important;
+}
+
+/* Ajuste uniforme de select, input y textarea */
+.cl-dlg-body select.cl-dlg-input,
+.cl-dlg-body textarea.cl-dlg-input {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 0 16px 0 !important;
+    padding: 10px 12px !important;
+    box-sizing: border-box !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 6px !important;
+    font-size: 14px !important;
+    font-family: inherit !important;
+    background-color: #ffffff !important;
+}
+
+.cl-dlg-body textarea.cl-dlg-input {
+    min-height: 80px !important;
+    resize: vertical !important;
+    margin-bottom: 0 !important;
+}
+
+/* Pie del modal alineado correctamente */
+.cl-dlg-foot {
+    padding: 14px 20px !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+    gap: 10px !important;
+    background-color: #f8fafc !important;
+    border-top: 1px solid #e2e8f0 !important;
+}
+
+/* Corrección de superposición (Z-Index) para el panel del Admin */
+#panel-admin-prestamo-head {
+    position: relative !important;
+    z-index: 1050 !important; /* Capa superior sobre la tabla y catálogo */
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 10px !important;
+    padding: 16px 20px !important;
+    margin-bottom: 20px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Distribución adaptable del formulario superior */
+.admin-form-grid {
+    display: grid !important;
+    grid-template-columns: 2fr 1fr 1fr !important;
+    gap: 16px !important;
+    align-items: end !important;
+}
+
+@media (max-width: 768px) {
+    .admin-form-grid {
+        grid-template-columns: 1fr !important; /* En móviles se apila verticalmente */
+    }
+}
+
+/* Estilos refinados para select e inputs del panel admin */
+#panel-admin-prestamo-head label {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: #334155 !important;
+    display: block !important;
+    margin-bottom: 6px !important;
+}
+
+#panel-admin-prestamo-head select,
+#panel-admin-prestamo-head input {
+    width: 100% !important;
+    padding: 9px 12px !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 6px !important;
+    font-size: 14px !important;
+    background-color: #f8fafc !important;
+    transition: border-color 0.2s, box-shadow 0.2s !important;
+    box-sizing: border-box !important;
+}
+
+#panel-admin-prestamo-head select:focus,
+#panel-admin-prestamo-head input:focus {
+    border-color: #0284c7 !important;
+    background-color: #ffffff !important;
+    outline: none !important;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15) !important;
+}
+
+/* Área de resumen del pedido seleccionado */
+#admin-resumen-carrito {
+    margin-top: 16px !important;
+    padding-top: 14px !important;
+    border-top: 1px dashed #e2e8f0 !important;
+}
+
+/* Badges de materiales elegidos */
+.badge-item-prestamo {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    background: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+    padding: 4px 10px !important;
+    border-radius: 16px !important;
+    font-size: 12px !important;
+    color: #1e293b !important;
+}
+
+/* Forzar que la cabecera del formulario admin quede sobre cualquier tabla o tarjeta */
+#panel-admin-prestamo-head {
+    position: relative !important;
+    z-index: 9999 !important;
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 8px !important;
+    padding: 16px !important;
+    margin-bottom: 20px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Asegurar que el contenedor del modal permita capas superpuestas sin recortarlas */
+#modalSolicitarPrestamo .modal-cuerpo,
+#modalSolicitarPrestamo .modal-body {
+    overflow: visible !important;
+}
+
+/* Ajuste de z-index de las tablas en caso de que tengan posición relativa */
+#modalSolicitarPrestamo table,
+#contenedor-productos-cliente {
+    position: relative !important;
+    z-index: 1 !important;
+}
+/* Forzar que el modal flote por encima de tablas y tarjetas */
+.modal.active {
+    display: flex !important;
+    z-index: 99999 !important; /* Capa superior absoluta */
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+/* Forzar capa máxima para el modal de préstamos */
+#modalSolicitarPrestamo {
+    z-index: 999999 !important;
+}
+
+#modalSolicitarPrestamo .modal-contenido,
+#modalSolicitarPrestamo .modal-dialog,
+#modalSolicitarPrestamo > div {
+    position: relative !important;
+    z-index: 1000000 !important;
+}
+
+/* Overlay completo en la capa superior */
+.modal-admin-overlay {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 999999 !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Caja principal del modal */
+.modal-admin-contenedor {
+    background: #ffffff;
+    width: 90%;
+    max-width: 950px;
+    max-height: 90vh;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.modal-admin-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-admin-header h3 {
+    margin: 0;
+    color: #0f172a;
+    font-size: 18px;
+}
+
+.modal-admin-cerrar {
+    font-size: 24px;
+    cursor: pointer;
+    color: #64748b;
+}
+
+.modal-admin-body {
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Panel de selección superior */
+.panel-admin-datos {
+    display: flex;
+    gap: 12px;
+    background: #f8fafc;
+    padding: 14px;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+}
+
+.campo-admin label {
+    display: block;
+    font-size: 12px;
+    font-weight: bold;
+    color: #1e293b;
+    margin-bottom: 4px;
+}
+
+.campo-admin select, .campo-admin input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 13px;
+    background: #fff;
+    box-sizing: border-box;
+}
+
+/* Grilla del catálogo */
+.catalogo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+    max-height: 280px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.card-producto-admin {
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 12px;
+    background: #fff;
+}
+
+.card-producto-admin h5 {
+    margin: 0 0 6px 0;
+    font-size: 15px;
+}
+
+.card-producto-admin p {
+    margin: 2px 0;
+    font-size: 12px;
+    color: #475569;
+}
+
+/* Caja Tu Pedido */
+.caja-tu-pedido {
+    border: 1.5px solid #0284c7;
+    border-radius: 8px;
+    padding: 14px;
+    background: #fafafa;
+}
+
+.caja-tu-pedido h4 {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    color: #0369a1;
+}
+
+.modal-admin-footer {
+    padding: 14px 20px;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.btn-cancelar-admin {
+    background: #e2e8f0;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.btn-confirmar-admin {
+    background: #16a34a;
+    color: white;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+}

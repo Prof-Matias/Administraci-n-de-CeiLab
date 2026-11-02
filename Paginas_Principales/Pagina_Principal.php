@@ -23,7 +23,7 @@ if (!isset($_SESSION['Rol'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="Diseño_Principal.css?v=4">
-    <link rel="stylesheet" href="Diseño2.css?v=2">
+    <link rel="stylesheet" href="Diseño2.css?v=3">
     <link rel="stylesheet" href="animaciones.css">
     <title>CeiLab - Gestión Principal</title>
 </head>
@@ -162,7 +162,7 @@ if (!isset($_SESSION['Rol'])) {
                             <th>Teléfono(s)</th>
                             <th>Rol</th>
                             <th>Especialidad</th>
-                            <th style="width: 160px;">Acciones</th>
+                            <th style="width: 280px;">Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="bodyTablaUsuarios"></tbody>
@@ -218,7 +218,23 @@ if (!isset($_SESSION['Rol'])) {
                 </div>
                 <div class="form-group">
                     <label>Especialidad</label>
-                    <input type="text" id="especialidad" name="especialidad">
+                    <select id="especialidad" name="especialidad" >
+                        <option value="" disabled selected>Selecciona una opción</option>
+                        <option value="Informatica">Informatica</option>
+                        <option value="Biologia">Biologia</option>
+                        <option value="Quimica">Quimica</option>
+                        <option value="Historia">Historia</option>
+                        <option value="Literatura">Literatura</option>
+                        <option value="Idioma_español">Idioma español</option>
+                        <option value="Derecho">Derecho</option>
+                        <option value="Filosofia">Filosofia</option>
+                        <option value="Ingles">Ingles</option>
+                        <option value="Matematica">Matematica</option>
+                        <option value="Sociologia">Sociologia</option>
+                        <option value="Geografia">Geografia</option>
+                        <option value="Educador_Social">Educador Social</option>
+
+                </select>
                 </div>
                 <button type="submit" class="btn-modal btn-crear" style="width: 100%; margin-top: 10px;">Guardar Usuario</button>
             </form>
@@ -243,6 +259,7 @@ if (!isset($_SESSION['Rol'])) {
                 <button class="modal-close" onclick="cerrarModal('modalGestionProductos')">&times;</button>
             </div>
             <button class="btn-modal btn-crear" onclick="abrirModalFormularioProducto()">+ Nuevo Producto</button>
+            <button class="btn-modal btn-editar" onclick="abrirModalStockStock()">Imprimir Stock</button>
             <div class="table-responsive">
                 <table class="tabla-modal">
                     <thead>
@@ -333,6 +350,37 @@ if (!isset($_SESSION['Rol'])) {
         </div>
     </div>
 
+    <!-- MODAL: VISTA PREVIA DE IMPRESIÓN DE STOCK -->
+<div class="modal-overlay" id="modalImprimirStock" style="z-index:1300;">
+    <div class="modal-content" style="max-width:750px; max-height:85vh; overflow-y:auto;">
+        <div class="modal-header">
+            <h3>Control de Stock Actual - Inventario CeiLab</h3>
+            <button class="modal-close" onclick="cerrarModal('modalImprimirStock')">&times;</button>
+        </div>
+        
+        <div class="table-responsive" style="margin-top: 15px;">
+            <table class="tabla-modal">
+                <thead>
+                    <tr>
+                        <th>Material</th>
+                        <th>Total</th>
+                        <th>Disponible</th>
+                        <th>Comprometidos</th>
+                        <th>Aprobados</th>
+                        <th>Prestados</th>
+                    </tr>
+                </thead>
+                <tbody id="bodyImprimirStock"></tbody>
+            </table>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+            <button class="btn-modal btn-crear" onclick="window.print()">Imprimir / Guardar PDF</button>
+            <button class="btn-modal btn-cancelar" onclick="cerrarModal('modalImprimirStock')">Cerrar</button>
+        </div>
+    </div>
+</div>
+
     <div class="modal-overlay" id="modalHistorialProducto" style="z-index: 1200;">
         <div class="modal-content" style="max-width: 750px;">
             <div class="modal-header">
@@ -357,53 +405,52 @@ if (!isset($_SESSION['Rol'])) {
         </div>
     </div>
     
-<!-- VENTANA MODAL: VER PERFIL DE USUARIO -->
-<!-- VENTANA MODAL: VER PERFIL DE USUARIO -->
-<div class="modal-overlay" id="modalVerPerfil">
-    <div class="modal-content perfil-card-modal">
-        <div class="modal-header">
-            <h3>Perfil de Usuario</h3>
-            <button type="button" class="modal-close" onclick="cerrarModal('modalVerPerfil')">&times;</button>
-        </div>
-        
-        <div class="perfil-card-body">
-            <!-- Encabezado con Avatar -->
-            <div class="perfil-avatar-section">
-                <div class="avatar-circle">
-                    <?php echo strtoupper(substr($_SESSION['Nombre'], 0, 1)); ?>
-                </div>
-                <h4><?php echo htmlspecialchars($_SESSION['Nombre'] . ' ' . ($_SESSION['Apellido'] ?? '')); ?></h4>
-                <span class="badge-rol"><?php echo htmlspecialchars($_SESSION['Rol']); ?></span>
+    <!-- VENTANA MODAL: VER PERFIL DE USUARIO -->
+    <div class="modal-overlay" id="modalVerPerfil">
+        <div class="modal-content perfil-card-modal">
+            <div class="modal-header">
+                <h3>Perfil de Usuario</h3>
+                <button type="button" class="modal-close" onclick="cerrarModal('modalVerPerfil')">&times;</button>
             </div>
-
-            <!-- Lista de Datos en Filas Separadas -->
-            <div class="perfil-details-list">
-                <div class="perfil-item">
-                    <span class="item-label">Cédula de Identidad</span>
-                    <span class="item-value"><?php echo htmlspecialchars($_SESSION['Cedula'] ?? $_SESSION['CI'] ?? '10000001'); ?></span>
+            
+            <div class="perfil-card-body">
+                <!-- Encabezado con Avatar -->
+                <div class="perfil-avatar-section">
+                    <div class="avatar-circle">
+                        <?php echo strtoupper(substr($_SESSION['Nombre'], 0, 1)); ?>
+                    </div>
+                    <h4><?php echo htmlspecialchars($_SESSION['Nombre'] . ' ' . ($_SESSION['Apellido'] ?? '')); ?></h4>
+                    <span class="badge-rol"><?php echo htmlspecialchars($_SESSION['Rol']); ?></span>
                 </div>
 
-                <div class="perfil-item">
-                    <span class="item-label">Correo Electrónico</span>
-                    <span class="item-value"><?php echo htmlspecialchars($_SESSION['Correo'] ?? $_SESSION['Email'] ?? 'lucia.fernandez@cerpdeleste.edu.uy'); ?></span>
+                <!-- Lista de Datos en Filas Separadas -->
+                <div class="perfil-details-list">
+                    <div class="perfil-item">
+                        <span class="item-label">Cédula de Identidad</span>
+                        <span class="item-value"><?php echo htmlspecialchars($_SESSION['Cedula'] ?? $_SESSION['CI'] ?? '10000001'); ?></span>
+                    </div>
+
+                    <div class="perfil-item">
+                        <span class="item-label">Correo Electrónico</span>
+                        <span class="item-value"><?php echo htmlspecialchars($_SESSION['Correo'] ?? $_SESSION['Email'] ?? 'lucia.fernandez@cerpdeleste.edu.uy'); ?></span>
+                    </div>
+
+                    <div class="perfil-item">
+                        <span class="item-label">Especialidad / Cargo</span>
+                        <span class="item-value"><?php echo htmlspecialchars($_SESSION['Especialidad'] ?? 'Sin especificar'); ?></span>
+                    </div>
                 </div>
 
-                <div class="perfil-item">
-                    <span class="item-label">Especialidad / Cargo</span>
-                    <span class="item-value"><?php echo htmlspecialchars($_SESSION['Especialidad'] ?? 'Sin especificar'); ?></span>
-                </div>
+                <!-- Acciones -->
+                <button type="button" class="btn-editar-perfil-main" onclick="abrirEditarPerfilPropio()">
+                    Editar mis Datos
+                </button>
             </div>
-
-            <!-- Acciones -->
-            <button type="button" class="btn-editar-perfil-main" onclick="abrirEditarPerfilPropio()">
-                Editar mis Datos
-            </button>
         </div>
     </div>
-</div>
 
 
-<!-- ==========================================================================
+    <!-- ==========================================================================
          MODAL: CATÁLOGO DE PRODUCTOS (VISTA CLIENTE)
          ========================================================================== -->
     <div class="modal-overlay" id="modalSolicitarPrestamo">
@@ -427,9 +474,72 @@ if (!isset($_SESSION['Rol'])) {
         </div>
     </div>
 
-<!-- ==========================================================================
-    CARGA DE SCRIPTS Y CONFIGURACIÓN GLOBAL
-    ========================================================================== -->
+    <!-- MODAL EXCLUSIVO PARA NUEVO PRÉSTAMO DESDE ADMINISTRACIÓN -->
+<div id="modalPrestamoAdmin" class="modal-admin-overlay" style="display: none;">
+    <div class="modal-admin-contenedor">
+        <!-- Cabecera -->
+        <div class="modal-admin-header">
+            <h3>Nuevo Préstamo (Administración)</h3>
+            <span class="modal-admin-cerrar" onclick="adminCerrarModal()">&times;</span>
+        </div>
+
+        <!-- Cuerpo del Modal -->
+        <div class="modal-admin-body">
+            <!-- Formulario Superior (Cliente, Materia, Horas) -->
+            <div class="panel-admin-datos">
+                <div class="campo-admin" style="flex: 2;">
+                    <label>Seleccionar Cliente / Usuario *</label>
+                    <select id="admin_select_cliente" onchange="PedidoAdminState.clienteCedula = this.value;">
+                        <option value="">-- Cargando usuarios... --</option>
+                    </select>
+                </div>
+                <div class="campo-admin" style="flex: 1;">
+                    <label>Materia / Motivo</label>
+                    <select  id="admin_input_materia" placeholder="Ej: Física" oninput="PedidoAdminState.materia = this.value;">
+                                    <option value="" disabled selected>Selecciona una opción</option>
+                        <option value="Informatica">Informatica</option>
+                        <option value="Biologia">Biologia</option>
+                        <option value="Quimica">Quimica</option>
+                        <option value="Historia">Historia</option>
+                        <option value="Literatura">Literatura</option>
+                        <option value="Idioma_español">Idioma español</option>
+                        <option value="Derecho">Derecho</option>
+                        <option value="Filosofia">Filosofia</option>
+                        <option value="Ingles">Ingles</option>
+                        <option value="Matematica">Matematica</option>
+                        <option value="Sociologia">Sociologia</option>
+                        <option value="Geografia">Geografia</option>
+                        <option value="Educador_Social">Educador Social</option>
+                </select>
+                </div>
+                <div class="campo-admin" style="flex: 1;">
+                    <label>Duración (Horas)</label>
+                    <input type="number" id="admin_input_horas" value="2" min="1" max="24" onchange="PedidoAdminState.horas = parseInt(this.value) || 2;">
+                </div>
+            </div>
+
+            <!-- Catálogo de Productos -->
+            <div id="admin-catalogo-productos" class="catalogo-grid">
+                <!-- Se dibuja dinámicamente -->
+            </div>
+
+            <!-- Resumen del Pedido (Tu Pedido) -->
+            <div class="caja-tu-pedido">
+                <h4>Tu pedido</h4>
+                <div id="admin-resumen-items">
+                    <p class="texto-vacio">Todavía no agregaste materiales.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pie con Botón de Confirmación -->
+        <div class="modal-admin-footer">
+            <button type="button" class="btn-cancelar-admin" onclick="adminCerrarModal()">Cancelar</button>
+            <button type="button" class="btn-confirmar-admin" onclick="adminProcesarSolicitudDirecta()">✓ Registrar Préstamo Directo</button>
+        </div>
+    </div>
+</div>
+
 <script>
     window.USUARIO_ACTUAL = {
         cedula: "<?php echo $_SESSION['Cedula'] ?? $_SESSION['CI'] ?? ''; ?>",
@@ -442,7 +552,8 @@ if (!isset($_SESSION['Rol'])) {
 </script>
 
 <!-- 1. Primero cargamos el Script general de la página donde viven toggleDropdown y funciones base -->
-<script src="Script.js?v=5"></script>
+<script src="Script.js?v=2"></script>
+
 
 <!-- 2. Luego incluimos la vista de préstamos (que define abrirModalSolicitarPrestamo y los fetch) UNA SOLA VEZ -->
 <?php include __DIR__ . '/../CRUD_Prestamos/Vista/Vista_Prestamos.php'; ?>
