@@ -14,6 +14,7 @@
  */
 require_once __DIR__ . '/../../Config/Conexion.php';
 require_once __DIR__ . '/../../Config/Estados.php';
+require_once __DIR__ . '/../../Config/Disponibilidad.php';
 
 class Modelo_Prestamo {
     /** @var PDO */
@@ -226,6 +227,13 @@ class Modelo_Prestamo {
             } elseif ($cantidad > $d['total'] - $d['en_mantenimiento']) {
                 $errores[] = "De «{$nombre}» hay " . ($d['total'] - $d['en_mantenimiento'])
                            . " en servicio y pediste {$cantidad}.";
+            } else {
+                $reservadas = $this->reservadoEnVentana($nombre, $horas);
+                $libresAhora = $d['total'] - $d['en_mantenimiento'] - $reservadas;
+                if ($reservadas > 0 && $cantidad > $libresAhora) {
+                    $errores[] = "«{$nombre}»: pediste {$cantidad}, pero hay {$reservadas} reservadas para las próximas {$horas} h "
+                               . '(las reservas tienen prioridad) y quedan ' . max(0, $libresAhora) . ' para prestar.';
+                }
             }
         }
         if ($errores) {
@@ -268,10 +276,12 @@ class Modelo_Prestamo {
                 $this->conexion->prepare("SELECT id_material FROM material WHERE nombre = ? FOR UPDATE")
                                ->execute([$linea['nombre_material']]);
                 $d = $this->disponibilidad($linea['nombre_material'], $idSolicitud);
-                if ($d['libres'] < $linea['cantidad']) {
-                    $errores[] = sprintf('«%s»: se piden %d y hay %d libres (%d disponibles, %d comprometidas en otras aprobaciones, %d en mantenimiento, %d prestadas).',
-                        $linea['nombre_material'], $linea['cantidad'], $d['libres'], $d['disponibles'],
-                        $d['comprometidas'], $d['en_mantenimiento'], $d['prestadas']);
+                $reservadas = $this->reservadoEnVentana($linea['nombre_material'], $this->horasDe($idSolicitud));
+                $libres = max(0, $d['libres'] - $reservadas);
+                if ($libres < $linea['cantidad']) {
+                    $errores[] = sprintf('«%s»: se piden %d y hay %d libres (%d disponibles, %d comprometidas en otras aprobaciones, %d reservadas en el período, %d en mantenimiento, %d prestadas).',
+                        $linea['nombre_material'], $linea['cantidad'], $libres, $d['disponibles'],
+                        $d['comprometidas'], $reservadas, $d['en_mantenimiento'], $d['prestadas']);
                 }
             }
             if ($errores) {
@@ -371,6 +381,12 @@ class Modelo_Prestamo {
             $consumibles = [];
             foreach ($pedido as $clave => $linea) {
                 $d = $this->disponibilidad($linea['nombre_material'], $idSolicitud);
+                $reservadas = $this->reservadoEnVentana($linea['nombre_material'], $this->horasDe($idSolicitud));
+                if ($reservadas > 0 && $d['libres'] - $reservadas < (int)$linea['cantidad']) {
+                    $errores[] = sprintf('«%s»: hay %d reservadas en las próximas horas y no alcanza para entregar %d (las reservas tienen prioridad).',
+                        $linea['nombre_material'], $reservadas, $linea['cantidad']);
+                    continue;
+                }
                 if ($d['tipo_control'] === 'SERIE') {
                     $dadas = count($unidades[$clave] ?? []);
                     if ($dadas !== (int)$linea['cantidad']) {
@@ -607,9 +623,10 @@ class Modelo_Prestamo {
             $this->conexion->prepare("SELECT id_material FROM material WHERE nombre = ? FOR UPDATE")
                            ->execute([$linea['nombre_material']]);
             $d = $this->disponibilidad($linea['nombre_material'], $idSolicitud);
-            if ($cantidad > $d['libres']) {
-                $errores[] = sprintf('«%s»: pediste %d y solo hay %d libres para este préstamo (%d disponibles, %d comprometidas en otros préstamos aprobados).',
-                    $linea['nombre_material'], $cantidad, $d['libres'], $d['disponibles'], $d['comprometidas']);
+            $libresEd = max(0, $d['libres'] - $this->reservadoEnVentana($linea['nombre_material'], $this->horasDe($idSolicitud)));
+            if ($cantidad > $libresEd) {
+                $errores[] = sprintf('«%s»: pediste %d y solo hay %d libres para este préstamo (%d disponibles, %d comprometidas en otros préstamos aprobados, descontadas las reservas del período).',
+                    $linea['nombre_material'], $cantidad, $libresEd, $d['disponibles'], $d['comprometidas']);
                 continue;
             }
             $aplicar[] = [$linea['nombre_material'], $cantidad];
@@ -874,6 +891,24 @@ class Modelo_Prestamo {
             "SELECT nombre FROM material WHERE nombre = ? AND estado <> 'DADO_DE_BAJA' ORDER BY id_material LIMIT 1");
         $st->execute([$nombre]);
         return $st->fetchColumn() ?: $nombre;
+    }
+
+    /**
+     * Unidades de un tipo que hay APROBADAS/ACTIVAS en reservas durante la ventana del préstamo
+     * [ahora, ahora + horas). Las reservas tienen prioridad sobre los préstamos, así que
+     * esas unidades no se pueden prestar. Es el máximo simultáneo, no la suma.
+     */
+    private function reservadoEnVentana($nombre, $horas) {
+        $ahora = Disponibilidad::ahora();
+        $fin   = $ahora->modify('+' . max(1, (int)$horas) . ' hours');
+        return (new Disponibilidad($this->conexion))
+            ->reservado($nombre, $ahora->format('Y-m-d H:i:s'), $fin->format('Y-m-d H:i:s'));
+    }
+
+    private function horasDe($idSolicitud) {
+        $st = $this->conexion->prepare("SELECT horas_solicitadas FROM prestamo WHERE id_solicitud = ?");
+        $st->execute([$idSolicitud]);
+        return (int)$st->fetchColumn();
     }
 
     private function pedido($idSolicitud) {
