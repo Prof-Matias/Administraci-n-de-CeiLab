@@ -33,11 +33,13 @@ if (!isset($_SESSION['Rol'])) {
     <div class="app-container">
         
         <!-- BARRA DE NAVEGACIÓN SUPERIOR -->
-        <header class="Barra">
-            <a href="Pagina_Principal.php" class="brand-logo">
-                <img src="../Material_Visual/itrio.png" alt="Logo ITRIO" class="logo-itrio">
-                <span class="brand-text">CEILAB</span>
-            </a>
+        <!-- BARRA DE NAVEGACIÓN SUPERIOR -->
+    <header class="Barra">
+        <a href="sobre-nosotros.php" target="_blank" rel="noopener noreferrer" class="brand-logo">
+            <img src="../Material_Visual/itrio.png" alt="Logo ITRIO" class="logo-itrio">
+            <span class="brand-text">CEILAB</span>
+        </a>
+
 
             <div class="nav-actions">
                 <!-- Switch animado de modo oscuro -->
