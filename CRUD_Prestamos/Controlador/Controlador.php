@@ -56,7 +56,7 @@ try {
     switch ($action) {
         /* ---------- Cliente ---------- */
         case 'solicitar':
-            $id = $modelo->solicitar($ci, $in['materia'] ?? '', $in['horas_solicitadas'] ?? 0, $in['items'] ?? []);
+            $id = $modelo->solicitar($ci, $in['especialidad'] ?? '', $in['horas_solicitadas'] ?? 0, $in['items'] ?? []);
             ok(['id_solicitud' => $id]);
             break;
 
