@@ -91,7 +91,7 @@ if (!isset($_SESSION['Rol'])) {
                         <span class="card-title">Gestionar Préstamos</span>
                         <span class="card-desc">Controla las entregas y devoluciones.</span>
                     </button>
-                    <button type="button" class="action-card" id="Reservas">
+                    <button type="button" class="action-card" id="Reservas" onclick="abrirModalGestionReservas()">
                         <span class="card-title">Gestionar Reservas</span>
                         <span class="card-desc">Revisa el calendario de reservas semanales.</span>
                     </button>
@@ -110,7 +110,7 @@ if (!isset($_SESSION['Rol'])) {
                         <span class="card-title">Solicitar Préstamo</span>
                         <span class="card-desc">Crea una solicitud para pedir equipos prestados del ceilab.</span>
                     </button>
-                    <button type="button" class="action-card" id="SolicitarRes">
+                    <button type="button" class="action-card" id="SolicitarRes" onclick="abrirModalHacerReserva()">
                         <span class="card-title">Hacer Reserva</span>
                         <span class="card-desc">Crea una solicitud para reservar equipos en la semana.</span>
                     </button>
@@ -557,6 +557,7 @@ if (!isset($_SESSION['Rol'])) {
 
 <!-- 2. Luego incluimos la vista de préstamos (que define abrirModalSolicitarPrestamo y los fetch) UNA SOLA VEZ -->
 <?php include __DIR__ . '/../CRUD_Prestamos/Vista/Vista_Prestamos.php'; ?>
+<?php include __DIR__ . '/../CRUD_Reservas/Vista/Vista_Reservas.php'; ?>
 
 </body>
 </html>
