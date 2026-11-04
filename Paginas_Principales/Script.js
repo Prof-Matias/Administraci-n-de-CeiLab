@@ -1047,6 +1047,34 @@ async function editarProducto(id) {
     }
 }
 
+function solicitarConfirmacionProducto(e) {
+    if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    const form = document.getElementById('formProducto');
+    if (!form || !form.checkValidity()) {
+        if (form) form.reportValidity();
+        return;
+    }
+
+    const mensaje = esEdicionProducto 
+        ? '¿Estás seguro de actualizar este producto?' 
+        : '¿Estás seguro de registrar este nuevo producto?';
+
+    const textoConf = document.getElementById('textoConfirmacionProducto');
+    if (textoConf) textoConf.innerText = mensaje;
+
+    const modalConf = document.getElementById('modalConfirmacionGuardarProducto');
+    if (modalConf) {
+        modalConf.classList.add('active');
+    } else {
+        // Si no tienes modal de confirmación intermedio, guarda directo
+        ejecutarGuardadoProducto();
+    }
+}
+
 async function ejecutarGuardadoProducto() {
     cerrarModal('modalConfirmacionGuardarProducto');
 
