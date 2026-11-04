@@ -218,7 +218,7 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
 
         let html = `
             <p><b>Cliente:</b> ${esc(p.cliente)} (${esc(p.ci_cliente)}) · <b>Materia:</b> ${esc(p.materia || '—')} · <b>Horas:</b> ${esc(p.horas_solicitadas)}</p>
-            <p><b>Solicitado:</b> ${fecha(p.fecha_solicitud)} · <b>Validado:</b> ${fecha(p.fecha_validacion)} ·
+            <p><b>Solicitado:</b> ${fecha(p.fecha_solicitud)} · <b>Validado/Rechazado/Cancelado :</b> ${fecha(p.fecha_validacion)} ·
                <b>Entregado:</b> ${fecha(p.fecha_entrega)} · <b>Devuelto:</b> ${fecha(p.fecha_devolucion)}</p>
             ${p.motivo_rechazo ? `<p><b>Motivo del rechazo:</b> ${esc(p.motivo_rechazo)}</p>` : ''}`;
 
