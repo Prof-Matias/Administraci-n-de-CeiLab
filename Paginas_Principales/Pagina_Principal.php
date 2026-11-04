@@ -552,7 +552,7 @@ if (!isset($_SESSION['Rol'])) {
 </script>
 
 <!-- 1. Primero cargamos el Script general de la página donde viven toggleDropdown y funciones base -->
-<script src="Script.js?v=2"></script>
+<script src="Script.js?v=3"></script>
 
 
 <!-- 2. Luego incluimos la vista de préstamos (que define abrirModalSolicitarPrestamo y los fetch) UNA SOLA VEZ -->

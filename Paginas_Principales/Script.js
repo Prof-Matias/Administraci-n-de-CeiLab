@@ -930,30 +930,57 @@ async function reactivarMaterial(idMaterial) {
     }
 }
 
+/**
+ * Oculta todos los bloques y muestra únicamente los correspondientes al tipo de producto.
+ */
 function ajustarFormularioProducto() {
     const tipoSelect = document.getElementById('prod_tipo');
     if (!tipoSelect) return;
 
-    const tipo = tipoSelect.value;
-    
-    const gSeries = document.getElementById('grupoSeries');
-    const gSerie = document.getElementById('grupoSerie');
-    const gCant = document.getElementById('grupoCantidad');
-    const gAplicar = document.getElementById('grupoAplicar');
+    const gSeries  = document.getElementById('grupoSeries');   // Múltiples series (Alta)
+    const gSerie   = document.getElementById('grupoSerie');    // Serie individual (Edición)
+    const gCant    = document.getElementById('grupoCantidad'); // Cantidad total
+    const gAplicar = document.getElementById('grupoAplicar');  // Checkbox masivo (Edición)
 
-    if (gSeries) gSeries.style.display = (!esEdicionProducto && tipo === 'SERIE') ? '' : 'none';
-    if (gSerie) gSerie.style.display = (esEdicionProducto && tipo === 'SERIE') ? '' : 'none';
-    if (gCant) gCant.style.display = (tipo === 'CANTIDAD') ? '' : 'none';
-    if (gAplicar) gAplicar.style.display = esEdicionProducto ? '' : 'none';
+    // 1. Ocultar todos los contenedores por defecto
+    [gSeries, gSerie, gCant, gAplicar].forEach(el => {
+        if (el) el.style.setProperty('display', 'none', 'important');
+    });
 
+    // 2. Leer el atributo value del selector de forma estricta
+    const val = (tipoSelect.value || '').toUpperCase();
+
+    // Si el valor contiene 'CANTIDAD', es un producto por cantidad (independientemente del texto visual)
+    const esCantidad = val.includes('CANTIDAD');
+    const esSerie = !esCantidad && val.includes('SERIE');
+
+    // 3. Mostrar únicamente el grupo correspondiente
+    if (esSerie) {
+        if (esEdicionProducto && gSerie) {
+            gSerie.style.setProperty('display', 'block', 'important');
+        } else if (!esEdicionProducto && gSeries) {
+            gSeries.style.setProperty('display', 'block', 'important');
+        }
+    } else {
+        // Muestra el campo 'Cantidad total' para todos los productos por cantidad
+        if (gCant) {
+            gCant.style.setProperty('display', 'block', 'important');
+        }
+    }
+
+    if (esEdicionProducto && gAplicar) {
+        gAplicar.style.setProperty('display', 'block', 'important');
+    }
+
+    // 4. Actualizar dinámicamente los campos requeridos
     const prodSeries = document.getElementById('prod_series');
-    if (prodSeries) prodSeries.required = !esEdicionProducto && tipo === 'SERIE';
+    if (prodSeries) prodSeries.required = (!esEdicionProducto && esSerie);
 
     const prodIdSerie = document.getElementById('prod_id_serie');
-    if (prodIdSerie) prodIdSerie.required = esEdicionProducto && tipo === 'SERIE';
+    if (prodIdSerie) prodIdSerie.required = (esEdicionProducto && esSerie);
 
     const prodCantTotal = document.getElementById('prod_cant_total');
-    if (prodCantTotal) prodCantTotal.required = (tipo === 'CANTIDAD');
+    if (prodCantTotal) prodCantTotal.required = !esSerie;
 
     tipoSelect.disabled = esEdicionProducto;
 }
@@ -967,10 +994,13 @@ function abrirModalFormularioProducto() {
     document.getElementById('foto_actual').value = '';
     document.getElementById('tituloFormProducto').innerText = 'Nuevo Producto';
     
+    const selectTipo = document.getElementById('prod_tipo');
+    if (selectTipo) selectTipo.disabled = false;
+
     ajustarFormularioProducto();
     document.getElementById('modalFormularioProducto').classList.add('active');
 }
-
+// Carga los datos del producto vía AJAX y despliega el modal de edición
 async function editarProducto(id) {
     esEdicionProducto = true;
     try {
@@ -978,7 +1008,7 @@ async function editarProducto(id) {
         const p = await res.json();
 
         if (!p || !p.id_material) {
-            window.avisar("No se encontraron datos para este producto.");
+            alert("No se encontraron datos para este producto.");
             return;
         }
 
@@ -988,19 +1018,24 @@ async function editarProducto(id) {
         document.getElementById('prod_categoria').value = p.categoria || '';
         document.getElementById('foto_actual').value = p.foto_material || p.Foto_Material || '';
 
+        // Determinar si el producto es de tipo SERIE o CANTIDAD
         const selectTipo = document.getElementById('prod_tipo');
         if (selectTipo) {
-            selectTipo.value = p.tipo_control || 'SERIE';
+            const tipoBD = (p.tipo_control || '').toUpperCase();
+            const esTipoSerie = (tipoBD === 'SERIE') || Boolean(p.id_serie && p.id_serie.trim() !== '');
+
+            // Asignar la opción exacta al select ('SERIE' o 'CANTIDAD')
+            selectTipo.value = esTipoSerie ? 'SERIE' : 'CANTIDAD';
         }
 
-        if (p.tipo_control === 'CANTIDAD') {
-            const cantInput = document.getElementById('prod_cant_total');
-            if (cantInput) cantInput.value = p.cantidad_total || 0;
-        } else {
-            const serieInput = document.getElementById('prod_id_serie');
-            if (serieInput) serieInput.value = p.id_serie || '';
-        }
+        // Cargar los valores correspondientes
+        const serieInput = document.getElementById('prod_id_serie');
+        if (serieInput) serieInput.value = p.id_serie || '';
 
+        const cantInput = document.getElementById('prod_cant_total');
+        if (cantInput) cantInput.value = p.cantidad_total || 0;
+
+        // Ejecutar el ajuste de visibilidad sincrónicamente antes de mostrar el modal
         ajustarFormularioProducto();
 
         document.getElementById('tituloFormProducto').innerText = 'Editar Producto';
@@ -1008,25 +1043,8 @@ async function editarProducto(id) {
 
     } catch (error) {
         console.error("Error al cargar el producto para edición:", error);
-        window.avisar("Ocurrió un error al obtener la información del producto.");
+        alert("Ocurrió un error al obtener la información del producto.");
     }
-}
-
-function solicitarConfirmacionProducto(e) {
-    e.preventDefault();
-    const form = document.getElementById('formProducto');
-
-    if (!form.checkValidity()) {
-        form.reportValidity();
-        return;
-    }
-
-    const mensaje = esEdicionProducto 
-        ? '¿Estás seguro de actualizar este producto?' 
-        : '¿Estás seguro de registrar este nuevo producto?';
-
-    document.getElementById('textoConfirmacionProducto').innerText = mensaje;
-    document.getElementById('modalConfirmacionGuardarProducto').classList.add('active');
 }
 
 async function ejecutarGuardadoProducto() {
