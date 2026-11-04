@@ -116,7 +116,7 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
         </div>
         <div class="table-responsive">
             <table class="tabla-modal">
-                <thead><tr><th>#</th><th>Estado</th><th>Pedido</th><th>Materia</th><th>Solicitado</th><th>Entregado</th><th>Devuelto</th><th></th></tr></thead>
+                <thead><tr><th>#</th><th>Estado</th><th>Pedido</th><th>Especialidad</th><th>Solicitado</th><th>Entregado</th><th>Devuelto</th><th></th></tr></thead>
                 <tbody id="bodyMisPrestamos"></tbody>
             </table>
         </div>
@@ -527,7 +527,25 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
         cont.innerHTML = !items.length ? '<p><i>Todavía no agregaste materiales.</i></p>' : `
             <ul>${items.map(([n, c]) => `<li>${c} × ${esc(n)} <button class="btn-modal btn-eliminar" style="padding:2px 8px;" onclick="quitarDelPedido(${esc(JSON.stringify(n))})">quitar</button></li>`).join('')}</ul>
             <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
-                <div class="form-group"><label>Materia</label><input type="text" id="pedidoMateria"></div>
+                <div class="form-group">
+                    <label>Especialidad</label>
+                    <select id="pedidoMateria" class="form-control" required>
+                        <option value="" disabled selected>Selecciona una opción</option>
+                        <option value="Informatica">Informatica</option>
+                        <option value="Biologia">Biologia</option>
+                        <option value="Quimica">Quimica</option>
+                        <option value="Historia">Historia</option>
+                        <option value="Literatura">Literatura</option>
+                        <option value="Idioma_español">Idioma español</option>
+                        <option value="Derecho">Derecho</option>
+                        <option value="Filosofia">Filosofia</option>
+                        <option value="Ingles">Ingles</option>
+                        <option value="Matematica">Matematica</option>
+                        <option value="Sociologia">Sociologia</option>
+                        <option value="Geografia">Geografia</option>
+                        <option value="Educador_Social">Educador Social</option>
+                    </select>
+                </div>
                 <div class="form-group"><label>Horas</label><input type="number" id="pedidoHoras" min="1" value="2" style="width:80px;"></div>
                 <button class="btn-modal btn-crear" onclick="enviarSolicitudPrestamo()">Enviar solicitud</button>
             </div>`;
@@ -537,7 +555,7 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
         if (prestamoBloqueante) { alert(textoBloqueo()); return; }
         const items = Object.entries(carritoPrestamo).map(([nombre, cantidad]) => ({ nombre, cantidad }));
         const r = await postJSON(`${RUTA_CONTROLADOR_PRESTAMOS}?action=solicitar`, {
-            items, materia: document.getElementById('pedidoMateria').value, horas_solicitadas: document.getElementById('pedidoHoras').value
+            items, especialidad: document.getElementById('pedidoMateria').value, horas_solicitadas: document.getElementById('pedidoHoras').value
         });
         if (r) {
             alert(`Solicitud #${r.data.id_solicitud} enviada. Queda pendiente hasta que el administrador la apruebe.`);
