@@ -25,7 +25,7 @@ $cedula = $_SESSION['cedula_temp'];
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="Diseño.css">
+  <link rel="stylesheet" href="Diseño.css?v=2">
   <title>Ingreso CeiLab - Contraseña</title>
 </head>
 <body>
