@@ -246,6 +246,8 @@ $nombreAdminReservas = trim(($_SESSION['Nombre'] ?? '') . ' ' . ($_SESSION['Apel
 </div>
 <?php endif; ?>
 
+
+
 <script>
     const MESES_NOMBRES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     const RUTA_CONTROLADOR_RESERVAS = '<?php echo dirname($_SERVER["SCRIPT_NAME"]) . "/../CRUD_Reservas/Controlador/Controlador_Reservas.php"; ?>';
@@ -652,7 +654,7 @@ $nombreAdminReservas = trim(($_SESSION['Nombre'] ?? '') . ' ' . ($_SESSION['Apel
                 <td>${esc(x.resumen)}</td>
                 <td class="res-acciones">
                     ${x.estado === 'PENDIENTE' ? `<button type="button" class="btn-modal btn-crear" onclick="resAprobar(${Number(x.id_solicitud)})">Aprobar</button><button type="button" class="btn-modal btn-eliminar" onclick="resRechazar(${Number(x.id_solicitud)})">Rechazar</button>` : ''}
-                    ${['PENDIENTE', 'APROBADO'].includes(x.estado) ? `<button type="button" class="btn-modal btn-editar" onclick="resModificarAdmin(${Number(x.id_solicitud)})">Modificar</button>` : ''}
+                    ${['PENDIENTE', 'APROBADO'].includes(x.estado)   ? `<button type="button" class="btn-modal btn-editar" onclick="resModificarAdmin(${parseInt(x.id_solicitud, 10)})">Modificar</button>` : ''}
                     ${x.estado === 'APROBADO' ? `<button type="button" class="btn-modal btn-res-azul" onclick="resAccion('iniciar', ${Number(x.id_solicitud)})">Iniciar uso</button>` : ''}
                     ${['APROBADO', 'ACTIVO'].includes(x.estado) ? `<button type="button" class="btn-modal btn-res-violeta" onclick="resAccion('finalizar', ${Number(x.id_solicitud)})">Finalizar</button>` : ''}
                     ${['PENDIENTE', 'APROBADO'].includes(x.estado) ? `<button type="button" class="btn-modal btn-cancelar" onclick="resCancelar(${Number(x.id_solicitud)})">Cancelar</button>` : ''}
@@ -665,7 +667,18 @@ $nombreAdminReservas = trim(($_SESSION['Nombre'] ?? '') . ' ' . ($_SESSION['Apel
         if (r && !r.ok) resAvisoError(r.json);
         resListarAdmin();
     }
-    async function resAprobar(id) { await resAccion('aprobar', id); }
+   // --- NUEVO MENSAJE DE PRÉSTAMO APROBADO ---
+    async function resAprobar(id) {
+        const r = await resPost({ action: 'aprobar', id_solicitud: id });
+        if (r && r.ok) {
+            if (window.avisar) window.avisar('Préstamo aprobado', { tipo: 'ok' });
+            else alert('Préstamo aprobado');
+            resListarAdmin();
+        } else {
+            resAvisoError(r ? r.json : null);
+        }
+    }
+
     async function resRechazar(id) {
         const motivo = window.pedirTexto ? await window.pedirTexto('Motivo del rechazo:') : prompt('Motivo del rechazo:');
         if (!motivo) return;
@@ -674,33 +687,108 @@ $nombreAdminReservas = trim(($_SESSION['Nombre'] ?? '') . ' ' . ($_SESSION['Apel
         resListarAdmin();
     }
 
-    function resModificarAdmin(id) {
-        const x = resDatosAdmin.find(r => Number(r.id_solicitud) === id);
+    // --- NUEVA FUNCIÓN QUE ABRE EL FORMULARIO VISUAL COMPLETO ---
+    async function resModificarAdmin(id) {
+        // 1. Buscar la reserva en la lista cargada
+        const x = resDatosAdmin.find(r => Number(r.id_solicitud) === Number(id));
         if (!x) return;
-        document.getElementById('resModId').value = id;
-        document.getElementById('resModTitulo').textContent = 'Modificar la reserva n.º ' + id;
-        document.getElementById('resModFecha').value = x.fecha;
-        document.getElementById('resModIni').value = resHora(x.hora_inicio);
-        document.getElementById('resModFin').value = resHora(x.hora_fin);
-        document.getElementById('resModItems').value = (x.items || []).map(i => i.nombre + '=' + i.cantidad).join('\n');
-        document.getElementById('modalResModificar').classList.add('active');
+
+        // 2. Activar el modo edición global
+        resEditando = id;
+
+        // 3. Configurar calendario y horas
+        const [a, m] = x.fecha.split('-').map(Number);
+        resCalFechaActual = new Date(a, m - 1, 1);
+        document.getElementById('resIni').value = resHora(x.hora_inicio);
+        document.getElementById('resFin').value = resHora(x.hora_fin);
+        document.getElementById('resFecha').value = x.fecha;
+        document.getElementById('resBoxHorario').classList.add('activo');
+        document.getElementById('resLblFechaSeleccionada').textContent = 'Horario:';
+
+        // 4. Cargar lista de clientes en el selector (si es admin) y seleccionar al dueño
+        const selectCliente = document.getElementById('resAdminCiCliente');
+        if (selectCliente) {
+            if (selectCliente.options.length <= 2) {
+                selectCliente.innerHTML = '<option value="">Cargando clientes...</option>';
+                const rc = await resPost({ action: 'cargar_clientes_admin' });
+                let opciones = '<option value="">Seleccione un cliente...</option>';
+                if (rc && rc.ok && Array.isArray(rc.json.data)) {
+                    opciones += rc.json.data.map(c => `<option value="${c.ci}">${c.nombre} (${c.ci})</option>`).join('');
+                }
+                selectCliente.innerHTML = opciones;
+            }
+            selectCliente.value = x.ci_cliente; // Marcar el cliente original
+        }
+
+        resRenderCalendario();
+
+        // 5. Ajustar textos del modal
+        document.getElementById('resTitulo').textContent = 'Modificar la reserva n.º ' + id;
+        document.getElementById('resBtnEnviar').textContent = 'Guardar cambios';
+        document.getElementById('resBtnCancelarEdicion').style.display = '';
+
+        // 6. Recuperar los materiales desde el resumen (Ej: "Ceibalita ×1, Router ×2")
+        const previo = {};
+        if (x.resumen) {
+             x.resumen.split(',').forEach(item => {
+                 const partes = item.trim().split(/[×xX]/);
+                 if (partes.length === 2) {
+                     previo[partes[0].trim()] = partes[1].trim();
+                 } else {
+                     previo[item.trim()] = 1;
+                 }
+             });
+        }
+
+        // 7. Cargar la tabla de stock interactiva inyectando los valores previos
+        await resConsultarStock(previo);
+
+        // 8. Abrir el modal principal
+        document.getElementById('modalHacerReserva').classList.add('active');
     }
 
-    async function resGuardarModificacion(ev) {
-        ev.preventDefault();
-        // Cada línea es "Nombre=cantidad"
-        const items = document.getElementById('resModItems').value.split('\n').map(s => s.trim()).filter(Boolean).map(s => {
-            const k = s.lastIndexOf('='); return { nombre: s.slice(0, k).trim(), cantidad: parseInt(s.slice(k + 1), 10) || 0 };
-        });
-        const r = await resPost({
-            action: 'modificar', id_solicitud: Number(document.getElementById('resModId').value),
-            fecha: document.getElementById('resModFecha').value,
-            hora_inicio: document.getElementById('resModIni').value, hora_fin: document.getElementById('resModFin').value, items
-        });
-        if (r && !r.ok) { resAvisoError(r.json); return; }
-        cerrarModal('modalResModificar');
+async function resGuardarModificacionInteractiva(e) {
+    if (e) e.preventDefault();
+
+    const id = window.reservaEditandoId;
+    if (!id) return;
+
+    const fecha = (document.getElementById('resCliFecha') || document.getElementById('resFecha')).value;
+    const horaInicio = (document.getElementById('resCliIni') || document.getElementById('resHoraInicio')).value;
+    const horaFin = (document.getElementById('resCliFin') || document.getElementById('resHoraFin')).value;
+
+    // Recolectar cantidades de la grilla/tarjetas de materiales
+    const materialesSeleccionados = [];
+    document.querySelectorAll('.cant-material, [id^="cant_"]').forEach(input => {
+        const cantidad = parseInt(input.value, 10);
+        if (cantidad > 0) {
+            const idMaterial = input.id.replace('cant_', '') || input.dataset.id;
+            materialesSeleccionados.push({
+                id_material: idMaterial,
+                cantidad: cantidad
+            });
+        }
+    });
+
+    const r = await resPost({
+        action: 'modificar',
+        id_solicitud: Number(id),
+        fecha: fecha,
+        hora_inicio: horaInicio,
+        hora_fin: horaFin,
+        materiales: materialesSeleccionados
+    });
+
+    if (r && r.ok) {
+        if (typeof cerrarModal === 'function') cerrarModal('modalResCliente');
+        if (window.showCustomAlert) showCustomAlert('Reserva modificada correctamente.', 'Éxito', 'exito');
+        
+        // Recargar la tabla de administración
         resListarAdmin();
+    } else {
+        if (window.resAvisoError) resAvisoError(r ? r.json : null);
     }
+}
 
     async function resListarEsperaAdmin() {
         const r = await pedirJSON(`${RUTA_CONTROLADOR_RESERVAS}?action=lista_espera`);
