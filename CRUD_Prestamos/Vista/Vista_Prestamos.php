@@ -1,6 +1,4 @@
 <?php
-/**
- */
 $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
 ?>
 <style>
@@ -21,9 +19,9 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
 </style>
 
 <?php if ($esAdminPrestamos): ?>
-<!-- ======================================================================
+<!-- =
      MODAL: GESTIÓN DE PRÉSTAMOS (ADMINISTRADOR)
-     ====================================================================== -->
+     = -->
 <div class="modal-overlay" id="modalGestionPrestamos">
     <div class="modal-content">
         <div class="modal-header">
@@ -105,9 +103,9 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
     </div>
 </div>
 <?php else: ?>
-<!-- ======================================================================
+<!-- =
      MODAL: MIS PRÉSTAMOS (CLIENTE)
-     ====================================================================== -->
+     = -->
 <div class="modal-overlay" id="modalMisPrestamos">
     <div class="modal-content" style="max-width:1000px;">
         <div class="modal-header">
@@ -182,9 +180,9 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
     }
 
 <?php if ($esAdminPrestamos): ?>
-    /* =====================================================================
+    /* 
        ADMINISTRADOR
-       ===================================================================== */
+        */
     let filtroPrestamos = 'PENDIENTE';
     let filasPrestamos = {};   // id -> fila de la lista (para las reservas en uso)
     let incluirReservasPrestamos = false;   // «Ver Solicitudes» también lista las reservas
@@ -376,9 +374,9 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
             </div>`;
     }
 
-/* =====================================================================
+/* 
        ACCIONES DE UN PRÉSTAMO
-       ===================================================================== */
+        */
     async function aprobarPrestamo(id) {
         // Muestra tu modal personalizado y espera la respuesta (true o false)
         const acepto = await confirmar(`¿Aprobar el préstamo #${id}?`);
@@ -572,9 +570,9 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
     }
 
 <?php else: ?>
-    /* =====================================================================
+    /* 
        CLIENTE
-       ===================================================================== */
+        */
     const carritoPrestamo = {};   // nombre -> cantidad
 
     /* Si el cliente ya tiene un préstamo APROBADO o ACTIVO (entregado), no puede pedir otro.

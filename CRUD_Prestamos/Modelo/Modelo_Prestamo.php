@@ -1,17 +1,5 @@
 <?php
-/**
- *
- * Ciclo de un préstamo:
- *   1. solicitar  (cliente)  -> PENDIENTE. Pide por nombre: «2 Ceibalitas».
- *   2. aprobar    (admin)    -> APROBADO. Verifica que haya unidades libres.
- *      rechazar   (admin)    -> RECHAZADO, con motivo.
- *   3. entregar   (admin)    -> ACTIVO. El admin indica qué series entrega;
- *                               cada unidad debe estar DISPONIBLE y pasa a PRESTADO.
- *   4. devolver   (admin)    -> cada unidad vuelve DISPONIBLE o EN_MANTENIMIENTO.
- *                               Cuando vuelve todo, la solicitud pasa a FINALIZADO
- *                               y se archiva en historial_solicitud (RNF7).
- *   cancelar (cliente o admin) desde PENDIENTE o APROBADO -> CANCELADO.
- */
+
 require_once __DIR__ . '/../../Config/Conexion.php';
 require_once __DIR__ . '/../../Config/Estados.php';
 require_once __DIR__ . '/../../Config/Disponibilidad.php';
@@ -24,9 +12,9 @@ class Modelo_Prestamo {
         $this->conexion = $conexion ?: Conexion::conectar();
     }
 
-    /* ==============================================================
+    /* 
        CONSULTAS
-       ============================================================== */
+        */
 
     /**
      * Lista préstamos, opcionalmente filtrados por estado o por cliente.
@@ -256,9 +244,9 @@ class Modelo_Prestamo {
         return $st->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
-    /* ==============================================================
+    /* 
        TRANSICIONES DE LA SOLICITUD
-       ============================================================== */
+        */
 
     /**
      * El cliente pide materiales por nombre.
@@ -896,9 +884,9 @@ class Modelo_Prestamo {
         }
     }
 
-    /* ==============================================================
+    /* 
        AUXILIARES
-       ============================================================== */
+        */
 
     /** null si la unidad se puede prestar; si no, el motivo para mostrar. */
     private function motivoNoPrestable(array $u) {
