@@ -387,6 +387,7 @@ $nombreAdminReservas = trim(($_SESSION['Nombre'] ?? '') . ' ' . ($_SESSION['Apel
                 opciones += r.json.data.map(c => `<option value="${esc(c.ci)}">${esc(c.nombre)} (${esc(c.ci)})</option>`).join('');
             }
             selectCliente.innerHTML = opciones;
+            selectCliente.disabled = false;
         }
 
         resRenderCalendario();
@@ -654,9 +655,9 @@ $nombreAdminReservas = trim(($_SESSION['Nombre'] ?? '') . ' ' . ($_SESSION['Apel
                 <td>${esc(x.resumen)}</td>
                 <td class="res-acciones">
                     ${x.estado === 'PENDIENTE' ? `<button type="button" class="btn-modal btn-crear" onclick="resAprobar(${Number(x.id_solicitud)})">Aprobar</button><button type="button" class="btn-modal btn-eliminar" onclick="resRechazar(${Number(x.id_solicitud)})">Rechazar</button>` : ''}
-                    ${['PENDIENTE', 'APROBADO'].includes(x.estado)   ? `<button type="button" class="btn-modal btn-editar" onclick="resModificarAdmin(${parseInt(x.id_solicitud, 10)})">Modificar</button>` : ''}
+                    ${['APROBADO'].includes(x.estado)   ? `<button type="button" class="btn-modal btn-editar" onclick="resModificarAdmin(${parseInt(x.id_solicitud, 10)})">Modificar</button>` : ''}
                     ${x.estado === 'APROBADO' ? `<button type="button" class="btn-modal btn-res-azul" onclick="resAccion('iniciar', ${Number(x.id_solicitud)})">Iniciar uso</button>` : ''}
-                    ${['APROBADO', 'ACTIVO'].includes(x.estado) ? `<button type="button" class="btn-modal btn-res-violeta" onclick="resAccion('finalizar', ${Number(x.id_solicitud)})">Finalizar</button>` : ''}
+                    ${['ACTIVO'].includes(x.estado) ? `<button type="button" class="btn-modal btn-res-violeta" onclick="resAccion('finalizar', ${Number(x.id_solicitud)})">Finalizar</button>` : ''}
                     ${['PENDIENTE', 'APROBADO'].includes(x.estado) ? `<button type="button" class="btn-modal btn-cancelar" onclick="resCancelar(${Number(x.id_solicitud)})">Cancelar</button>` : ''}
                 </td>
             </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;">No hay reservas con ese filtro.</td></tr>';
@@ -696,6 +697,7 @@ $nombreAdminReservas = trim(($_SESSION['Nombre'] ?? '') . ' ' . ($_SESSION['Apel
         // 2. Activar el modo edición global
         resEditando = id;
 
+
         // 3. Configurar calendario y horas
         const [a, m] = x.fecha.split('-').map(Number);
         resCalFechaActual = new Date(a, m - 1, 1);
@@ -718,6 +720,7 @@ $nombreAdminReservas = trim(($_SESSION['Nombre'] ?? '') . ' ' . ($_SESSION['Apel
                 selectCliente.innerHTML = opciones;
             }
             selectCliente.value = x.ci_cliente; // Marcar el cliente original
+            selectCliente.disabled = true;
         }
 
         resRenderCalendario();

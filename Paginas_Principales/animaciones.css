@@ -1,6 +1,6 @@
-/* =========================================================
+/* 
    1. ANIMACIONES DE ENTRADA DESDE LOS LADOS
-   ========================================================= */
+    */
 
 @keyframes desdeIzquierda {
   from {
@@ -51,9 +51,9 @@ header.Barra {
 }
 
 
-/* =========================================================
+/* 
    2. EFECTO 3D REALISTA Y PULSACIÓN EN BOTONES
-   ========================================================= */
+    */
 
 .action-card {
   position: relative !important;
@@ -116,9 +116,9 @@ header.Barra {
   z-index: 1 !important;
 }
 
-/* =========================================================
+/* 
    SOLUCIÓN DE SUPERPOSICIÓN DE VENTANAS MODALES
-   ========================================================= */
+    */
 
 /* Eleva el fondo oscuro de las modales por encima de la barra */
 .modal-overlay {
@@ -142,9 +142,9 @@ header.Barra {
   z-index: 100001 !important;
 }
 
-/* =========================================================
+/* 
    ANIMACIÓN: POP-UP DIVERTIDO CON DOBLE REBOTE ELÁSTICO
-   ========================================================= */
+    */
 
 @keyframes popUpDivertido {
   0% {
@@ -184,9 +184,9 @@ header.Barra {
   transform-origin: center center !important;
 }
 
-/* =========================================================
+/* 
    OCULTAMIENTO DE CAMPOS CON MÁXIMA PRIORIDAD
-   ========================================================= */
+    */
 .oculto-dinamico {
   display: none !important;
 }

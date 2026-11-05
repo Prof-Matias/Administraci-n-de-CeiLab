@@ -1,6 +1,6 @@
-/* =========================================================
+/* 
    VARIABLES DE COLOR (SISTEMA CLARO Y OSCURO)
-   ========================================================= */
+    */
 :root {
   --card-bg: #ffffff;            /* Fondo pantalla claro */
   --header-bg: #ffffff;
@@ -48,9 +48,9 @@ header.Barra,
   transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease !important;
 }
 
-/* =========================================================
+/* 
    RESET Y TARJETA 100% PANTALLA COMPLETA
-   ========================================================= */
+    */
 * {
   box-sizing: border-box !important;
   margin: 0;
@@ -83,9 +83,9 @@ body {
   margin: 0 !important;
 }
 
-/* =========================================================
+/* 
    BARRA DE NAVEGACIÓN SUPERIOR
-   ========================================================= */
+    */
 header.Barra {
   display: flex !important;
   justify-content: space-between !important;
@@ -143,9 +143,9 @@ header.Barra {
   transform: translateY(-1px) !important;
 }
 
-/* =========================================================
+/* 
    CONFIGURACIÓN DEL MENÚ DESPLEGABLE (Z-INDEX Y DESPLIEGUE)
-   ========================================================= */
+    */
 .dropdown {
   position: relative !important;
   display: inline-block !important;
@@ -195,9 +195,9 @@ header.Barra {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* =========================================================
+/* 
    SWITCH ANIMADO SOL / LUNA
-   ========================================================= */
+    */
 .theme-switch {
   position: relative !important;
   width: 48px !important;
@@ -248,9 +248,9 @@ input:checked + .slider .slider-thumb {
 input:checked + .slider .sun { opacity: 0 !important; }
 input:checked + .slider .moon { opacity: 1 !important; }
 
-/* =========================================================
+/* 
    HERO BANNER
-   ========================================================= */
+    */
 .hero-section {
   position: relative !important;
   width: 100% !important;
@@ -294,9 +294,9 @@ input:checked + .slider .moon { opacity: 1 !important; }
   font-weight: 500 !important;
 }
 
-/* =========================================================
+/* 
    GRID DE BOTONES / TARJETAS
-   ========================================================= */
+    */
 .actions-section {
   padding: 24px 20px !important;
   width: 100% !important;
@@ -353,9 +353,9 @@ input:checked + .slider .moon { opacity: 1 !important; }
   line-height: 1.25 !important;
 }
 
-/* =========================================================
+/* 
    FOOTER INFERIOR
-   ========================================================= */
+    */
 .app-footer {
   background-color: var(--footer-bg) !important;
   padding: 16px 40px !important;
@@ -379,9 +379,9 @@ input:checked + .slider .moon { opacity: 1 !important; }
   object-fit: contain !important;
 }
 
-/* =========================================================
+/* 
    MODALES Y TABLAS
-   ========================================================= */
+    */
 .modal-overlay {
   display: none;
   position: fixed !important;
@@ -474,9 +474,9 @@ input:checked + .slider .moon { opacity: 1 !important; }
   }
 }
 
-/* =========================================================
+/* 
    AJUSTE DE ANCHO COMPLETO - SÓLO PARA TABLAS DE GESTIÓN
-   ========================================================= */
+    */
 
 /* Modales que contienen tablas de gestión (Productos, Usuarios, etc.) */
 .modal-content:has(.tabla-modal) {
