@@ -1,6 +1,6 @@
-/* =========================================================
+/* 
    VARIABLES DE COLOR (SISTEMA CLARO Y OSCURO)
-   ========================================================= */
+    */
 :root {
   --card-bg: #ffffff;            /* Fondo pantalla claro */
   --header-bg: #ffffff;
@@ -48,9 +48,9 @@ header.Barra,
   transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease !important;
 }
 
-/* =========================================================
+/* 
    RESET Y TARJETA 100% PANTALLA COMPLETA
-   ========================================================= */
+    */
 * {
   box-sizing: border-box !important;
   margin: 0;
@@ -83,9 +83,9 @@ body {
   margin: 0 !important;
 }
 
-/* =========================================================
+/* 
    BARRA DE NAVEGACIÓN SUPERIOR
-   ========================================================= */
+    */
 header.Barra {
   display: flex !important;
   justify-content: space-between !important;
@@ -143,9 +143,9 @@ header.Barra {
   transform: translateY(-1px) !important;
 }
 
-/* =========================================================
+/* 
    CONFIGURACIÓN DEL MENÚ DESPLEGABLE (Z-INDEX Y DESPLIEGUE)
-   ========================================================= */
+    */
 .dropdown {
   position: relative !important;
   display: inline-block !important;
@@ -195,9 +195,9 @@ header.Barra {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* =========================================================
+/* 
    SWITCH ANIMADO SOL / LUNA
-   ========================================================= */
+    */
 .theme-switch {
   position: relative !important;
   width: 48px !important;
@@ -248,9 +248,9 @@ input:checked + .slider .slider-thumb {
 input:checked + .slider .sun { opacity: 0 !important; }
 input:checked + .slider .moon { opacity: 1 !important; }
 
-/* =========================================================
+/* 
    HERO BANNER
-   ========================================================= */
+    */
 .hero-section {
   position: relative !important;
   width: 100% !important;
@@ -294,9 +294,9 @@ input:checked + .slider .moon { opacity: 1 !important; }
   font-weight: 500 !important;
 }
 
-/* =========================================================
+/* 
    GRID DE BOTONES / TARJETAS
-   ========================================================= */
+    */
 .actions-section {
   padding: 24px 20px !important;
   width: 100% !important;
@@ -353,9 +353,9 @@ input:checked + .slider .moon { opacity: 1 !important; }
   line-height: 1.25 !important;
 }
 
-/* =========================================================
+/* 
    FOOTER INFERIOR
-   ========================================================= */
+    */
 .app-footer {
   background-color: var(--footer-bg) !important;
   padding: 16px 40px !important;
@@ -379,9 +379,9 @@ input:checked + .slider .moon { opacity: 1 !important; }
   object-fit: contain !important;
 }
 
-/* =========================================================
+/* 
    MODALES Y TABLAS
-   ========================================================= */
+    */
 .modal-overlay {
   display: none;
   position: fixed !important;
@@ -475,9 +475,9 @@ input:checked + .slider .moon { opacity: 1 !important; }
   }
 }
 
-/* =========================================================
+/* 
    1. TABLA FLUIDA Y OPTIMIZADA (SIN EFECTOS 3D HEAVY)
-   ========================================================= */
+    */
 
 .table-responsive {
   width: 100% !important;
@@ -548,9 +548,9 @@ input:checked + .slider .moon { opacity: 1 !important; }
   opacity: 0.88 !important;
 }
 
-/* =========================================================
+/* 
    2. ANIMACIÓN "APILAMIENTO LEGO" (CONSTRUCCIÓN FILA POR FILA)
-   ========================================================= */
+    */
 
 @keyframes caerLego {
   0% {
@@ -586,9 +586,9 @@ input:checked + .slider .moon { opacity: 1 !important; }
 .modal-overlay.active .tabla-modal tbody tr:nth-child(10) { animation-delay: 0.50s !important; }
 
 
-/* =========================================================
+/* 
    AJUSTE DE ANCHO COMPLETO - SÓLO PARA TABLAS DE GESTIÓN
-   ========================================================= */
+    */
 
 /* Modales que contienen tablas de gestión (Productos, Usuarios, etc.) */
 .modal-content:has(.tabla-modal) {
@@ -634,9 +634,9 @@ input:checked + .slider .moon { opacity: 1 !important; }
   border-radius: 5px !important;
 }
 
-/* =========================================================
+/* 
    FORMULARIO VERTICAL APILADO (UNA COLUMNA)
-   ========================================================= */
+    */
 
 /* Contenedor del modal de formulario */
 .modal-form-container,
@@ -732,9 +732,9 @@ input:checked + .slider .moon { opacity: 1 !important; }
   background-color: #059669 !important;
 }
 
-/* =========================================================
+/* 
    OCULTAMIENTO DE CAMPOS CON MÁXIMA PRIORIDAD
-   ========================================================= */
+    */
 .oculto-dinamico {
   display: none !important;
 }
@@ -897,9 +897,9 @@ body.dark-mode .badge-rol {
   color: #60a5fa !important;
 }
 
-/* ==========================================================================
+/*
    ESTILOS DE LA GRILLA Y TARJETAS DEL CATÁLOGO DE PRODUCTOS
-   ========================================================================== */
+   */
 
 .grid-productos {
     display: grid;
@@ -969,9 +969,9 @@ body.dark-mode .badge-rol {
     border-radius: 8px;
 }
 
-/* =========================================================
+/* 
    MODAL DE PRÉSTAMOS: CATÁLOGO CON SCROLL Y CARRITO FIJO
-   ========================================================= */
+    */
 
 /* 1. Convertimos el contenido del modal en un contenedor flexible en columna */
 .modal-content:has(#contenedor-productos-cliente) {
@@ -1001,9 +1001,9 @@ body.dark-mode .badge-rol {
     box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.05) !important;
 }
 
-/* =========================================================
+/* 
    FORZAR VISIBILIDAD DEL CARRITO EN EL MODAL DE PRÉSTAMOS
-   ========================================================= */
+    */
 
 /* 1. La caja del modal se flexiona verticalmente */
 #modalSolicitarPrestamo .modal-content {
@@ -1035,9 +1035,9 @@ body.dark-mode .badge-rol {
     flex-shrink: 0 !important; /* Evita que los productos lo aplasten */
 }
 
-/* ==========================================================================
+/*
    ETIQUETAS DE ESTADO (tabla de productos e historial de materiales)
-   ========================================================================== */
+   */
 .badge-estado {
     display: inline-block;
     padding: 3px 10px;
@@ -1062,11 +1062,11 @@ body.dark-mode .badge-baja          { background: #2b2b2b; color: #b5b5b5; borde
 body.dark-mode .badge-secondary     { background: #2f3337; color: #c9ced4; border-color: #454b52; }
 
 
-/* ==========================================================================
+/*
    CATÁLOGO DEL CLIENTE: tarjeta sin stock (agotado / en mantenimiento) y aviso de bloqueo
    La tarjeta se ve apagada (gris) pero el botón queda por encima, nítido y legible,
    igual que las acciones de una fila dada de baja en «Gestionar Productos».
-   ========================================================================== */
+   */
 .tarjeta-producto.tarjeta-agotada {
     background: #f1f3f5;
     border-color: #d5d9de;
@@ -1114,9 +1114,9 @@ body.dark-mode .tarjeta-producto.tarjeta-agotada .tarjeta-cuerpo h4,
 body.dark-mode .tarjeta-producto.tarjeta-agotada .tarjeta-cuerpo p { color: #a9afb5; }
 body.dark-mode .aviso-bloqueo-prestamo { background: #44350f; color: #ffd374; border-color: #6b5316; }
 
-/* =========================================================
+/* 
   ADAPTACIÓN DE TARJETAS DE PRODUCTOS PARA MODO OSCURO
-   ========================================================= */
+    */
 
 .tarjeta-producto, .producto-card {
     background-color: var(--card-bg, #ffffff) !important;
@@ -1138,9 +1138,9 @@ body.dark-mode .aviso-bloqueo-prestamo { background: #44350f; color: #ffd374; bo
     border: 1px solid var(--card-border, #cbd5e1) !important;
 }
 
-/* =========================================================
+/* 
    ESTILOS Y CONTRASTE DEL CARRITO (MODO CLARO Y OSCURO)
-   ========================================================= */
+    */
 
 .carrito {
     background-color: #f8fafc !important;

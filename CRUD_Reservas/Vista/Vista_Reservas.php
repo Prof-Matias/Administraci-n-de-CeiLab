@@ -387,6 +387,7 @@ $nombreAdminReservas = trim(($_SESSION['Nombre'] ?? '') . ' ' . ($_SESSION['Apel
                 opciones += r.json.data.map(c => `<option value="${esc(c.ci)}">${esc(c.nombre)} (${esc(c.ci)})</option>`).join('');
             }
             selectCliente.innerHTML = opciones;
+            selectCliente.disabled = false;
         }
 
         resRenderCalendario();
@@ -696,6 +697,7 @@ $nombreAdminReservas = trim(($_SESSION['Nombre'] ?? '') . ' ' . ($_SESSION['Apel
         // 2. Activar el modo edición global
         resEditando = id;
 
+
         // 3. Configurar calendario y horas
         const [a, m] = x.fecha.split('-').map(Number);
         resCalFechaActual = new Date(a, m - 1, 1);
@@ -718,6 +720,7 @@ $nombreAdminReservas = trim(($_SESSION['Nombre'] ?? '') . ' ' . ($_SESSION['Apel
                 selectCliente.innerHTML = opciones;
             }
             selectCliente.value = x.ci_cliente; // Marcar el cliente original
+            selectCliente.disabled = true;
         }
 
         resRenderCalendario();

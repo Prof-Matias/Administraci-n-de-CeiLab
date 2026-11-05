@@ -1,6 +1,6 @@
-/* ==========================================================================
+/*
    1. SISTEMA DE MODALES PERSONALIZADOS (REEMPLAZO DE LOCALHOST)
-   ========================================================================== */
+   */
 (function () {
     'use strict';
 
@@ -124,9 +124,9 @@
 })();
 
 
-/* ==========================================================================
+/*
    2. CONFIGURACIÓN GENERAL Y AUXILIARES
-   ========================================================================== */
+   */
 const RUTA_CONTROLADOR = '../CRUD_Usuarios/Controlador/Controlador_Usuarios.php';
 const RUTA_CONTROLADOR_PRODUCTOS = '../CRUD_Productos/Controlador/Controlador_Productos.php';
 const RUTA_VERIFICADOR = '../Login_logica/Validar_Cedula.php';
@@ -193,9 +193,9 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
-/* ==========================================================================
+/*
    3. MÓDULO VISTA CLIENTE
-   ========================================================================== */
+   */
 async function abrirModalSolicitarPrestamo() {
     const modal = document.getElementById('modalSolicitarPrestamo');
     if (modal) {
@@ -283,9 +283,9 @@ async function cargarProductosCliente() {
 }
 
 
-/* ==========================================================================
+/*
    4. MÓDULO USUARIOS & TELÉFONOS
-   ========================================================================== */
+   */
 async function abrirModalGestionUsuarios() {
     const modal = document.getElementById('modalGestionUsuarios');
     if (!modal) {
@@ -637,9 +637,9 @@ async function eliminarUsuario(cedula) {
 }
 
 
-/* ==========================================================================
+/*
    5. MÓDULO PRODUCTOS / MATERIALES (ADMINISTRADOR)
-   ========================================================================== */
+   */
 async function abrirModalGestionProductos() {
     const modal = document.getElementById('modalGestionProductos');
     if (modal) modal.classList.add('active');
@@ -779,9 +779,9 @@ async function verHistorialProducto(idMaterial) {
     }
 }
 
-/* ==========================================================================
+/*
    6. CAMBIAR ESTADO DE MATERIAL CON SELECTOR DESPLEGABLE
-   ========================================================================== */
+   */
 async function abrirModalCambiarEstado(idMaterial, estadoActual) {
     const estados = [
         { valor: 'DISPONIBLE', etiqueta: 'DISPONIBLE' },
@@ -1114,9 +1114,9 @@ async function ejecutarGuardadoProducto() {
 }
 
 
-/* ==========================================================================
+/*
    7. REPORTES E IMPRESIÓN
-   ========================================================================== */
+   */
 async function abrirModalStockStock() {
     try {
         const res = await fetch(`${RUTA_CONTROLADOR_PRODUCTOS}?action=reporte_stock`);
@@ -1225,9 +1225,9 @@ function imprimirHistorialGeneral() {
 }
 
 
-/* ==========================================================================
+/*
    8. INTERFAZ Y TEMA
-   ========================================================================== */
+   */
 window.toggleDropdown = function(event) {
     if (event) event.stopPropagation();
     const dropdown = document.getElementById('userDropdown') || document.querySelector('.dropdown-menu');
@@ -1314,9 +1314,9 @@ window.abrirEditarPerfilPropio = function() {
     if (campoEspecialidad) campoEspecialidad.style.setProperty('display', 'none', 'important');
 };
 
-/* ==========================================================================
+/*
    MODAL DE NUEVO PRÉSTAMO ADMINISTRATIVO (INDEPENDIENTE)
-   ========================================================================== */
+   */
 
 const PedidoAdminState = {
     clienteCedula: '',
