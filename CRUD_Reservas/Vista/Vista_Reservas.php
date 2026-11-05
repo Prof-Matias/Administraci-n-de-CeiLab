@@ -1,18 +1,5 @@
 <?php
-/**
- * Vista_Reservas.php  (v8)
- * Se incluye en Paginas_Principales/Pagina_Principal.php, DESPUÉS de Vista_Prestamos.php
- * (reutiliza sus ayudas: esc, chipEstado, pedirJSON, postJSON y las clases CSS de los modales).
- *
- *  Cliente:       <Hacer Reserva>      -> elegir fecha y franja, ver el stock de ESA franja por tipo de material,
- *                                         pedir cantidades, confirmar si hay stock parcial, anotarse en lista de espera,
- *                                         ver / modificar / cancelar «Mis reservas» y «Mi lista de espera»
- *  Administrador: <Gestionar Reservas> -> reservas por estado/fecha (aprobar, rechazar, modificar, cancelar, iniciar,
- *                                         finalizar), lista de espera e historial
- *
- * La vista solo muestra y envía: el stock, los choques y los estados los decide el servidor
- * (Modelo_Reservas.php + Config/Disponibilidad.php). Lo que se ve en pantalla es una ayuda, no la validación.
- */
+
 $esAdminReservas = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
 ?>
 <style>
@@ -43,9 +30,7 @@ $esAdminReservas = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
 </style>
 
 <?php if (!$esAdminReservas): ?>
-<!-- ======================================================================
-     MODAL: HACER RESERVA (CLIENTE)
-     ====================================================================== -->
+<!-- HACER RESERVA (CLIENTE)-->
 <div class="modal-overlay" id="modalHacerReserva">
     <div class="modal-content" style="max-width:920px;">
         <div class="modal-header">
@@ -94,9 +79,7 @@ $esAdminReservas = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
     </div>
 </div>
 <?php else: ?>
-<!-- ======================================================================
-     MODAL: GESTIÓN DE RESERVAS (ADMINISTRADOR)
-     ====================================================================== -->
+<!-- GESTIÓN DE RESERVAS (ADMINISTRADOR)-->
 <div class="modal-overlay" id="modalGestionReservas">
     <div class="modal-content" style="max-width:1080px;">
         <div class="modal-header">
