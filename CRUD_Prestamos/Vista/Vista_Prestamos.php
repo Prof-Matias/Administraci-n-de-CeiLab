@@ -138,6 +138,13 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
         return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     }
     function chipEstado(e) { return `<span class="estado estado-${esc(e)}">${esc(ETIQUETA_ESTADO[e] || e)}</span>`; }
+    /* Estado de una fila de la lista: las reservas que ya empezaron se ven como «Reserva en uso»
+       y, si pasó la hora en que debía volver el material, con la marca «Atrasado». */
+    function chipFila(p) {
+        const base = p.es_reserva && p.estado === 'ACTIVO'
+            ? '<span class="estado estado-ACTIVO">Reserva en uso</span>' : chipEstado(p.estado);
+        return base + (p.atrasada ? ' <span class="estado" style="background:#fde2e2; color:#a11d1d;">Atrasado</span>' : '');
+    }
     function fecha(f) { return f ? esc(String(f).slice(0, 16).replace('T', ' ')) : '—'; }
 
     /**
@@ -173,6 +180,7 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
        ADMINISTRADOR
        ===================================================================== */
     let filtroPrestamos = 'PENDIENTE';
+    let filasPrestamos = {};   // id -> fila de la lista (para las reservas en uso)
 
     async function abrirModalGestionPrestamos(estado) {
         if (estado !== undefined) filtroPrestamos = estado;
@@ -189,6 +197,8 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
         const r = await pedirJSON(`${RUTA_CONTROLADOR_PRESTAMOS}?action=listar&estado=${encodeURIComponent(filtroPrestamos)}`);
         const tbody = document.getElementById('bodyTablaPrestamos');
         if (!r) return;
+        filasPrestamos = {};
+        r.data.forEach(p => { filasPrestamos[p.id_solicitud] = p; });
         if (!r.data.length) {
             tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;">No hay préstamos en este estado.</td></tr>`;
             return;
@@ -196,18 +206,43 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
         tbody.innerHTML = r.data.map(p => `
             <tr>
                 <td>${p.id_solicitud}</td>
-                <td>${chipEstado(p.estado)}</td>
+                <td>${chipFila(p)}</td>
                 <td>${esc(p.cliente)}<br><small>${esc(p.ci_cliente)}</small></td>
                 <td>${esc(p.pedido || '—')}</td>
                 <td>${esc(p.materia || '—')}</td>
                 <td>${esc(p.horas_solicitadas || '—')}</td>
                 <td>${fecha(p.fecha_solicitud)}</td>
-                <td style="white-space:nowrap;"><button class="btn-modal btn-editar" onclick="abrirDetallePrestamo(${p.id_solicitud})">${accionPrincipal(p.estado)}</button>${botonEditarPrestamo(p)}</td>
+                <td style="white-space:nowrap;">${p.es_reserva
+                    ? `<button class="btn-modal btn-editar" onclick="abrirReservaEnUso(${p.id_solicitud})">Finalizar reserva</button>`
+                    : `<button class="btn-modal btn-editar" onclick="abrirDetallePrestamo(${p.id_solicitud})">${accionPrincipal(p.estado)}</button>${botonEditarPrestamo(p)}`}</td>
             </tr>`).join('');
     }
 
     function accionPrincipal(estado) {
         return { PENDIENTE: 'Revisar', APROBADO: 'Entregar', ACTIVO: 'Registrar devolución' }[estado] || 'Ver';
+    }
+
+    /* Una reserva que ya empezó figura en la lista como un préstamo en uso. Se devuelve (finaliza)
+       desde acá, con la misma acción del módulo de Reservas. */
+    function abrirReservaEnUso(id) {
+        const p = filasPrestamos[id];
+        if (!p) return;
+        document.getElementById('tituloDetallePrestamo').innerHTML = `Reserva #${p.id_solicitud} ${chipFila(p)}`;
+        document.getElementById('cuerpoDetallePrestamo').innerHTML = `
+            <p><b>Cliente:</b> ${esc(p.cliente)} (${esc(p.ci_cliente)})</p>
+            <p><b>Uso desde:</b> ${fecha(p.fecha_entrega)} · <b>Debe volver:</b> ${fecha(p.fin_previsto)}</p>
+            <p><b>Material:</b> ${esc(p.pedido || '—')}</p>
+            ${p.atrasada ? '<p style="color:#a11d1d;"><b>Ya pasó la hora de devolución.</b> Mientras no se finalice, el cliente no puede pedir préstamos ni reservas.</p>' : ''}
+            <p><small>Al finalizar se registra la devolución, se libera el material y se atiende la lista de espera.</small></p>
+            <button class="btn-modal btn-crear" onclick="finalizarReservaEnUso(${p.id_solicitud})">Registrar devolución (finalizar reserva)</button>`;
+        document.getElementById('modalDetallePrestamo').classList.add('active');
+    }
+    async function finalizarReservaEnUso(id) {
+        if (!confirm(`¿Registrar la devolución y finalizar la reserva #${id}?`)) return;
+        if (await postJSON(`../CRUD_Reservas/Controlador/Controlador_Reservas.php?action=finalizar`, { id_solicitud: id })) {
+            document.getElementById('modalDetallePrestamo').classList.remove('active');
+            cargarPrestamos();
+        }
     }
 
     async function abrirDetallePrestamo(id) {
@@ -490,6 +525,7 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
 
     function textoBloqueo() {
         const b = prestamoBloqueante;
+        if (b.tipo === 'RESERVA') return `Tenés la reserva #${b.id_solicitud} en uso y todavía sin devolver. No podés solicitar un préstamo hasta que se finalice.`;
         const situacion = b.estado === 'ACTIVO' ? 'entregado y todavía sin devolver' : 'aprobado y todavía sin entregar';
         return `Ya tenés el préstamo #${b.id_solicitud} ${situacion}. No podés solicitar otro hasta que se finalice o se cancele.`;
     }
@@ -570,7 +606,7 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
         const r = await pedirJSON(`${RUTA_CONTROLADOR_PRESTAMOS}?action=mis_prestamos`);
         if (!r) return;
         document.getElementById('bodyMisPrestamos').innerHTML = r.data.length ? r.data.map(p => `
-            <tr><td>${p.id_solicitud}</td><td>${chipEstado(p.estado)}${p.motivo_rechazo ? `<br><small>${esc(p.motivo_rechazo)}</small>` : ''}</td>
+            <tr><td>${p.id_solicitud}</td><td>${chipFila(p)}${p.motivo_rechazo ? `<br><small>${esc(p.motivo_rechazo)}</small>` : ''}</td>
                 <td>${esc(p.pedido || '—')}</td><td>${esc(p.materia || '—')}</td><td>${fecha(p.fecha_solicitud)}</td>
                 <td>${fecha(p.fecha_entrega)}</td><td>${fecha(p.fecha_devolucion)}</td>
                 <td>${['PENDIENTE', 'APROBADO'].includes(p.estado) ? `<button class="btn-modal btn-eliminar" onclick="cancelarMiPrestamo(${p.id_solicitud})">Cancelar</button>` : ''}</td></tr>`).join('')

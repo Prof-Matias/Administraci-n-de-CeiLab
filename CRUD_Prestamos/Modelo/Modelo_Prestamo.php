@@ -28,22 +28,27 @@ class Modelo_Prestamo {
        CONSULTAS
        ============================================================== */
 
-    /** Lista préstamos, opcionalmente filtrados por estado o por cliente. */
+    /**
+     * Lista préstamos, opcionalmente filtrados por estado o por cliente.
+     * Las reservas que ya empezaron (estado ACTIVO) se muestran como un préstamo más:
+     * traen es_reserva = 1 y fecha_entrega = inicio de la franja.
+     */
     public function listar($estado = null, $ciCliente = null) {
+        if ($estado !== null && $estado !== '' && !in_array($estado, EstadoSolicitud::TODOS, true)) {
+            throw new ErrorNegocio('Estado de solicitud no válido.');
+        }
         $sql = "SELECT s.id_solicitud, s.estado, s.fecha_solicitud, s.fecha_validacion, s.motivo_rechazo,
                        s.ci_cliente, CONCAT(u.nombre, ' ', u.apellido) AS cliente,
                        p.materia, p.horas_solicitadas, p.fecha_entrega, p.fecha_devolucion,
                        (SELECT GROUP_CONCAT(CONCAT(pp.cantidad, ' × ', pp.nombre_material) ORDER BY pp.nombre_material SEPARATOR ', ')
-                          FROM prestamo_pedido pp WHERE pp.id_solicitud = s.id_solicitud) AS pedido
+                          FROM prestamo_pedido pp WHERE pp.id_solicitud = s.id_solicitud) AS pedido,
+                       0 AS es_reserva, NULL AS fin_previsto
                   FROM solicitud s
                   JOIN prestamo p ON p.id_solicitud = s.id_solicitud
                   JOIN usuario  u ON u.ci = s.ci_cliente
                  WHERE 1 = 1";
         $param = [];
         if ($estado !== null && $estado !== '') {
-            if (!in_array($estado, EstadoSolicitud::TODOS, true)) {
-                throw new ErrorNegocio('Estado de solicitud no válido.');
-            }
             $sql .= " AND s.estado = ?";
             $param[] = $estado;
         }
@@ -51,10 +56,45 @@ class Modelo_Prestamo {
             $sql .= " AND s.ci_cliente = ?";
             $param[] = $ciCliente;
         }
-        $sql .= " ORDER BY s.fecha_solicitud DESC, s.id_solicitud DESC";
+        if ($estado === null || $estado === '' || $estado === EstadoSolicitud::ACTIVO) {
+            $sql .= " UNION ALL
+                SELECT s.id_solicitud, s.estado, s.fecha_solicitud, s.fecha_validacion, s.motivo_rechazo,
+                       s.ci_cliente, CONCAT(u.nombre, ' ', u.apellido) AS cliente,
+                       'Reserva en uso' AS materia,
+                       GREATEST(1, CEIL(TIMESTAMPDIFF(MINUTE, CONCAT(r.fecha, ' ', r.hora_inicio), CONCAT(r.fecha, ' ', r.hora_fin)) / 60)) AS horas_solicitadas,
+                       CONCAT(r.fecha, ' ', r.hora_inicio) AS fecha_entrega, NULL AS fecha_devolucion,
+                       (SELECT GROUP_CONCAT(CONCAT(rp.cantidad, ' × ', rp.nombre_material) ORDER BY rp.nombre_material SEPARATOR ', ')
+                          FROM reserva_pedido rp WHERE rp.id_solicitud = s.id_solicitud) AS pedido,
+                       1 AS es_reserva, CONCAT(r.fecha, ' ', r.hora_fin) AS fin_previsto
+                  FROM solicitud s
+                  JOIN reserva r ON r.id_solicitud = s.id_solicitud
+                  JOIN usuario u ON u.ci = s.ci_cliente
+                 WHERE s.estado = 'ACTIVO'";
+            if ($ciCliente !== null) {
+                $sql .= " AND s.ci_cliente = ?";
+                $param[] = $ciCliente;
+            }
+        }
+        $sql .= " ORDER BY fecha_solicitud DESC, id_solicitud DESC";
         $st = $this->conexion->prepare($sql);
         $st->execute($param);
-        return $st->fetchAll(PDO::FETCH_ASSOC);
+        $filas = $st->fetchAll(PDO::FETCH_ASSOC);
+
+        // «atrasada»: está en uso y ya pasó el momento en que debía volver (reserva: fin de la franja;
+        // préstamo: entrega + horas). Se calcula con la hora de PHP, la misma que usa Disponibilidad.
+        $ahora = Disponibilidad::ahora()->format('Y-m-d H:i:s');
+        foreach ($filas as &$f) {
+            $f['es_reserva'] = (int)$f['es_reserva'];
+            if ($f['estado'] === EstadoSolicitud::ACTIVO) {
+                $fin = $f['es_reserva'] ? $f['fin_previsto']
+                     : ($f['fecha_entrega'] ? date('Y-m-d H:i:s', strtotime($f['fecha_entrega'] . ' +' . (int)$f['horas_solicitadas'] . ' hours')) : null);
+                $f['atrasada'] = ($fin !== null && $fin < $ahora) ? 1 : 0;
+            } else {
+                $f['atrasada'] = 0;
+            }
+        }
+        unset($f);
+        return $filas;
     }
 
     /** Solicitud completa: cabecera, lo pedido (con disponibilidad actual) y lo entregado. */
@@ -181,15 +221,28 @@ class Modelo_Prestamo {
     }
 
     /**
-     * Préstamo del cliente que le impide pedir otro: uno APROBADO (todavía sin entregar)
-     * o ACTIVO (entregado y sin devolver). Devuelve ['id_solicitud', 'estado'] o null.
+     * Lo que le impide al cliente pedir otro préstamo:
+     *  - un préstamo APROBADO (todavía sin entregar) o ACTIVO (entregado y sin devolver), o
+     *  - una reserva ACTIVA (ya empezó y todavía no se devolvió el material).
+     * Devuelve ['id_solicitud', 'estado', 'tipo' => 'PRESTAMO'|'RESERVA'] o null.
      */
     public function prestamoBloqueante($ciCliente) {
         $st = $this->conexion->prepare(
-            "SELECT s.id_solicitud, s.estado
+            "SELECT s.id_solicitud, s.estado, 'PRESTAMO' AS tipo
                FROM solicitud s
                JOIN prestamo p ON p.id_solicitud = s.id_solicitud
               WHERE s.ci_cliente = ? AND s.estado IN ('APROBADO', 'ACTIVO')
+              ORDER BY s.id_solicitud DESC
+              LIMIT 1");
+        $st->execute([$ciCliente]);
+        $b = $st->fetch(PDO::FETCH_ASSOC);
+        if ($b) return $b;
+
+        $st = $this->conexion->prepare(
+            "SELECT s.id_solicitud, s.estado, 'RESERVA' AS tipo
+               FROM solicitud s
+               JOIN reserva r ON r.id_solicitud = s.id_solicitud
+              WHERE s.ci_cliente = ? AND s.estado = 'ACTIVO'
               ORDER BY s.id_solicitud DESC
               LIMIT 1");
         $st->execute([$ciCliente]);
@@ -207,6 +260,10 @@ class Modelo_Prestamo {
     public function solicitar($ciCliente, $materia, $horas, array $items) {
         $bloqueante = $this->prestamoBloqueante($ciCliente);
         if ($bloqueante) {
+            if ($bloqueante['tipo'] === 'RESERVA') {
+                throw new ErrorNegocio("Tenés la reserva #{$bloqueante['id_solicitud']} en uso y todavía sin devolver. "
+                                     . 'No podés solicitar un préstamo hasta que se finalice.');
+            }
             $situacion = $bloqueante['estado'] === EstadoSolicitud::ACTIVO
                 ? 'entregado y todavía sin devolver'
                 : 'aprobado y todavía sin entregar';

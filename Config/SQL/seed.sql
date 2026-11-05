@@ -17,6 +17,10 @@ SET time_zone = "+00:00";
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
 /*!40101 SET NAMES utf8mb4 */;
 
+-- El volcado carga las tablas en orden alfabético: se desactiva el control de claves foráneas
+-- mientras se insertan los datos y se reactiva al final.
+SET FOREIGN_KEY_CHECKS = 0;
+
 --
 -- Base de datos: `ceilab`
 --
@@ -190,6 +194,16 @@ INSERT INTO `usuario` (`ci`, `nombre`, `apellido`, `contrasenia`, `email`, `rol`
 ('20000004', 'Diego', 'Martínez', '$2y$10$7fxnQ269MQlGq/qqg4MTOeTunygb75owxXHYr8crs7Qvx4vZG1CdS', 'diego.martinez@cerpdeleste.edu.uy', 'CLIENTE', 'Informática', 'ACTIVA'),
 ('20000005', 'Sofía', 'Techera', '$2y$10$7fxnQ269MQlGq/qqg4MTOeTunygb75owxXHYr8crs7Qvx4vZG1CdS', 'sofia.techera@cerpdeleste.edu.uy', 'CLIENTE', 'Química', 'ACTIVA'),
 ('20000006', 'Joaquín', 'Barrios', '$2y$10$7fxnQ269MQlGq/qqg4MTOeTunygb75owxXHYr8crs7Qvx4vZG1CdS', 'joaquin.barrios@cerpdeleste.edu.uy', 'CLIENTE', 'Historia', 'INACTIVA');
+-- Resumen por tipo de material de cada reserva (lo usa el módulo de Reservas para calcular el stock por franja).
+-- Se calcula desde reserva_material, así que sirve para cualquier reserva cargada en este seed.
+INSERT IGNORE INTO reserva_pedido (id_solicitud, nombre_material, cantidad)
+SELECT rm.id_solicitud, m.nombre, SUM(rm.cantidad)
+  FROM reserva_material rm
+  JOIN material m ON m.id_material = rm.id_material
+ GROUP BY rm.id_solicitud, m.nombre;
+
+SET FOREIGN_KEY_CHECKS = 1;
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
