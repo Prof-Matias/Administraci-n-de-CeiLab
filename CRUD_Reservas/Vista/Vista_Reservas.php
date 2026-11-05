@@ -657,7 +657,7 @@ $nombreAdminReservas = trim(($_SESSION['Nombre'] ?? '') . ' ' . ($_SESSION['Apel
                     ${x.estado === 'PENDIENTE' ? `<button type="button" class="btn-modal btn-crear" onclick="resAprobar(${Number(x.id_solicitud)})">Aprobar</button><button type="button" class="btn-modal btn-eliminar" onclick="resRechazar(${Number(x.id_solicitud)})">Rechazar</button>` : ''}
                     ${['APROBADO'].includes(x.estado)   ? `<button type="button" class="btn-modal btn-editar" onclick="resModificarAdmin(${parseInt(x.id_solicitud, 10)})">Modificar</button>` : ''}
                     ${x.estado === 'APROBADO' ? `<button type="button" class="btn-modal btn-res-azul" onclick="resAccion('iniciar', ${Number(x.id_solicitud)})">Iniciar uso</button>` : ''}
-                    ${['APROBADO', 'ACTIVO'].includes(x.estado) ? `<button type="button" class="btn-modal btn-res-violeta" onclick="resAccion('finalizar', ${Number(x.id_solicitud)})">Finalizar</button>` : ''}
+                    ${['ACTIVO'].includes(x.estado) ? `<button type="button" class="btn-modal btn-res-violeta" onclick="resAccion('finalizar', ${Number(x.id_solicitud)})">Finalizar</button>` : ''}
                     ${['PENDIENTE', 'APROBADO'].includes(x.estado) ? `<button type="button" class="btn-modal btn-cancelar" onclick="resCancelar(${Number(x.id_solicitud)})">Cancelar</button>` : ''}
                 </td>
             </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;">No hay reservas con ese filtro.</td></tr>';

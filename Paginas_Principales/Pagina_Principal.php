@@ -145,10 +145,6 @@ if (!isset($_SESSION['ci'])) {
                         <span class="card-title">Hacer Reserva</span>
                         <span class="card-desc">Crea una solicitud para reservar equipos en la semana.</span>
                     </button>
-                    <button type="button" class="action-card" onclick="abrirModalSolicitarPrestamo()">
-                        <span class="card-title">Consultar Catálogo</span>
-                        <span class="card-desc">Consulta el catálogo para saber qué días están disponibles u ocupados los equipos.</span>
-                    </button>
                     <!-- NUEVA TARJETA ESTILIZADA PARA CLIENTE -->
                     <button type="button" class="action-card" id="MisPrestamos" onclick="abrirModalMisPrestamos()">
                         <span class="card-title">Mis Préstamos</span>
