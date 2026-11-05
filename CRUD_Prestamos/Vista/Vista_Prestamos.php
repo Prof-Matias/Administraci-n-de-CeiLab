@@ -237,13 +237,16 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
             <button class="btn-modal btn-crear" onclick="finalizarReservaEnUso(${p.id_solicitud})">Registrar devolución (finalizar reserva)</button>`;
         document.getElementById('modalDetallePrestamo').classList.add('active');
     }
+    
     async function finalizarReservaEnUso(id) {
-        if (!confirm(`¿Registrar la devolución y finalizar la reserva #${id}?`)) return;
-        if (await postJSON(`../CRUD_Reservas/Controlador/Controlador_Reservas.php?action=finalizar`, { id_solicitud: id })) {
-            document.getElementById('modalDetallePrestamo').classList.remove('active');
-            cargarPrestamos();
-        }
+    const acepto = await confirmar(`¿Registrar la devolución y finalizar la reserva #${id}?`);
+    if (!acepto) return;
+    
+    if (await postJSON(`../CRUD_Reservas/Controlador/Controlador_Reservas.php?action=finalizar`, { id_solicitud: id })) {
+        document.getElementById('modalDetallePrestamo').classList.remove('active');
+        cargarPrestamos();
     }
+}
 
     async function abrirDetallePrestamo(id) {
         const r = await pedirJSON(`${RUTA_CONTROLADOR_PRESTAMOS}?action=unidades_entrega&id=${id}`);
