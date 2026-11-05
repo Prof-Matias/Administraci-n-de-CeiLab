@@ -230,6 +230,12 @@ class Modelo_Reservas {
      * @return array ['id_solicitud' => int|null, 'items' => [...], 'espera' => [ids], 'completo' => bool]
      */
     public function solicitar($ciCliente, array $items, $fecha, $horaInicio, $horaFin, $aceptarParcial = false, $anotarEspera = false) {
+        $uso = $this->usoSinDevolver($ciCliente);
+        if ($uso) {
+            throw new ErrorNegocio($uso['tipo'] === 'RESERVA'
+                ? "Tenés la reserva #{$uso['id_solicitud']} en uso y todavía sin devolver. No podés hacer otra reserva hasta que se finalice."
+                : "Tenés el préstamo #{$uso['id_solicitud']} entregado y todavía sin devolver. No podés hacer una reserva hasta que lo devuelvas.");
+        }
         [$f, $ini, $fin] = $this->normalizarFranja($fecha, $horaInicio, $horaFin);
         $pedido = $this->normalizarItems($items);
         $desde  = Disponibilidad::momento($f, $ini);
@@ -682,6 +688,25 @@ class Modelo_Reservas {
     }
 
     /** Bloquea las filas de cada tipo, siempre en orden alfabético (el mismo orden que usa el módulo de préstamos). */
+    /**
+     * Material que el cliente tiene en su poder y no devolvió: un préstamo ACTIVO o una reserva ACTIVA
+     * (ya empezó). Mientras tanto no puede reservar. Devuelve ['id_solicitud', 'tipo'] o null.
+     */
+    public function usoSinDevolver($ciCliente) {
+        $st = $this->conexion->prepare(
+            "SELECT s.id_solicitud,
+                    CASE WHEN r.id_solicitud IS NOT NULL THEN 'RESERVA' ELSE 'PRESTAMO' END AS tipo
+               FROM solicitud s
+          LEFT JOIN reserva  r ON r.id_solicitud = s.id_solicitud
+          LEFT JOIN prestamo p ON p.id_solicitud = s.id_solicitud
+              WHERE s.ci_cliente = ? AND s.estado = 'ACTIVO'
+                AND (r.id_solicitud IS NOT NULL OR p.id_solicitud IS NOT NULL)
+              ORDER BY s.id_solicitud DESC
+              LIMIT 1");
+        $st->execute([$ciCliente]);
+        return $st->fetch(PDO::FETCH_ASSOC) ?: null;
+    }
+
     private function bloquearTipos(array $nombres) {
         $nombres = array_values(array_unique($nombres));
         sort($nombres, SORT_NATURAL | SORT_FLAG_CASE);

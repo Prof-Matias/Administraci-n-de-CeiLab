@@ -89,18 +89,26 @@ class Disponibilidad {
      */
     public function intervalosReserva($nombre, $desde, $hasta, $excluirSolicitud = 0) {
         $st = $this->db->prepare(
-            "SELECT rp.id_solicitud, rp.cantidad,
+            "SELECT rp.id_solicitud, rp.cantidad, s.estado,
                     TIMESTAMP(r.fecha, r.hora_inicio) AS inicio, TIMESTAMP(r.fecha, r.hora_fin) AS fin
                FROM reserva_pedido rp
                JOIN solicitud s ON s.id_solicitud = rp.id_solicitud
                JOIN reserva r   ON r.id_solicitud = rp.id_solicitud
               WHERE rp.nombre_material = ? AND s.estado IN ('APROBADO', 'ACTIVO') AND s.id_solicitud <> ?
-                AND TIMESTAMP(r.fecha, r.hora_inicio) < ? AND TIMESTAMP(r.fecha, r.hora_fin) > ?");
-        $st->execute([$nombre, (int)$excluirSolicitud, $hasta, $desde]);
-        return array_map(function ($f) {
-            return ['inicio' => $f['inicio'], 'fin' => $f['fin'], 'cantidad' => (int)$f['cantidad'],
-                    'id_solicitud' => (int)$f['id_solicitud']];
-        }, $st->fetchAll(PDO::FETCH_ASSOC));
+                AND TIMESTAMP(r.fecha, r.hora_inicio) < ?");
+        $st->execute([$nombre, (int)$excluirSolicitud, $hasta]);
+        $ahoraTxt = self::ahora()->format('Y-m-d H:i:s');
+        $res = [];
+        foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $f) {
+            // Una reserva en uso (ACTIVA) que no se devolvió a tiempo sigue ocupando el material,
+            // igual que un préstamo vencido: hasta el final del día de hoy.
+            $fin = $f['estado'] === 'ACTIVO' ? $this->finVigente($f['fin'], $ahoraTxt) : $f['fin'];
+            if ($fin > $desde) {
+                $res[] = ['inicio' => $f['inicio'], 'fin' => $fin, 'cantidad' => (int)$f['cantidad'],
+                          'id_solicitud' => (int)$f['id_solicitud']];
+            }
+        }
+        return $res;
     }
 
     /** Máximo de unidades reservadas A LA VEZ dentro de [desde, hasta). */
