@@ -346,19 +346,47 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
             </div>`;
     }
 
+/* =====================================================================
+       ACCIONES DE UN PRÉSTAMO
+       ===================================================================== */
     async function aprobarPrestamo(id) {
-        if (!confirm(`¿Aprobar el préstamo #${id}?`)) return;
-        if (await postJSON(`${RUTA_CONTROLADOR_PRESTAMOS}?action=aprobar`, { id_solicitud: id })) refrescarPrestamo(id);
+        // Muestra tu modal personalizado y espera la respuesta (true o false)
+        const acepto = await confirmar(`¿Aprobar el préstamo #${id}?`);
+        
+        // Si el usuario cancela, corta la ejecución
+        if (!acepto) return;
+        
+        // Si acepta, procede con la petición normal
+        if (await postJSON(`${RUTA_CONTROLADOR_PRESTAMOS}?action=aprobar`, { id_solicitud: id })) {
+            refrescarPrestamo(id);
+        }
     }
+
     async function rechazarPrestamo(id) {
-        const motivo = prompt('Motivo del rechazo:');
-        if (!motivo) return;
-        if (await postJSON(`${RUTA_CONTROLADOR_PRESTAMOS}?action=rechazar`, { id_solicitud: id, motivo })) refrescarPrestamo(id);
+    // Muestra un modal con un campo de texto integrado en lugar del prompt nativo
+    const motivo = await pedirTexto('Motivo del rechazo:', { 
+        titulo: 'Rechazar Préstamo',
+        placeholder: 'Escriba el motivo aquí...' 
+    });
+    
+    // Si el usuario cancela o deja el campo vacío, se corta la ejecución
+    if (!motivo || motivo.trim() === '') return;
+    
+    if (await postJSON(`${RUTA_CONTROLADOR_PRESTAMOS}?action=rechazar`, { id_solicitud: id, motivo })) {
+        refrescarPrestamo(id);
     }
+}
+
     async function cancelarPrestamoAdmin(id) {
-        if (!confirm(`¿Cancelar el préstamo #${id}?`)) return;
-        if (await postJSON(`${RUTA_CONTROLADOR_PRESTAMOS}?action=cancelar`, { id_solicitud: id })) refrescarPrestamo(id);
+        // Reemplaza el confirm nativo por tu modal de confirmación personalizado
+        const acepto = await confirmar(`¿Cancelar el préstamo #${id}?`);
+        if (!acepto) return;
+        
+        if (await postJSON(`${RUTA_CONTROLADOR_PRESTAMOS}?action=cancelar`, { id_solicitud: id })) {
+            refrescarPrestamo(id);
+        }
     }
+
     async function entregarPrestamo(id) {
         const marcadas = [...document.querySelectorAll('.serie-entrega:checked')].map(c => c.value);
         const escritas = document.getElementById('seriesEscaneadas').value.split(/[\s,;]+/).filter(Boolean);
