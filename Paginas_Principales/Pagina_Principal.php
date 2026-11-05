@@ -126,7 +126,7 @@ if (!isset($_SESSION['ci'])) {
                         <span class="card-title">Gestionar Reservas</span>
                         <span class="card-desc">Revisa el calendario de reservas semanales.</span>
                     </button>
-                    <button type="button" class="action-card" id="Solicitud" onclick="abrirModalGestionPrestamos('PENDIENTE')">
+                    <button type="button" class="action-card" id="Solicitud" onclick="abrirModalGestionPrestamos('PENDIENTE', true)">
                         <span class="card-title">Ver Solicitudes</span>
                         <span class="card-desc">Atiende las peticiones pendientes.</span>
                     </button>

@@ -61,7 +61,7 @@ try {
             break;
 
         case 'mis_prestamos':
-            ok($modelo->listar($_GET['estado'] ?? null, $ci));
+            ok($modelo->listar($_GET['estado'] ?? null, $ci, true));
             break;
 
         case 'cancelar':
@@ -75,7 +75,7 @@ try {
 
         /* ---------- Administrador ---------- */
         case 'listar':
-            ok($modelo->listar($_GET['estado'] ?? null));
+            ok($modelo->listar($_GET['estado'] ?? null, null, !empty($_GET['incluir_reservas'])));
             break;
 
         case 'detalle':
