@@ -172,9 +172,9 @@ if (!isset($_SESSION['ci'])) {
 
     </div>
 
-    <!-- ==========================================================================
+    <!--
          VENTANAS MODALES (SISTEMA INTERNO)
-         ========================================================================== -->
+         -->
     <div class="modal-overlay" id="modalGestionUsuarios">
         <div class="modal-content">
             <div class="modal-header">
@@ -481,9 +481,7 @@ if (!isset($_SESSION['ci'])) {
     </div>
 
 
-    <!-- ==========================================================================
-         MODAL: CATÁLOGO DE PRODUCTOS (VISTA CLIENTE)
-         ========================================================================== -->
+    <!--MODAL: CATÁLOGO DE PRODUCTOS (VISTA CLIENTE)-->
     <div class="modal-overlay" id="modalSolicitarPrestamo">
         <div class="modal-content" style="max-width: 1200px;">
             <div class="modal-header">
