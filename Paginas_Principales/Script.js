@@ -1499,3 +1499,26 @@ async function adminProcesarSolicitudDirecta() {
 }
 window.adminAbrirModalNuevoPrestamo = adminAbrirModalNuevoPrestamo;
 window.adminCerrarModal = adminCerrarModal;
+
+function mostrarConfirmacionCerrarSesion(urlLogout) {
+    const modal = document.getElementById('customConfirmModal');
+    const btnAceptar = document.getElementById('btnAceptarConfirmacion');
+
+    if (!modal) {
+        if (confirm("¿Estás seguro de que deseas salir del sistema?")) {
+            window.location.href = urlLogout;
+        }
+        return;
+    }
+
+    btnAceptar.onclick = function() {
+        window.location.href = urlLogout;
+    };
+
+    modal.style.display = 'flex';
+}
+
+function cerrarModalConfirmacion() {
+    const modal = document.getElementById('customConfirmModal');
+    if (modal) modal.style.display = 'none';
+}

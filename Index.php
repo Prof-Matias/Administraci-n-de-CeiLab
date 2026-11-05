@@ -1,3 +1,35 @@
+<?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// 1. SI NO TIENE LA COOKIE "usuario_recuerdame", SIGNIFICA QUE NO MARCÓ EL CHECKBOX.
+// Por lo tanto, destruimos cualquier sesión residual activa al entrar al index.
+if (!isset($_COOKIE['usuario_recuerdame'])) {
+    $_SESSION = array();
+    if (ini_get("session.use_cookies")) {
+        $params = session_get_cookie_params();
+        setcookie(session_name(), '', time() - 42000,
+            $params["path"], $params["domain"],
+            $params["secure"], $params["httponly"]
+        );
+    }
+    session_destroy();
+    session_start(); // Reiniciamos una sesión limpia por si se requiere en el formulario
+} else {
+    // 2. SI SÍ EXISTE LA COOKIE "usuario_recuerdame", RESTAURAMOS LA SESIÓN AUTOMÁTICAMENTE
+    if (!isset($_SESSION['ci'])) {
+        $_SESSION['ci'] = $_COOKIE['usuario_recuerdame'];
+        $_SESSION['CI'] = $_COOKIE['usuario_recuerdame'];
+    }
+}
+
+// 3. SOLO SI LA SESIÓN FUE RESTAURADA POR LA COOKIE "RECUÉRDAME", REDIRIGIR A LA PÁGINA PRINCIPAL
+if (isset($_SESSION['ci']) && isset($_COOKIE['usuario_recuerdame'])) {
+    header("Location: Paginas_Principales/Pagina_Principal.php");
+    exit();
+}
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>

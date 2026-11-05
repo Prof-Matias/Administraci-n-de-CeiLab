@@ -1,12 +1,4 @@
 <?php 
-/**
- * Pagina_Principal.php
- * 
- * Vista principal de la aplicación CeiLab.
- * Controla el acceso por roles, despliega las herramientas administrativas y de cliente,
- * y gestiona las ventanas modales mediante JavaScript (Fetch API).
- */
-
 // Inclusión de la configuración de conexión y la verificación de sesión activa
 require_once "../Config/Conexion.php";
 require_once "Verificar_Usuario.php";
@@ -17,13 +9,31 @@ if (!isset($_SESSION['Rol'])) {
     exit();
 }
 ?>
+<?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Si no hay sesión activa pero sí existe la cookie "Recuérdame", se restaura la sesión
+if (!isset($_SESSION['ci']) && isset($_COOKIE['usuario_recuerdame'])) {
+    $_SESSION['ci'] = $_COOKIE['usuario_recuerdame'];
+    $_SESSION['CI'] = $_COOKIE['usuario_recuerdame'];
+}
+
+// Si ni la sesión ni la cookie existen, redirige al login
+if (!isset($_SESSION['ci'])) {
+    header("Location: ../index.php");
+    exit();
+}
+?>
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="Diseño_Principal.css?v=4">
-    <link rel="stylesheet" href="Diseño2.css?v=3">
+    <link rel="stylesheet" href="Diseño_Principal.css?v=5">
+    <link rel="stylesheet" href="Diseño2.css?v=4">
     <link rel="stylesheet" href="animaciones.css">
     <title>CeiLab - Gestión Principal</title>
 </head>
@@ -60,12 +70,31 @@ if (!isset($_SESSION['Rol'])) {
                     </button>
                     <div class="dropdown-content" id="menuContent">
                         <a href="#" onclick="abrirModalVerPerfil(event)">Ver Perfil</a>
-                        <a href="../Index.php" class="logout-link">Cerrar Sesión</a>
+                        <!-- En tu barra de navegación o cabecera HTML -->
+                        <!-- Opción enlace <a> -->
+                    <a href="CerrarSesion.php" class="btn btn-danger" onclick="mostrarConfirmacionCerrarSesion(this.href); return false;">
+                                Cerrar Sesión
+                        </a>
                     </div>
                 </div>
             </div>
         </header>
 
+    <!-- Modal Personalizado de Confirmación (Cerrar Sesión) -->
+<div id="customConfirmModal" class="custom-modal-overlay">
+  <div class="custom-modal-box">
+    <div class="custom-modal-header">
+      <h3>Cerrar Sesión</h3>
+    </div>
+    <div class="custom-modal-body">
+      <p id="customConfirmMessage">¿Estás seguro de que deseas salir del sistema?</p>
+    </div>
+    <div class="custom-modal-footer">
+      <button type="button" class="btn-custom-modal btn-cancelar" onclick="cerrarModalConfirmacion()">Cancelar</button>
+      <button type="button" class="btn-custom-modal btn-confirmar" id="btnAceptarConfirmacion">Salir</button>
+    </div>
+  </div>
+</div>
         <!-- SECCIÓN DE ENCABEZADO CON LA IMAGEN Y TEXTO -->
         <section class="hero-section">
             <div class="hero-overlay">

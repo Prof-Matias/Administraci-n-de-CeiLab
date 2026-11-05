@@ -1,25 +1,11 @@
 <?php
-/**
- * Controlador de reservas (v8). Responde JSON:
- *   { "success": true,  "data": ... }
- *   { "success": false, "message": "...", "errores": ["..."] }
- *   y, en los avisos de stock, además: "codigo": "SIN_STOCK" | "STOCK_PARCIAL" y "detalle": {...}
- *
- * Cualquier usuario con sesión:  catalogo, calendario
- * Cliente:                       solicitar, mis_reservas, mi_espera
- * Cliente o administrador:       cancelar, modificar, cancelar_espera
- * Administrador:                 listar, aprobar, rechazar, iniciar, finalizar, historial, lista_espera, procesar_espera
- *
- * Las acciones que cambian datos solo se aceptan por POST.
- * Códigos: 401 sin sesión · 403 rol · 405 método · 409 stock parcial (pide confirmar) ·
- *          422 regla de negocio / sin stock · 500 error interno.
- */
+
 require_once __DIR__ . '/../../Config/Guardia.php';
 require_once __DIR__ . '/../Modelo/Modelo_Reservas.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
-/** Une $_POST con un cuerpo JSON, para recibir listas (items). */
+// Junta $_POST con el JSON del cuerpo (para recibir los ítems)
 function entrada() {
     static $datos = null;
     if ($datos === null) {
@@ -32,11 +18,11 @@ function entrada() {
 $action = $_GET['action'] ?? entrada()['action'] ?? '';   // entrada() también lee un cuerpo JSON
 
 $accionesSesion  = ['catalogo', 'calendario'];
-$accionesCliente = ['solicitar', 'mis_reservas', 'mi_espera'];
-$accionesAmbos   = ['cancelar', 'modificar', 'cancelar_espera'];
+$accionesCliente = ['mis_reservas', 'mi_espera'];
+$accionesAmbos   = ['solicitar', 'cancelar', 'modificar', 'cancelar_espera'];
 $accionesPost    = ['solicitar', 'cancelar', 'modificar', 'cancelar_espera', 'aprobar', 'rechazar', 'iniciar', 'finalizar', 'procesar_espera'];
 
-// Primero se controla quién es y qué rol tiene; recién después se hace cualquier otra cosa.
+// Primero se controla la sesión y el rol
 if (in_array($action, $accionesSesion, true)) {
     exigirSesion();
 } elseif (in_array($action, $accionesCliente, true)) {
@@ -54,12 +40,12 @@ function ok($data = null) {
     echo json_encode(['success' => true, 'data' => $data], JSON_UNESCAPED_UNICODE);
 }
 
-/** true/false desde 1, "1", "true", "on", "si"... */
+// Convierte 1, "1", "true", "on" o "si" en true
 function bandera($v) {
     return filter_var($v, FILTER_VALIDATE_BOOLEAN);
 }
 
-/** Atiende la lista de espera antes de mostrar listados. Si falla, no impide mostrar. */
+// Atiende la lista de espera antes de listar; si falla, se lista igual
 function atenderEspera(Modelo_Reservas $modelo) {
     try {
         $modelo->procesarEspera();
@@ -78,9 +64,9 @@ try {
     $modelo = new Modelo_Reservas();
 
     switch ($action) {
-        /* ---------- Cualquier usuario con sesión ---------- */
+        // Cualquier usuario con sesión
         case 'catalogo':
-            // Sin franja: tipos reservables. Con fecha + hora_inicio + hora_fin: stock de esa franja.
+            // Sin fecha ni horario devuelve los tipos; con la franja, el stock de esas horas
             ok($modelo->catalogo($_GET['fecha'] ?? null, $_GET['hora_inicio'] ?? null, $_GET['hora_fin'] ?? null));
             break;
 
@@ -88,28 +74,44 @@ try {
             ok($modelo->calendario($_GET['desde'] ?? null, $_GET['hasta'] ?? null, $_GET['nombre'] ?? null));
             break;
 
-        /* ---------- Cliente ---------- */
+        // Administrador: clientes para reservar a su nombre
+        case 'cargar_clientes_admin':
+            ok($modelo->obtenerListadoClientesAdmin());
+            break;
+
+        // Cliente o administrador
         case 'solicitar':
             $items = $in['items'] ?? [];
             if (is_string($items)) {
                 $items = json_decode($items, true) ?: [];
             }
-            ok($modelo->solicitar($ci, is_array($items) ? $items : [],
-                $in['fecha'] ?? '', $in['hora_inicio'] ?? '', $in['hora_fin'] ?? '',
-                bandera($in['aceptar_parcial'] ?? false), bandera($in['anotar_espera'] ?? false)));
+            if ($esAdmin) {
+                // El administrador reserva para un cliente o para él mismo y la reserva queda aprobada
+                $ciCliente = trim((string)($in['ci_cliente'] ?? ''));
+                if ($ciCliente === '') {
+                    throw new ErrorNegocio('Elegí a nombre de quién es la reserva.');
+                }
+                $estadoInicial = 'APROBADO';
+            } else {
+                $ciCliente = $ci;
+                $estadoInicial = 'PENDIENTE';
+            }
+            ok($modelo->solicitarReserva($in['fecha'] ?? '', $in['hora_inicio'] ?? '', $in['hora_fin'] ?? '',
+                is_array($items) ? $items : [], $ciCliente, $estadoInicial,
+                bandera($in['aceptar_parcial'] ?? false), bandera($in['anotar_espera'] ?? false), $ci));
             break;
 
-        case 'mis_reservas':
-            atenderEspera($modelo);
-            ok($modelo->listar(['ci_cliente' => $ci, 'estado' => $_GET['estado'] ?? null, 'fecha' => $_GET['fecha'] ?? null]));
-            break;
+    case 'mis_reservas':
+        atenderEspera($modelo);
+        ok($modelo->listar(['ci_cliente' => $ci, 'estado' => $_GET['estado'] ?? null, 'fecha' => $_GET['fecha'] ?? null]));
+        break;
 
         case 'mi_espera':
             atenderEspera($modelo);
             ok($modelo->listarEspera(['ci_cliente' => $ci]));
             break;
 
-        /* ---------- Cliente o administrador ---------- */
+        // Cliente o administrador
         case 'cancelar':
             $modelo->cancelar($idSol, $ci, $esAdmin);
             ok();
@@ -133,13 +135,13 @@ try {
             ok();
             break;
 
-        /* ---------- Administrador ---------- */
+        // Administrador
         case 'listar':
             atenderEspera($modelo);
             ok($modelo->listar([
                 'estado'     => $_GET['estado'] ?? null,
-                'ci_cliente' => $_GET['ci_cliente'] ?? null,   // RF42
-                'fecha'      => $_GET['fecha'] ?? null,        // RF43
+                'ci_cliente' => $_GET['ci_cliente'] ?? null,   // por cédula
+                'fecha'      => $_GET['fecha'] ?? null,        // por fecha
             ]));
             break;
 
@@ -163,7 +165,7 @@ try {
             ok();
             break;
 
-        case 'historial':      // RF47
+        case 'historial':      // reservas finalizadas
             ok($modelo->historial(['ci_cliente' => $_GET['ci_cliente'] ?? null, 'fecha' => $_GET['fecha'] ?? null]));
             break;
 
@@ -180,7 +182,7 @@ try {
             responderError(400, 'Acción no reconocida.');
     }
 } catch (ErrorDisponibilidad $e) {
-    // Stock parcial: 409, el cliente debe confirmar. Sin stock: 422.
+    // 409 si alcanza solo una parte (hay que confirmar), 422 si no hay nada
     http_response_code($e->codigo === ErrorDisponibilidad::STOCK_PARCIAL ? 409 : 422);
     echo json_encode(['success' => false, 'message' => $e->getMessage(), 'errores' => $e->errores,
                       'codigo' => $e->codigo, 'detalle' => $e->detalle], JSON_UNESCAPED_UNICODE);

@@ -1569,3 +1569,113 @@ body.dark-mode .carrito label {
     font-weight: bold;
     cursor: pointer;
 }
+
+/* Overlay flotante oscurecido de pantalla completa */
+.custom-modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 99999;
+  justify-content: center;
+  align-items: center;
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* Tarjeta centrada del Modal */
+.custom-modal-box {
+  background: #ffffff;
+  color: #333333;
+  width: 90%;
+  max-width: 400px;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+  text-align: center;
+  transform: scale(0.9);
+  animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* Adaptación a Modo Oscuro */
+body.dark-mode .custom-modal-box {
+  background: #1e1e2d;
+  color: #f1f1f1;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+}
+
+.custom-modal-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.custom-modal-icon {
+  font-size: 2.2rem;
+}
+
+.custom-modal-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.custom-modal-body p {
+  font-size: 0.95rem;
+  margin: 0 0 20px 0;
+  line-height: 1.5;
+}
+
+/* Alineación de Botones en el pie del modal */
+.custom-modal-footer {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.btn-custom-modal {
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.btn-custom-modal:active {
+  transform: scale(0.97);
+}
+
+.btn-cancelar {
+  background-color: #6c757d;
+  color: #ffffff;
+}
+
+.btn-cancelar:hover {
+  background-color: #5a6268;
+}
+
+.btn-confirmar {
+  background-color: #dc3545;
+  color: #ffffff;
+}
+
+.btn-confirmar:hover {
+  background-color: #bd2130;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes popIn {
+  to { transform: scale(1); }
+}

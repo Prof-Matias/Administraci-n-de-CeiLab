@@ -1,16 +1,22 @@
 <?php 
-// Iniciamos la sesión para poder acceder a la cédula
-// que guardamos anteriormente en verificar_cedula.php.
 session_start();
 
-// Verificamos que exista una cédula guardada.
-// Si alguien intenta entrar directamente sin haber ingresado su cédula, lo devolvemos al inicio.
+// Si ya tiene sesión activa o cookie "recuerdame", redirigir directamente a la página principal
+if (isset($_SESSION['CI']) || isset($_COOKIE['usuario_recuerdame'])) {
+    if (!isset($_SESSION['CI']) && isset($_COOKIE['usuario_recuerdame'])) {
+        // Restaurar la sesión desde la cookie segura
+        $_SESSION['CI'] = $_COOKIE['usuario_recuerdame'];
+    }
+    header("Location: Pagina_Principal.php");
+    exit();
+}
+
+// Verificar que exista la cédula temporal de la etapa anterior
 if (!isset($_SESSION['cedula_temp'])) {
     header("Location: index.php");
     exit();
 }
 
-// Recuperamos la cédula guardada en la sesión.
 $cedula = $_SESSION['cedula_temp'];
 ?>
 
@@ -24,7 +30,6 @@ $cedula = $_SESSION['cedula_temp'];
 </head>
 <body>
   
-  <!-- Switch animado para Modo Oscuro -->
   <label class="theme-switch" for="theme-toggle" title="Alternar Modo Oscuro">
     <input type="checkbox" id="theme-toggle">
     <span class="slider">
@@ -40,44 +45,41 @@ $cedula = $_SESSION['cedula_temp'];
       <form action="Login_Logica/verificar_contrasenia.php" method="post">
         <label for="contrasenia" class="form-label">Contraseña</label>
         <input type="password" class="form-control" id="contrasenia" placeholder="Ingrese su contraseña" name="contrasenia" required autofocus>
+        
+        <!-- Opción Recuérdame -->
+        <div class="form-check mt-2 mb-2" style="display: flex; align-items: center; gap: 8px;">
+          <input type="checkbox" id="recuerdame" name="recuerdame" value="1">
+          <label for="recuerdame" style="cursor: pointer;">Recuérdame en este dispositivo</label>
+        </div>
+
         <button type="submit" class="btn btn-primary" id="iniciar">Iniciar Sesión</button>    
 
-        <!-- Mensajes de alerta en la interfaz -->
+        <!-- Mensajes de alerta -->
         <?php if (isset($_GET['error']) && $_GET['error'] == 1): ?>
-          <div class="alert alert-danger mt-2" role="alert">
-            Contraseña inválida. Intente nuevamente.
-          </div>
+          <div class="alert alert-danger mt-2" role="alert">Contraseña inválida. Intente nuevamente.</div>
         <?php endif; ?>
 
         <?php if (isset($_GET['error']) && $_GET['error'] == "empty"): ?>
-          <div class="alert alert-danger mt-2" role="alert">
-            El campo de contraseña no puede estar vacío.
-          </div>
+          <div class="alert alert-danger mt-2" role="alert">El campo de contraseña no puede estar vacío.</div>
         <?php endif; ?>
 
         <?php if (isset($_GET['error']) && $_GET['error'] == "db"): ?>
-          <div class="alert alert-danger mt-2" role="alert">
-            Error de conexión con el servidor. Intente más tarde.
-          </div>
+          <div class="alert alert-danger mt-2" role="alert">Error de conexión con el servidor. Intente más tarde.</div>
         <?php endif; ?>
-         
-         <img src="Material_Visual/Logo2.png" alt="Logo CeiLab" class="Logo">
+          
+        <img src="Material_Visual/Logo2.png" alt="Logo CeiLab" class="Logo">
       </form>
   </div>
 
   <script>
-    // SISTEMA DE MODO OSCURO (SWITCH ANIMADO)
     const themeToggle = document.getElementById('theme-toggle');
     const body = document.body;
 
-    // Comprueba el modo guardado en el navegador del usuario (LocalStorage)
-    // Esto asegura que si lo activó en la pantalla anterior, siga activo aquí.
     if (localStorage.getItem('theme') === 'dark') {
       body.classList.add('dark-mode');
-      themeToggle.checked = true; // Activa el switch visualmente
+      themeToggle.checked = true;
     }
 
-    // Evento al cambiar el switch
     themeToggle.addEventListener('change', () => {
       if (themeToggle.checked) {
         body.classList.add('dark-mode');

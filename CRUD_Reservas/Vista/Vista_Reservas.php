@@ -1,21 +1,20 @@
 <?php
 
 $esAdminReservas = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
+$ciAdminReservas = (string)($_SESSION['CI'] ?? '');
+$nombreAdminReservas = trim(($_SESSION['Nombre'] ?? '') . ' ' . ($_SESSION['Apellido'] ?? ''));
 ?>
 <style>
     .res-fila { display:flex; flex-wrap:wrap; gap:12px; margin-bottom:12px; align-items:flex-end; }
     .modal-content .res-fila label { display:flex !important; flex-direction:column; width:auto; font-size:13px; gap:4px; }
-    .modal-content .res-fila input { width:auto; }
+    .modal-content .res-fila input, .modal-content .res-fila select { width:auto; }
     .res-aviso { font-size:12px; color:#8a5a00; }
     .res-acciones button { margin:0 4px 4px 0; }
     .res-cant { width:70px; }
     .res-sin { color:#8a1c1c; font-weight:600; }
     .res-panel { border:1px solid #e0b252; background:#fff8e6; border-radius:8px; padding:12px 14px; margin:12px 0; }
     .res-panel.error { border-color:#e5a5a5; background:#fdecea; }
-    /* El texto del panel tiene color propio: en modo oscuro la app pone el texto en blanco y quedaba invisible sobre el fondo claro */
     .res-panel, .res-panel h4, .res-panel li, .res-panel strong, .res-panel small { color:#1f2937 !important; }
-    .res-panel button { color:#1f2937 !important; background:#fff !important; border:1px solid #9ca3af !important; border-radius:6px; padding:5px 10px; cursor:pointer; }
-    .res-panel button.btn-guardar { background:#10b981 !important; color:#fff !important; border-color:#0e9f6e !important; }
     body.dark-mode .res-panel { background:#3a2f12; border-color:#8a6d1f; }
     body.dark-mode .res-panel.error { background:#3b1c1c; border-color:#8a3a3a; }
     body.dark-mode .res-panel, body.dark-mode .res-panel h4, body.dark-mode .res-panel li,
@@ -24,43 +23,133 @@ $esAdminReservas = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
     body.dark-mode .res-sin { color:#ff9b9b; }
     .res-panel h4 { margin:0 0 8px; }
     .res-panel ul { margin:6px 0 10px 18px; padding:0; }
-    .res-panel button { margin:4px 6px 0 0; }
-    .res-tabs button { margin-right:6px; }
-    .res-tabs button.activo, #resFiltros button.activo { font-weight:700; text-decoration:underline; }
+    .res-panel .btn-modal { margin:4px 6px 0 0; }
+
+    /* Pestañas y filtros con los mismos botones que Gestión de Préstamos */
+    .res-tabs .btn-modal, #resFiltros .btn-modal { margin:0 4px 6px 0; }
+    .res-tabs .btn-modal.activo, #resFiltros .btn-modal.activo { outline:2px solid #333; }
+    body.dark-mode .res-tabs .btn-modal.activo, body.dark-mode #resFiltros .btn-modal.activo { outline-color:#e5e7eb; }
+    .btn-modal.btn-res-azul { background-color:#0284c7 !important; color:#fff !important; }
+    .btn-modal.btn-res-violeta { background-color:#7c3aed !important; color:#fff !important; }
+
+    /* El formulario de la reserva es más ancho que los demás */
+    #modalHacerReserva .modal-content { max-width:920px !important; width:94% !important; }
+    #formReserva div.res-fila, #formReserva .res-fila { flex-direction:row !important; align-items:flex-end !important; }
+    #formReserva .res-fila label { width:auto !important; }
+    #formReserva .res-fila input[type="time"] {
+        padding:8px 10px; border:1px solid var(--card-border, #cbd5e1); border-radius:8px;
+        background:var(--card-bg, #fff); color:var(--text-main, #0f172a); font-size:0.88rem;
+    }
+    #formReserva .res-cliente-box { background:#f3f4f6; padding:10px 12px; border-radius:8px; }
+    body.dark-mode #formReserva .res-cliente-box { background:#1f2937; }
+    #formReserva .table-responsive { display:block !important; }
+    #formReserva .res-botones { flex-direction:row !important; align-items:center !important; gap:10px !important; }
+    #formReserva .res-botones button[type="submit"] { width:auto !important; margin-top:0 !important; padding:10px 22px !important; }
+
+    /* Calendario */
+    .cal-contenedor { border:1px solid #cbd5e1; border-radius:8px; padding:16px; background:#fff; width:100%; box-sizing:border-box; }
+    body.dark-mode .cal-contenedor { background:#1e293b; border-color:#475569; }
+    #formReserva div.cal-header { display:flex !important; flex-direction:row !important; justify-content:space-between !important; align-items:center !important; margin-bottom:12px !important; }
+    .cal-header h4 { margin:0; font-size:16px; font-weight:700; color:#1e293b; text-transform:capitalize; }
+    body.dark-mode .cal-header h4 { color:#f8fafc; }
+    .cal-header button {
+        width:36px; height:36px; border-radius:8px; border:1px solid #cbd5e1; background:#f8fafc;
+        color:#1e293b; font-weight:700; font-size:16px; cursor:pointer; transition:background-color 0.15s ease;
+    }
+    .cal-header button:hover { background:#e2e8f0; }
+    body.dark-mode .cal-header button { background:#334155; color:#fff; border-color:#475569; }
+    #resCalGrid td { transition:background-color 0.15s ease; }
+    #resCalGrid td[onclick]:hover { background:#e2e8f0 !important; }
+    body.dark-mode #resCalGrid td { color:#f8fafc; border-color:#334155 !important; }
+    body.dark-mode #resCalGrid td[onclick] { background:#0f172a !important; }
+
+    /* Horario: aparece al elegir un día */
+    #formReserva div.horario-box { display:none !important; padding:14px; background:#f8fafc; border-radius:8px; border:1px solid #e2e8f0; }
+    #formReserva div.horario-box.activo { display:flex !important; }
+    body.dark-mode #formReserva div.horario-box { background:#0f172a; border-color:#334155; }
+
+    /* El formulario queda sobre Gestión de Reservas y la ventana de modificar sobre las dos */
+    #modalHacerReserva { z-index:100010 !important; }
+    #modalResModificar { z-index:100020 !important; }
 </style>
 
-<?php if (!$esAdminReservas): ?>
-<!-- HACER RESERVA (CLIENTE)-->
+<!-- Hacer una reserva (cliente y administrador) -->
 <div class="modal-overlay" id="modalHacerReserva">
-    <div class="modal-content" style="max-width:920px;">
+    <div class="modal-content">
         <div class="modal-header">
-            <h3 id="resTitulo">Hacer una reserva</h3>
+            <h3 id="resTitulo"><?php echo $esAdminReservas ? 'Nueva Reserva (Admin)' : 'Hacer una reserva'; ?></h3>
             <button class="modal-close" onclick="cerrarModal('modalHacerReserva')">&times;</button>
         </div>
 
         <form id="formReserva" onsubmit="resEnviar(event)">
-            <div class="res-fila">
-                <label>Fecha <input type="date" id="resFecha" required onchange="resConsultarStock()"></label>
-                <label>Desde <input type="time" id="resIni" required onchange="resConsultarStock()"></label>
-                <label>Hasta <input type="time" id="resFin" required onchange="resConsultarStock()"></label>
+
+            <?php if ($esAdminReservas): ?>
+            <!-- A nombre de quién es la reserva -->
+            <div class="res-cliente-box">
+                <label style="width:100%;">Reserva a nombre de:
+                    <select id="resAdminCiCliente" required>
+                        <option value="">Seleccione un cliente...</option>
+                    </select>
+                </label>
+                <small>La reserva que hace el administrador queda aprobada.</small>
             </div>
+            <?php endif; ?>
+
+            <!-- La fecha la completa el calendario -->
+            <input type="hidden" id="resFecha" required>
+
+            <div class="cal-contenedor">
+                <div class="cal-header">
+                    <button type="button" onclick="resCambiarMes(-1)" title="Mes anterior">&lt;</button>
+                    <h4 id="resCalTituloMes">Mes Año</h4>
+                    <button type="button" onclick="resCambiarMes(1)" title="Mes siguiente">&gt;</button>
+                </div>
+                <table style="width:100%; border-collapse:separate; border-spacing:4px; table-layout:fixed;">
+                    <thead>
+                        <tr>
+                            <th style="text-align:center; padding:4px; font-size:12px; color:#64748b;">DOM</th>
+                            <th style="text-align:center; padding:4px; font-size:12px; color:#64748b;">LUN</th>
+                            <th style="text-align:center; padding:4px; font-size:12px; color:#64748b;">MAR</th>
+                            <th style="text-align:center; padding:4px; font-size:12px; color:#64748b;">MIÉ</th>
+                            <th style="text-align:center; padding:4px; font-size:12px; color:#64748b;">JUE</th>
+                            <th style="text-align:center; padding:4px; font-size:12px; color:#64748b;">VIE</th>
+                            <th style="text-align:center; padding:4px; font-size:12px; color:#64748b;">SÁB</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resCalGrid"></tbody>
+                </table>
+            </div>
+
+            <!-- Horario de la reserva -->
+            <div class="horario-box" id="resBoxHorario">
+                <strong id="resLblFechaSeleccionada">Selecciona un horario:</strong>
+                <div class="res-fila" style="margin-bottom:0;">
+                    <label>Desde <input type="time" id="resIni" required onchange="resConsultarStock()"></label>
+                    <label>Hasta <input type="time" id="resFin" required onchange="resConsultarStock()"></label>
+                </div>
+            </div>
+
             <p class="res-aviso" style="margin:4px 0 8px;">
                 El stock que ves es el de la franja elegida: descuenta lo reservado y lo prestado en esas horas.
                 Elegí cuántas unidades querés de cada material.
             </p>
+
             <div class="table-responsive">
                 <table class="tabla-modal">
                     <thead><tr><th>Material</th><th>En servicio</th><th>Libres</th><th>Reservadas</th><th>Prestadas</th><th>Se liberan</th><th>Cantidad</th></tr></thead>
-                    <tbody id="resStock"><tr><td colspan="7" style="text-align:center;">Elegí fecha y horario.</td></tr></tbody>
+                    <tbody id="resStock"><tr><td colspan="7" style="text-align:center;">Selecciona un día en el calendario.</td></tr></tbody>
                 </table>
             </div>
+
             <div id="resPanel"></div>
-            <div style="margin-top:14px;">
-                <button type="submit" class="btn-guardar" id="resBtnEnviar">Solicitar reserva</button>
-                <button type="button" id="resBtnCancelarEdicion" style="display:none;" onclick="resCancelarEdicion()">Cancelar edición</button>
+
+            <div class="res-botones">
+                <button type="submit" class="btn-guardar" id="resBtnEnviar"><?php echo $esAdminReservas ? 'Crear reserva' : 'Solicitar reserva'; ?></button>
+                <button type="button" class="btn-modal btn-cancelar" id="resBtnCancelarEdicion" style="display:none;" onclick="resCancelarEdicion()">Cancelar edición</button>
             </div>
         </form>
 
+        <?php if (!$esAdminReservas): ?>
         <h4 style="margin-top:22px;">Mis reservas</h4>
         <div class="table-responsive">
             <table class="tabla-modal">
@@ -76,10 +165,12 @@ $esAdminReservas = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
                 <tbody id="resMiEspera"></tbody>
             </table>
         </div>
+        <?php endif; ?>
     </div>
 </div>
-<?php else: ?>
-<!-- GESTIÓN DE RESERVAS (ADMINISTRADOR)-->
+
+<?php if ($esAdminReservas): ?>
+<!-- Gestión de reservas (administrador) -->
 <div class="modal-overlay" id="modalGestionReservas">
     <div class="modal-content" style="max-width:1080px;">
         <div class="modal-header">
@@ -87,16 +178,17 @@ $esAdminReservas = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
             <button class="modal-close" onclick="cerrarModal('modalGestionReservas')">&times;</button>
         </div>
         <div class="res-tabs res-fila">
-            <button type="button" id="resTabReservas" onclick="resTab('reservas')">Reservas</button>
-            <button type="button" id="resTabEspera" onclick="resTab('espera')">Lista de espera</button>
-            <button type="button" id="resTabHistorial" onclick="resTab('historial')">Historial</button>
+            <button type="button" class="btn-modal" id="resTabReservas" onclick="resTab('reservas')">Reservas</button>
+            <button type="button" class="btn-modal" id="resTabEspera" onclick="resTab('espera')">Lista de espera</button>
+            <button type="button" class="btn-modal" id="resTabHistorial" onclick="resTab('historial')">Historial</button>
+            <button type="button" class="btn-guardar btn-modal btn-crear" style="margin-left:auto;" onclick="abrirModalHacerReserva()">+ Nueva Reserva</button>
         </div>
 
         <div id="resSecReservas">
             <div class="res-fila">
                 <div class="filtros-estado" id="resFiltros" style="margin:0;"></div>
                 <label>Fecha <input type="date" id="resFiltroFecha" onchange="resListarAdmin()"></label>
-                <button type="button" onclick="document.getElementById('resFiltroFecha').value=''; resListarAdmin();">Quitar fecha</button>
+                <button type="button" class="btn-modal btn-cancelar" onclick="document.getElementById('resFiltroFecha').value=''; resListarAdmin();">Quitar fecha</button>
             </div>
             <div class="table-responsive">
                 <table class="tabla-modal">
@@ -107,7 +199,7 @@ $esAdminReservas = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
         </div>
 
         <div id="resSecEspera" style="display:none;">
-            <div class="res-fila"><button type="button" onclick="resProcesarEspera()">Atender lista de espera ahora</button></div>
+            <div class="res-fila"><button type="button" class="btn-modal btn-crear" onclick="resProcesarEspera()">Atender lista de espera ahora</button></div>
             <div class="table-responsive">
                 <table class="tabla-modal">
                     <thead><tr><th>#</th><th>Cliente</th><th>Material</th><th>Cant.</th><th>Fecha</th><th>Horario</th><th>Estado</th><th>Solicitud generada</th><th></th></tr></thead>
@@ -120,7 +212,7 @@ $esAdminReservas = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
             <div class="res-fila">
                 <label>Cédula <input type="text" id="resHistCi" maxlength="8" style="width:110px;" onchange="resListarHistorial()"></label>
                 <label>Fecha <input type="date" id="resHistFecha" onchange="resListarHistorial()"></label>
-                <button type="button" onclick="document.getElementById('resHistCi').value=''; document.getElementById('resHistFecha').value=''; resListarHistorial();">Limpiar</button>
+                <button type="button" class="btn-modal btn-cancelar" onclick="document.getElementById('resHistCi').value=''; document.getElementById('resHistFecha').value=''; resListarHistorial();">Limpiar</button>
             </div>
             <div class="table-responsive">
                 <table class="tabla-modal">
@@ -132,9 +224,6 @@ $esAdminReservas = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
     </div>
 </div>
 
-<?php endif; ?>
-
-<?php if ($esAdminReservas): ?>
 <div class="modal-overlay" id="modalResModificar">
     <div class="modal-content" style="max-width:520px;">
         <div class="modal-header">
@@ -148,7 +237,7 @@ $esAdminReservas = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
                 <label>Desde <input type="time" id="resModIni" required></label>
                 <label>Hasta <input type="time" id="resModFin" required></label>
             </div>
-            <label style="display:flex; flex-direction:column; gap:4px; font-size:13px;">Materiales (uno por línea, «Nombre=cantidad»)
+            <label style="display:flex; flex-direction:column; gap:4px; font-size:13px;">Materiales (uno por línea, "Nombre=cantidad")
                 <textarea id="resModItems" rows="5" required></textarea>
             </label>
             <div style="margin-top:12px;"><button type="submit" class="btn-guardar">Guardar cambios</button></div>
@@ -158,64 +247,162 @@ $esAdminReservas = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
 <?php endif; ?>
 
 <script>
-    const RUTA_CONTROLADOR_RESERVAS = '../CRUD_Reservas/Controlador/Controlador_Reservas.php';
+    const MESES_NOMBRES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    const RUTA_CONTROLADOR_RESERVAS = '<?php echo dirname($_SERVER["SCRIPT_NAME"]) . "/../CRUD_Reservas/Controlador/Controlador_Reservas.php"; ?>';
+    const RES_ES_ADMIN = <?php echo $esAdminReservas ? 'true' : 'false'; ?>;
+    const RES_ADMIN_CI = <?php echo json_encode($ciAdminReservas); ?>;
+    const RES_ADMIN_NOMBRE = <?php echo json_encode($nombreAdminReservas, JSON_UNESCAPED_UNICODE); ?>;
 
-    /** Fecha local AAAA-MM-DD (no usa toISOString, que devuelve la fecha en UTC). */
+    let resCalFechaActual = new Date();
+    let resEditando = 0;
+    let resUltimoPedido = null;
+
     function resFechaLocal(d) {
         const p = n => String(n).padStart(2, '0');
         return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
     }
     function resHora(h) { return String(h || '').slice(0, 5); }
 
-    /**
-     * POST que NO muestra alert: devuelve {ok, status, json} para poder tratar el aviso de stock
-     * (409 STOCK_PARCIAL / 422 SIN_STOCK) con un panel en vez de un mensaje simple.
-     */
     async function resPost(cuerpo) {
         try {
             const res = await fetch(RUTA_CONTROLADOR_RESERVAS, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo)
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify(cuerpo)
             });
             const texto = await res.text();
             let json;
             try { json = JSON.parse(texto); } catch (e) { alert('Respuesta inesperada del servidor:\n' + texto.substring(0, 300)); return null; }
-            return { ok: json.success !== false, status: res.status, json };
+            return { ok: res.ok && json.success !== false, status: res.status, json };
         } catch (err) {
             alert('Error de conexión con el servidor: ' + err.message);
             return null;
         }
     }
+
     function resAvisoError(json) {
         const lista = (json.errores || []).map(e => '• ' + e).join('\n');
         alert((json.message || 'No se pudo completar la operación.') + (lista ? '\n\n' + lista : ''));
     }
 
-<?php if (!$esAdminReservas): ?>
-    /* =====================================================================
-       CLIENTE
-       ===================================================================== */
-    let resEditando = 0;          // id de la reserva que se está modificando (0 = reserva nueva)
-    let resUltimoPedido = null;   // lo último que se intentó enviar (para reintentar con confirmación)
+    // Calendario
 
-    async function abrirModalHacerReserva() {
-        const manana = new Date(); manana.setDate(manana.getDate() + 1);
-        const campo = document.getElementById('resFecha');
-        campo.min = resFechaLocal(new Date());
-        if (!campo.value) campo.value = resFechaLocal(manana);
-        document.getElementById('modalHacerReserva').classList.add('active');
-        resConsultarStock();
-        resListarMias();
-        resListarEspera();
+    function resRenderCalendario() {
+        const grid = document.getElementById('resCalGrid');
+        const titulo = document.getElementById('resCalTituloMes');
+        if (!grid || !titulo) return;
+
+        const anio = resCalFechaActual.getFullYear();
+        const mes = resCalFechaActual.getMonth();
+        titulo.textContent = `${MESES_NOMBRES[mes]} ${anio}`;
+
+        const primerDiaIndex = new Date(anio, mes, 1).getDay();
+        const totalDias = new Date(anio, mes + 1, 0).getDate();
+        const hoyStr = resFechaLocal(new Date());
+        const fechaSeleccionada = document.getElementById('resFecha').value;
+
+        let html = '';
+        let diaContador = 1;
+        for (let i = 0; i < 6; i++) {
+            let filaHtml = '<tr>';
+            let tieneDias = false;
+            for (let j = 0; j < 7; j++) {
+                if ((i === 0 && j < primerDiaIndex) || diaContador > totalDias) {
+                    filaHtml += '<td></td>';
+                    continue;
+                }
+                tieneDias = true;
+                const fechaObj = new Date(anio, mes, diaContador);
+                const fechaStr = resFechaLocal(fechaObj);
+                const diaSemana = fechaObj.getDay();
+                // No se reservan días pasados ni fines de semana
+                const deshabilitado = fechaStr < hoyStr || diaSemana === 0 || diaSemana === 6;
+                const seleccionado = (fechaStr === fechaSeleccionada);
+
+                let estilo = 'text-align:center; padding:8px 0; border:1px solid #e2e8f0; border-radius:6px; font-size:14px;';
+                if (deshabilitado) {
+                    estilo += ' opacity:0.35; background:#f1f5f9; cursor:not-allowed;';
+                } else if (seleccionado) {
+                    estilo += ' background:#10b981 !important; color:#fff; font-weight:bold; border-color:#059669; cursor:pointer;';
+                } else {
+                    estilo += ' background:#fff; cursor:pointer;';
+                }
+                const click = deshabilitado ? '' : `onclick="resSeleccionarDia('${fechaStr}')"`;
+                filaHtml += `<td ${click} style="${estilo}">${diaContador}</td>`;
+                diaContador++;
+            }
+            filaHtml += '</tr>';
+            if (tieneDias) html += filaHtml;
+        }
+        grid.innerHTML = html;
     }
 
-    /** Pide al servidor el stock de la franja elegida, por tipo de material. */
+    function resCambiarMes(paso) {
+        resCalFechaActual = new Date(resCalFechaActual.getFullYear(), resCalFechaActual.getMonth() + paso, 1);
+        resRenderCalendario();
+    }
+
+    function resSeleccionarDia(fechaStr) {
+        document.getElementById('resFecha').value = fechaStr;
+        const partes = fechaStr.split('-');
+        document.getElementById('resLblFechaSeleccionada').textContent = `Horario para el ${partes[2]}/${partes[1]}/${partes[0]}:`;
+        document.getElementById('resBoxHorario').classList.add('activo');
+        resRenderCalendario();
+
+        if (document.getElementById('resIni').value && document.getElementById('resFin').value) {
+            resConsultarStock();
+        } else {
+            document.getElementById('resStock').innerHTML = '<tr><td colspan="7" style="text-align:center;">Ingresa el horario (Desde / Hasta) para ver la disponibilidad.</td></tr>';
+        }
+    }
+
+    // Formulario
+
+    async function abrirModalHacerReserva() {
+        resEditando = 0;
+        resCalFechaActual = new Date();
+        document.getElementById('resFecha').value = '';
+        document.getElementById('resIni').value = '';
+        document.getElementById('resFin').value = '';
+        document.getElementById('resPanel').innerHTML = '';
+        document.getElementById('resBoxHorario').classList.remove('activo');
+        document.getElementById('resStock').innerHTML = '<tr><td colspan="7" style="text-align:center;">Selecciona un día en el calendario.</td></tr>';
+        document.getElementById('resTitulo').textContent = RES_ES_ADMIN ? 'Nueva Reserva (Admin)' : 'Hacer una reserva';
+        document.getElementById('resBtnEnviar').textContent = RES_ES_ADMIN ? 'Crear reserva' : 'Solicitar reserva';
+        document.getElementById('resBtnCancelarEdicion').style.display = 'none';
+        document.getElementById('modalHacerReserva').classList.add('active');
+
+        // El administrador elige a nombre de quién reserva: un cliente o él mismo
+        const selectCliente = document.getElementById('resAdminCiCliente');
+        if (selectCliente) {
+            selectCliente.innerHTML = '<option value="">Cargando clientes...</option>';
+            const r = await resPost({ action: 'cargar_clientes_admin' });
+            let opciones = '<option value="">Seleccione un cliente...</option>';
+            if (RES_ADMIN_CI) {
+                opciones += `<option value="${esc(RES_ADMIN_CI)}">A mi nombre (${esc(RES_ADMIN_NOMBRE || RES_ADMIN_CI)})</option>`;
+            }
+            if (r && r.ok && Array.isArray(r.json.data)) {
+                opciones += r.json.data.map(c => `<option value="${esc(c.ci)}">${esc(c.nombre)} (${esc(c.ci)})</option>`).join('');
+            }
+            selectCliente.innerHTML = opciones;
+        }
+
+        resRenderCalendario();
+
+        if (!RES_ES_ADMIN) {
+            resListarMias();
+            resListarEspera();
+        }
+    }
+
     async function resConsultarStock(conservar) {
         const f = document.getElementById('resFecha').value;
         const i = document.getElementById('resIni').value, h = document.getElementById('resFin').value;
         const cuerpo = document.getElementById('resStock');
         document.getElementById('resPanel').innerHTML = '';
-        if (!f || !i || !h) { cuerpo.innerHTML = '<tr><td colspan="7" style="text-align:center;">Elegí fecha y horario.</td></tr>'; return; }
-        // Conserva lo que ya se tipeó al cambiar la franja
+        if (!f || !i || !h) return;
+
+        // Lo que ya estaba cargado no se pierde al cambiar el horario
         const previo = {};
         document.querySelectorAll('input.res-cant').forEach(c => { if (Number(c.value) > 0) previo[c.dataset.nombre] = c.value; });
         const datos = conservar || previo;
@@ -243,43 +430,81 @@ $esAdminReservas = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
     }
 
     function resPedidoActual(extra) {
-        return Object.assign({
+        const pedido = {
             fecha: document.getElementById('resFecha').value,
             hora_inicio: document.getElementById('resIni').value,
             hora_fin: document.getElementById('resFin').value,
             items: resItemsElegidos()
-        }, extra || {});
+        };
+        const selectCliente = document.getElementById('resAdminCiCliente');
+        if (selectCliente) {
+            pedido.ci_cliente = selectCliente.value;
+        }
+        return Object.assign(pedido, extra || {});
     }
 
+    // extra: { aceptar_parcial, anotar_espera } cuando se responde al aviso de stock
     async function resEnviar(ev, extra) {
         if (ev) ev.preventDefault();
+
         const pedido = resPedidoActual(extra);
-        if (!pedido.items.length) { alert('Elegí la cantidad de al menos un material.'); return; }
-        resUltimoPedido = pedido;
-        const r = await resPost(Object.assign({ action: resEditando ? 'modificar' : 'solicitar' }, resEditando ? { id_solicitud: resEditando } : {}, pedido));
-        if (!r) return;
-        if (r.ok) { resExito(r.json.data); return; }
-        if (r.json.codigo && r.json.detalle) { resMostrarAviso(r.json); return; }
-        resAvisoError(r.json);
-    }
+        if (RES_ES_ADMIN && !resEditando && !pedido.ci_cliente) { alert('Elegí a nombre de quién es la reserva.'); return false; }
+        if (!pedido.fecha) { alert('Elegí un día en el calendario.'); return false; }
+        if (!pedido.hora_inicio || !pedido.hora_fin) { alert('Indicá la hora de inicio y la de fin.'); return false; }
+        if (!pedido.items.length) { alert('Elegí la cantidad de al menos un material.'); return false; }
 
-    function resExito(d) {
-        document.getElementById('resPanel').innerHTML = '';
-        if (resEditando) {
-            alert('Reserva modificada.');
-            resCancelarEdicion();
-        } else {
-            const lineas = (d.items || []).map(i => `• ${i.nombre}: reservado ${i.reservado}` +
-                (i.en_espera ? `, en lista de espera ${i.en_espera}` : '') + (i.sin_cubrir && !i.en_espera ? `, sin cubrir ${i.sin_cubrir}` : ''));
-            alert((d.id_solicitud ? 'Solicitud enviada (n.º ' + d.id_solicitud + '). Queda pendiente hasta que un administrador la apruebe.\n\n'
-                                  : 'No se creó ninguna reserva.\n\n') + lineas.join('\n') +
-                  (d.espera && d.espera.length ? '\n\nTe anotamos en la lista de espera: si se libera stock se te crea una solicitud pendiente a tu nombre.' : ''));
+        const accion = resEditando ? 'modificar' : 'solicitar';
+        const payload = Object.assign({ action: accion }, resEditando ? { id_solicitud: resEditando } : {}, pedido);
+
+        const r = await resPost(payload);
+        if (!r) return false;
+        if (r.ok) {
+            resExito(r.json.data || {});
+            return false;
         }
-        document.querySelectorAll('input.res-cant').forEach(c => c.value = 0);
-        resConsultarStock(); resListarMias(); resListarEspera();
+        // 409: no alcanza para todo, se ofrecen opciones
+        if (r.json.codigo && r.json.detalle) {
+            resMostrarAviso(r.json);
+            return false;
+        }
+        resAvisoError(r.json);
+        return false;
     }
 
-    /** Muestra el detalle del stock y los botones para confirmar (409) o anotarse en espera (422). */
+    function resExito(data) {
+        data = data || {};
+        let msg;
+        if (resEditando) {
+            msg = `Reserva n.º ${resEditando} modificada.`;
+        } else if (!data.id_solicitud) {
+            msg = 'No había stock en esa franja: quedó anotado en la lista de espera.';
+        } else if (data.aprobada) {
+            msg = `Reserva n.º ${data.id_solicitud} creada y aprobada.`;
+        } else if (RES_ES_ADMIN) {
+            msg = `Reserva n.º ${data.id_solicitud} creada.` + (data.aviso ? ' ' + data.aviso : '');
+        } else {
+            msg = `Reserva n.º ${data.id_solicitud} enviada. Queda pendiente hasta que el CeiLab la apruebe.`;
+        }
+        if (data.id_solicitud && data.espera && data.espera.length) {
+            msg += ' Lo que faltaba quedó en la lista de espera.';
+        }
+        window.avisar ? window.avisar(msg, { tipo: 'ok' }) : alert(msg);
+
+        resCancelarEdicion();
+        if (RES_ES_ADMIN) {
+            cerrarModal('modalHacerReserva');
+            if (document.getElementById('modalGestionReservas').classList.contains('active')) {
+                resFiltroEstado = data.aprobada ? 'APROBADO' : 'PENDIENTE';
+                resListarAdmin();
+            }
+        } else {
+            document.querySelectorAll('input.res-cant').forEach(c => c.value = 0);
+            resConsultarStock();
+            resListarMias();
+            resListarEspera();
+        }
+    }
+
     function resMostrarAviso(json) {
         const parcial = json.codigo === 'STOCK_PARCIAL';
         const items = (json.detalle && json.detalle.items) || [];
@@ -287,23 +512,45 @@ $esAdminReservas = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
             const prox = (i.proximos || []).map(p => `${esc(p.hora)} (+${esc(p.cantidad)}, ${esc(p.origen)})`).join(', ');
             return `<li><strong>${esc(i.nombre)}</strong>: pediste ${esc(i.solicitado)}, libres ${esc(i.libres)}, faltan ${esc(i.faltan)}.
                     Reservadas ${esc(i.reservadas)}, prestadas ${esc(i.prestadas)}${i.en_mantenimiento ? ', en mantenimiento ' + esc(i.en_mantenimiento) : ''}.
-                    ${prox ? '<br>Se van liberando: ' + prox + '.' : ''}
-                    ${i.completo_desde ? '<br>Tendrías todo disponible desde las <strong>' + esc(i.completo_desde) + '</strong>.' : ''}</li>`;
+                    ${prox ? '<br>Se van liberando: ' + prox + '.' : ''}</li>`;
         }).join('');
         const titulo = parcial ? 'No alcanza el stock para todo lo pedido' : esc(json.message);
         const botones = parcial
-            ? `<button type="button" class="btn-guardar" onclick="resEnviar(null, {aceptar_parcial: true})">Reservar solo lo disponible</button>
-               <button type="button" onclick="resEnviar(null, {aceptar_parcial: true, anotar_espera: true})">Reservar lo disponible y anotarme en espera por el resto</button>`
-            : `<button type="button" class="btn-guardar" onclick="resEnviar(null, {anotar_espera: true})">Anotarme en lista de espera</button>`;
+            ? `<button type="button" class="btn-modal btn-crear" onclick="resEnviar(null, {aceptar_parcial: true})">Reservar solo lo disponible</button>
+               <button type="button" class="btn-modal btn-res-azul" onclick="resEnviar(null, {aceptar_parcial: true, anotar_espera: true})">Reservar lo disponible y anotar el resto en espera</button>`
+            : `<button type="button" class="btn-modal btn-res-azul" onclick="resEnviar(null, {anotar_espera: true})">Anotar en la lista de espera</button>`;
         document.getElementById('resPanel').innerHTML = `
             <div class="res-panel ${parcial ? '' : 'error'}">
                 <h4>${titulo}</h4>
                 <ul>${filas}</ul>
                 ${resEditando ? '' : botones}
-                <button type="button" onclick="document.getElementById('resPanel').innerHTML=''">Cambiar mi pedido</button>
+                <button type="button" class="btn-modal btn-cancelar" onclick="document.getElementById('resPanel').innerHTML=''">Cambiar el pedido</button>
             </div>`;
     }
 
+    function resCancelarEdicion() {
+        resEditando = 0;
+        document.getElementById('resTitulo').textContent = RES_ES_ADMIN ? 'Nueva Reserva (Admin)' : 'Hacer una reserva';
+        document.getElementById('resBtnEnviar').textContent = RES_ES_ADMIN ? 'Crear reserva' : 'Solicitar reserva';
+        document.getElementById('resBtnCancelarEdicion').style.display = 'none';
+        document.querySelectorAll('input.res-cant').forEach(c => c.value = 0);
+        document.getElementById('resPanel').innerHTML = '';
+    }
+
+    async function resCancelar(id) {
+        const quiere = window.confirmar ? await window.confirmar('¿Cancelar la reserva n.º ' + id + '?', { peligro: true }) : confirm('¿Cancelar la reserva n.º ' + id + '?');
+        if (!quiere) return;
+        const r = await resPost({ action: 'cancelar', id_solicitud: id });
+        if (r && !r.ok) resAvisoError(r.json);
+        if (RES_ES_ADMIN) {
+            resListarAdmin();
+        } else {
+            resListarMias(); resConsultarStock(); resListarEspera();
+        }
+    }
+
+    <?php if (!$esAdminReservas): ?>
+    // Cliente
     async function resListarMias() {
         const r = await pedirJSON(`${RUTA_CONTROLADOR_RESERVAS}?action=mis_reservas`);
         if (!r) return;
@@ -314,11 +561,10 @@ $esAdminReservas = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
                 <td>${chipEstado(x.estado)}</td>
                 <td>${esc(x.fecha)}</td>
                 <td>${esc(resHora(x.hora_inicio))}–${esc(resHora(x.hora_fin))}</td>
-                <td>${esc(x.resumen)}${(x.asignadas || []).some(a => a.id_serie) ? `<br><small>${esc(x.asignadas.filter(a => a.id_serie).map(a => a.id_serie).join(', '))}</small>` : ''}</td>
+                <td>${esc(x.resumen)}</td>
                 <td>${esc(x.motivo_rechazo || '')}</td>
-                <td>${x.estado === 'PENDIENTE' ? `<button type="button" onclick="resModificar(${Number(x.id_solicitud)})">Modificar</button>` : ''}
-                    ${['PENDIENTE', 'APROBADO'].includes(x.estado)
-                        ? `<button type="button" onclick="resCancelar(${Number(x.id_solicitud)})">Cancelar</button>` : ''}</td>
+                <td>${x.estado === 'PENDIENTE' ? `<button type="button" class="btn-modal btn-editar" onclick="resModificar(${Number(x.id_solicitud)})">Modificar</button>` : ''}
+                    ${['PENDIENTE', 'APROBADO'].includes(x.estado) ? `<button type="button" class="btn-modal btn-eliminar" onclick="resCancelar(${Number(x.id_solicitud)})">Cancelar</button>` : ''}</td>
             </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;">Todavía no hiciste reservas.</td></tr>';
     }
 
@@ -329,42 +575,39 @@ $esAdminReservas = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
             <tr>
                 <td>${esc(x.nombre)}</td><td>${esc(x.cantidad)}</td><td>${esc(x.fecha)}</td>
                 <td>${esc(resHora(x.hora_inicio))}–${esc(resHora(x.hora_fin))}</td>
-                <td>${esc(x.estado)}${x.id_solicitud_generada ? ` (solicitud #${esc(x.id_solicitud_generada)})` : ''}</td>
-                <td>${x.estado === 'ESPERANDO' ? `<button type="button" onclick="resCancelarEspera(${Number(x.id_espera)})">Salir de la espera</button>` : ''}</td>
+                <td>${esc(x.estado)}</td>
+                <td>${x.estado === 'ESPERANDO' ? `<button type="button" class="btn-modal btn-eliminar" onclick="resCancelarEspera(${Number(x.id_espera)})">Salir</button>` : ''}</td>
             </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;">No estás en ninguna lista de espera.</td></tr>';
     }
 
-    /** Carga una reserva pendiente en el formulario para editarla. */
     function resModificar(id) {
         const x = (window.resMias || []).find(r => Number(r.id_solicitud) === id);
         if (!x) return;
         resEditando = id;
-        document.getElementById('resFecha').value = x.fecha;
+        const [a, m] = x.fecha.split('-').map(Number);
+        resCalFechaActual = new Date(a, m - 1, 1);
         document.getElementById('resIni').value = resHora(x.hora_inicio);
         document.getElementById('resFin').value = resHora(x.hora_fin);
+        document.getElementById('resFecha').value = x.fecha;
+        document.getElementById('resBoxHorario').classList.add('activo');
+        document.getElementById('resLblFechaSeleccionada').textContent = 'Horario:';
+        resRenderCalendario();
         document.getElementById('resTitulo').textContent = 'Modificar la reserva n.º ' + id;
         document.getElementById('resBtnEnviar').textContent = 'Guardar cambios';
         document.getElementById('resBtnCancelarEdicion').style.display = '';
         const previo = {}; (x.items || []).forEach(i => previo[i.nombre] = i.cantidad);
         resConsultarStock(previo);
+        document.getElementById('formReserva').scrollIntoView({ behavior: 'smooth' });
     }
-    function resCancelarEdicion() {
-        resEditando = 0;
-        document.getElementById('resTitulo').textContent = 'Hacer una reserva';
-        document.getElementById('resBtnEnviar').textContent = 'Solicitar reserva';
-        document.getElementById('resBtnCancelarEdicion').style.display = 'none';
-        document.querySelectorAll('input.res-cant').forEach(c => c.value = 0);
-        document.getElementById('resPanel').innerHTML = '';
-    }
+
     async function resCancelarEspera(id) {
         const r = await resPost({ action: 'cancelar_espera', id_espera: id });
         if (r && !r.ok) resAvisoError(r.json);
         resListarEspera();
     }
-<?php else: ?>
-    /* =====================================================================
-       ADMINISTRADOR
-       ===================================================================== */
+
+    <?php else: ?>
+    // Administrador
     let resFiltroEstado = 'PENDIENTE';
     let resDatosAdmin = [];
 
@@ -376,8 +619,9 @@ $esAdminReservas = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
 
     function resTab(cual) {
         ['reservas', 'espera', 'historial'].forEach(t => {
-            document.getElementById('resSec' + t.charAt(0).toUpperCase() + t.slice(1)).style.display = (t === cual) ? '' : 'none';
-            document.getElementById('resTab' + t.charAt(0).toUpperCase() + t.slice(1)).classList.toggle('activo', t === cual);
+            const nombre = t.charAt(0).toUpperCase() + t.slice(1);
+            document.getElementById('resSec' + nombre).style.display = (t === cual) ? '' : 'none';
+            document.getElementById('resTab' + nombre).classList.toggle('activo', t === cual);
         });
         if (cual === 'reservas') resListarAdmin();
         if (cual === 'espera') resListarEsperaAdmin();
@@ -388,7 +632,7 @@ $esAdminReservas = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
         const estados = [['', 'Todas'], ['PENDIENTE', 'Pendientes'], ['APROBADO', 'Aprobadas'], ['ACTIVO', 'En uso'],
                          ['FINALIZADO', 'Finalizadas'], ['RECHAZADO', 'Rechazadas'], ['CANCELADO', 'Canceladas']];
         document.getElementById('resFiltros').innerHTML = estados.map(([v, t]) =>
-            `<button type="button" class="${v === resFiltroEstado ? 'activo' : ''}" onclick="resFiltroEstado='${v}'; resListarAdmin();">${t}</button>`).join('');
+            `<button type="button" class="btn-modal ${v === resFiltroEstado ? 'activo' : ''}" onclick="resFiltroEstado='${v}'; resListarAdmin();">${t}</button>`).join('');
 
         const q = new URLSearchParams({ action: 'listar' });
         if (resFiltroEstado) q.set('estado', resFiltroEstado);
@@ -398,29 +642,22 @@ $esAdminReservas = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
         const r = await pedirJSON(`${RUTA_CONTROLADOR_RESERVAS}?${q}`);
         if (!r) return;
         resDatosAdmin = r.data;
-        document.getElementById('resBodyAdmin').innerHTML = r.data.map(x => {
-            const pendiente = x.estado === 'PENDIENTE';
-            const aviso = (pendiente && x.sin_stock && x.sin_stock.length)
-                ? `<br><small class="res-aviso">⚠ Sin stock suficiente ahora: ${x.sin_stock.map(s => esc(s.nombre) + ' (pide ' + esc(s.pedidas) + ', libres ' + esc(s.libres) + ')').join(', ')}</small>` : '';
-            const series = (x.asignadas || []).filter(a => a.id_serie).map(a => a.id_serie).join(', ');
-            const puedeIniciar = x.estado === 'APROBADO';
-            return `<tr>
+        document.getElementById('resBodyAdmin').innerHTML = r.data.map(x => `
+            <tr>
                 <td>${esc(x.id_solicitud)}</td>
-                <td>${chipEstado(x.estado)}${x.motivo_rechazo ? `<br><small>${esc(x.motivo_rechazo)}</small>` : ''}</td>
+                <td>${chipEstado(x.estado)}</td>
                 <td>${esc(x.cliente)}<br><small>${esc(x.ci_cliente)}</small></td>
                 <td>${esc(x.fecha)}</td>
                 <td>${esc(resHora(x.hora_inicio))}–${esc(resHora(x.hora_fin))}</td>
-                <td>${esc(x.resumen)}${series ? `<br><small>${esc(series)}</small>` : ''}${aviso}</td>
+                <td>${esc(x.resumen)}</td>
                 <td class="res-acciones">
-                    ${pendiente ? `<button type="button" onclick="resAprobar(${Number(x.id_solicitud)})">Aprobar</button>
-                                   <button type="button" onclick="resRechazar(${Number(x.id_solicitud)})">Rechazar</button>` : ''}
-                    ${['PENDIENTE', 'APROBADO'].includes(x.estado) ? `<button type="button" onclick="resModificarAdmin(${Number(x.id_solicitud)})">Modificar</button>` : ''}
-                    ${puedeIniciar ? `<button type="button" onclick="resAccion('iniciar', ${Number(x.id_solicitud)})">Iniciar uso</button>` : ''}
-                    ${['APROBADO', 'ACTIVO'].includes(x.estado) ? `<button type="button" onclick="resAccion('finalizar', ${Number(x.id_solicitud)})">Finalizar</button>` : ''}
-                    ${['PENDIENTE', 'APROBADO'].includes(x.estado) ? `<button type="button" onclick="resCancelar(${Number(x.id_solicitud)})">Cancelar</button>` : ''}
+                    ${x.estado === 'PENDIENTE' ? `<button type="button" class="btn-modal btn-crear" onclick="resAprobar(${Number(x.id_solicitud)})">Aprobar</button><button type="button" class="btn-modal btn-eliminar" onclick="resRechazar(${Number(x.id_solicitud)})">Rechazar</button>` : ''}
+                    ${['PENDIENTE', 'APROBADO'].includes(x.estado) ? `<button type="button" class="btn-modal btn-editar" onclick="resModificarAdmin(${Number(x.id_solicitud)})">Modificar</button>` : ''}
+                    ${x.estado === 'APROBADO' ? `<button type="button" class="btn-modal btn-res-azul" onclick="resAccion('iniciar', ${Number(x.id_solicitud)})">Iniciar uso</button>` : ''}
+                    ${['APROBADO', 'ACTIVO'].includes(x.estado) ? `<button type="button" class="btn-modal btn-res-violeta" onclick="resAccion('finalizar', ${Number(x.id_solicitud)})">Finalizar</button>` : ''}
+                    ${['PENDIENTE', 'APROBADO'].includes(x.estado) ? `<button type="button" class="btn-modal btn-cancelar" onclick="resCancelar(${Number(x.id_solicitud)})">Cancelar</button>` : ''}
                 </td>
-            </tr>`;
-        }).join('') || '<tr><td colspan="7" style="text-align:center;">No hay reservas con ese filtro.</td></tr>';
+            </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;">No hay reservas con ese filtro.</td></tr>';
     }
 
     async function resAccion(accion, id) {
@@ -430,14 +667,13 @@ $esAdminReservas = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
     }
     async function resAprobar(id) { await resAccion('aprobar', id); }
     async function resRechazar(id) {
-        const motivo = window.pedirTexto ? await window.pedirTexto('Motivo del rechazo (obligatorio):') : prompt('Motivo del rechazo (obligatorio):');
-        if (motivo === null || motivo === undefined) return;
+        const motivo = window.pedirTexto ? await window.pedirTexto('Motivo del rechazo:') : prompt('Motivo del rechazo:');
+        if (!motivo) return;
         const r = await resPost({ action: 'rechazar', id_solicitud: id, motivo });
         if (r && !r.ok) resAvisoError(r.json);
         resListarAdmin();
     }
 
-    /** Abre el formulario de modificación con los datos de la reserva. */
     function resModificarAdmin(id) {
         const x = resDatosAdmin.find(r => Number(r.id_solicitud) === id);
         if (!x) return;
@@ -450,9 +686,9 @@ $esAdminReservas = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
         document.getElementById('modalResModificar').classList.add('active');
     }
 
-    /** Un material por línea: «Nombre=cantidad». */
     async function resGuardarModificacion(ev) {
         ev.preventDefault();
+        // Cada línea es "Nombre=cantidad"
         const items = document.getElementById('resModItems').value.split('\n').map(s => s.trim()).filter(Boolean).map(s => {
             const k = s.lastIndexOf('='); return { nombre: s.slice(0, k).trim(), cantidad: parseInt(s.slice(k + 1), 10) || 0 };
         });
@@ -477,7 +713,7 @@ $esAdminReservas = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
                 <td>${esc(resHora(x.hora_inicio))}–${esc(resHora(x.hora_fin))}</td>
                 <td>${esc(x.estado)}</td>
                 <td>${x.id_solicitud_generada ? '#' + esc(x.id_solicitud_generada) : '—'}</td>
-                <td>${x.estado === 'ESPERANDO' ? `<button type="button" onclick="resCancelarEsperaAdmin(${Number(x.id_espera)})">Quitar</button>` : ''}</td>
+                <td>${x.estado === 'ESPERANDO' ? `<button type="button" class="btn-modal btn-eliminar" onclick="resCancelarEsperaAdmin(${Number(x.id_espera)})">Quitar</button>` : ''}</td>
             </tr>`).join('') || '<tr><td colspan="9" style="text-align:center;">La lista de espera está vacía.</td></tr>';
     }
     async function resCancelarEsperaAdmin(id) {
@@ -508,17 +744,5 @@ $esAdminReservas = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
                 <td>${esc(String(x.fecha_archivo || '').slice(0, 16))}</td>
             </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;">No hay reservas finalizadas con ese filtro.</td></tr>';
     }
-<?php endif; ?>
-
-    async function resCancelar(id) {
-        const quiere = window.confirmar ? await window.confirmar('¿Cancelar la reserva n.º ' + id + '?', { peligro: true }) : confirm('¿Cancelar la reserva n.º ' + id + '?');
-        if (!quiere) return;
-        const r = await resPost({ action: 'cancelar', id_solicitud: id });
-        if (r && !r.ok) resAvisoError(r.json);
-<?php if (!$esAdminReservas): ?>
-        resListarMias(); resConsultarStock(); resListarEspera();
-<?php else: ?>
-        resListarAdmin();
-<?php endif; ?>
-    }
+    <?php endif; ?>
 </script>
