@@ -38,7 +38,7 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
             <table class="tabla-modal">
                 
                 <thead>
-                    <tr><th>#</th><th>Estado</th><th>Cliente</th><th>Pedido</th><th>Materia</th><th>Horas</th><th>Solicitado</th><th>Acciones</th></tr>
+                    <tr><th>#</th><th>Estado</th><th>Cliente</th><th>Pedido</th><th>Especialidad</th><th>Horas</th><th>Solicitado</th><th>Acciones</th></tr>
                 </thead>
                 <tbody id="bodyTablaPrestamos"></tbody>
                 
@@ -252,7 +252,7 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
         document.getElementById('tituloDetallePrestamo').innerHTML = `Préstamo #${p.id_solicitud} ${chipEstado(p.estado)}`;
 
         let html = `
-            <p><b>Cliente:</b> ${esc(p.cliente)} (${esc(p.ci_cliente)}) · <b>Materia:</b> ${esc(p.materia || '—')} · <b>Horas:</b> ${esc(p.horas_solicitadas)}</p>
+            <p><b>Cliente:</b> ${esc(p.cliente)} (${esc(p.ci_cliente)}) · <b>Especialidad:</b> ${esc(p.materia || '—')} · <b>Horas:</b> ${esc(p.horas_solicitadas)}</p>
             <p><b>Solicitado:</b> ${fecha(p.fecha_solicitud)} · <b>Validado/Rechazado/Cancelado :</b> ${fecha(p.fecha_validacion)} ·
                <b>Entregado:</b> ${fecha(p.fecha_entrega)} · <b>Devuelto:</b> ${fecha(p.fecha_devolucion)}</p>
             ${p.motivo_rechazo ? `<p><b>Motivo del rechazo:</b> ${esc(p.motivo_rechazo)}</p>` : ''}`;
