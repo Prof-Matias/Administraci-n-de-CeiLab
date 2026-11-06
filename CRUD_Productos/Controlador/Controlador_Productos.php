@@ -259,6 +259,7 @@ try {
             $id = $data['id_material'] ?? null;
             $nuevoEstado = strtoupper(trim($data['nuevo_estado'] ?? $data['estado'] ?? 'DADO_DE_BAJA'));
             $motivo = trim($data['motivo_baja'] ?? $data['motivo'] ?? '');
+            $cantidadAfectada = isset($data['cantidad_afectada']) ? (int)$data['cantidad_afectada'] : null;
 
             // Cédula del usuario responsable
             $ciResponsable = $_SESSION['ci'] ?? $_SESSION['usuario']['ci'] ?? null;
@@ -267,6 +268,25 @@ try {
                 echo json_encode(['success' => false, 'message' => 'Debe ingresar un motivo válido.']);
                 break;
             }
+
+            // Si está comprometido en préstamo no permite cambiar estado
+            if ($modelo->esProductoComprometido($id)) {
+                echo json_encode([
+                    'success' => false, 
+                    'message' => 'Operación cancelada: El producto está PRESTADO o reservado.'
+                ]);
+                break;
+            }
+
+            // Llama al método flexible del modelo pasando la cantidad afectada
+            $resultado = $modelo->cambiarEstadoMaterial($id, $nuevoEstado, $motivo, $ciResponsable, $cantidadAfectada);
+
+            if ($resultado) {
+                echo json_encode(['success' => true, 'message' => "Estado del material actualizado a '{$nuevoEstado}' correctamente."]);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'No se pudo actualizar el estado del producto.']);
+            }
+            break;
 
             // Si está comprometido en préstamo no permite cambiar estado
             if ($modelo->esProductoComprometido($id)) {

@@ -92,25 +92,71 @@ class Modelo_Producto {
      * Permite cambiar dinámicamente el estado de un producto (DISPONIBLE, EN_MANTENIMIENTO, DADO_DE_BAJA)
      * registrando el cambio en el historial y gestionando la cantidad disponible.
      */
-    public function cambiarEstadoMaterial($id, $nuevoEstado, $motivo, $ciResponsable = null) {
+    public function cambiarEstadoMaterial($id, $nuevoEstado, $motivo, $ciResponsable = null, $cantidadAfectada = null) {
         $producto = $this->obtenerProductoPorID($id);
         if (!$producto) return false;
 
         $estadoAnterior = $producto['estado'];
         
-        // Si el estado no cambió y no hay motivo relevante, evitamos procesar innecesariamente
         if ($estadoAnterior === $nuevoEstado) return true;
 
-        // Definimos la cantidad disponible según el nuevo estado elegido
+        $tipoControl = $producto['tipo_control'];
+        $cantidadTotal = (int)$producto['cantidad_total'];
+        $cantidadDispActual = (int)$producto['cantidad_disponible'];
+
+        if ($tipoControl === 'CANTIDAD' && $cantidadAfectada !== null && $cantidadAfectada > 0) {
+            $this->conexion->beginTransaction();
+            try {
+                if ($nuevoEstado === EstadoMaterial::EN_MANTENIMIENTO || $nuevoEstado === EstadoMaterial::DADO_DE_BAJA) {
+                    $nuevaDisp = max(0, $cantidadDispActual - $cantidadAfectada);
+                } else if ($nuevoEstado === EstadoMaterial::DISPONIBLE) {
+                    $nuevaDisp = min($cantidadTotal, $cantidadDispActual + $cantidadAfectada);
+                } else {
+                    $nuevaDisp = $cantidadDispActual;
+                }
+
+                // Si aún quedan unidades disponibles, la fila principal permanece DISPONIBLE para permitir préstamos
+                $estadoFinal = ($nuevaDisp === 0) ? $nuevoEstado : EstadoMaterial::DISPONIBLE;
+
+                $motivoBajaVal = ($estadoFinal === EstadoMaterial::DADO_DE_BAJA) ? $motivo : $producto['motivo_baja'];
+                $fechaBajaVal = ($estadoFinal === EstadoMaterial::DADO_DE_BAJA) ? ($producto['fecha_baja'] ?: date('Y-m-d H:i:s')) : null;
+
+                $sqlUpd = "UPDATE material 
+                           SET estado = ?, cantidad_disponible = ?, motivo_baja = ?, fecha_baja = ? 
+                           WHERE id_material = ?";
+                $this->conexion->prepare($sqlUpd)->execute([$estadoFinal, $nuevaDisp, $motivoBajaVal, $fechaBajaVal, $id]);
+
+                if (class_exists('HistorialEstado') && method_exists('HistorialEstado', 'registrarHistorialEstado')) {
+                    $evento = ($nuevoEstado === EstadoMaterial::DADO_DE_BAJA) ? 'DAR_DE_BAJA' : 'CAMBIO_ESTADO';
+                    HistorialEstado::registrarHistorialEstado(
+                        $this->conexion, 
+                        $id, 
+                        $estadoAnterior, 
+                        $estadoFinal, 
+                        $evento, 
+                        $ciResponsable, 
+                        null, 
+                        $motivo
+                    );
+                }
+
+                $this->conexion->commit();
+                return true;
+            } catch (Exception $e) {
+                $this->conexion->rollBack();
+                throw $e;
+            }
+        }
+
+        // Comportamiento estándar para series
         if ($nuevoEstado === EstadoMaterial::DADO_DE_BAJA || $nuevoEstado === EstadoMaterial::EN_MANTENIMIENTO) {
             $cantidadDisponible = 0;
         } else if ($nuevoEstado === EstadoMaterial::DISPONIBLE) {
-            $cantidadDisponible = ($producto['tipo_control'] === 'SERIE') ? 1 : $producto['cantidad_total'];
+            $cantidadDisponible = 1;
         } else {
             $cantidadDisponible = $producto['cantidad_disponible'];
         }
 
-        // Si se da de baja se registran los campos de fecha_baja y motivo_baja
         if ($nuevoEstado === EstadoMaterial::DADO_DE_BAJA) {
             $sql = "UPDATE material 
                     SET estado = ?, cantidad_disponible = ?, motivo_baja = ?, fecha_baja = NOW() 
@@ -125,7 +171,6 @@ class Modelo_Producto {
             $exito = $stmt->execute([$nuevoEstado, $cantidadDisponible, $id]);
         }
 
-        // Si la actualización fue exitosa, registramos el movimiento en la tabla de historial
         if ($exito) {
             $evento = ($nuevoEstado === EstadoMaterial::DADO_DE_BAJA) ? 'DAR_DE_BAJA' : 'CAMBIO_ESTADO';
             
@@ -230,6 +275,7 @@ class Modelo_Producto {
     }
 
     // Función para obtener el catálogo de productos
+    // Función para obtener el catálogo de productos
     public function catalogo() {
         $sql = "SELECT m.nombre,
                     MIN(m.categoria)     AS categoria,
@@ -237,8 +283,8 @@ class Modelo_Producto {
                     MIN(m.foto_material) AS foto_material,
                     MIN(m.tipo_control)  AS tipo_control,
                     SUM(m.cantidad_total)AS total,
-                    SUM(CASE WHEN m.estado = '" . EstadoMaterial::DISPONIBLE . "' THEN m.cantidad_disponible ELSE 0 END) AS disponibles,
-                    SUM(m.estado = '" . EstadoMaterial::EN_MANTENIMIENTO . "') AS en_mantenimiento,
+                    SUM(m.cantidad_disponible) AS disponibles,
+                    SUM(CASE WHEN m.estado = '" . EstadoMaterial::EN_MANTENIMIENTO . "' THEN m.cantidad_total ELSE 0 END) AS en_mantenimiento_cant,
                     COUNT(*) AS filas,
                     COALESCE((SELECT SUM(pp.cantidad)
                                 FROM prestamo_pedido pp
@@ -256,7 +302,7 @@ class Modelo_Producto {
             
             if ($f['libres'] > 0) {
                 $f['disponibilidad'] = 'Disponible';
-            } elseif ((int)$f['en_mantenimiento'] === (int)$f['filas']) {
+            } elseif ((int)$f['disponibles'] === 0 && (int)$f['en_mantenimiento_cant'] > 0) {
                 $f['disponibilidad'] = 'En mantenimiento';
             } else {
                 $f['disponibilidad'] = 'Agotado';

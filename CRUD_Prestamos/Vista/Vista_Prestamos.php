@@ -114,7 +114,7 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
         </div>
         <div class="table-responsive">
             <table class="tabla-modal">
-                <thead><tr><th>#</th><th>Estado</th><th>Tipo de pedido</th><th>Pedido</th><th>Solicitado</th><th>Entregado</th><th>Devuelto</th><th></th></tr></thead>
+                <thead><tr><th>#</th><th>Estado</th><th>Tipo de pedido</th><th>Pedido</th><th>Solicitado</th><th>Entregado</th><th>Devuelto</th><th>Motivo</th></thead>
                 <tbody id="bodyMisPrestamos"></tbody>
             </table>
         </div>
@@ -676,12 +676,15 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
                 columnaAccionDetalle = `<small style="color: #b91c1c;"><b>Motivo:</b> ${esc(p.motivo_rechazo)}</small>`;
             }
 
+            // Definir el texto del tipo de pedido según venga de reserva o préstamo
+            let tipoPedidoTexto = p.es_reserva == 1 ? 'Reserva convertida en préstamo' : 'Préstamo';
+
             return `
                 <tr>
                     <td>${p.id_solicitud}</td>
                     <td>${chipFila(p)}</td>
+                    <td><b>${tipoPedidoTexto}</b></td>
                     <td>${esc(p.pedido || '—')}</td>
-                    <td>${esc(p.materia || '—')}</td>
                     <td>${fecha(p.fecha_solicitud)}</td>
                     <td>${fecha(p.fecha_entrega)}</td>
                     <td>${fecha(p.fecha_devolucion)}</td>

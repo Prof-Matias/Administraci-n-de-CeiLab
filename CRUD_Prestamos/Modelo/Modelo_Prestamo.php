@@ -22,22 +22,24 @@ class Modelo_Prestamo {
      * traen es_reserva = 1 y fecha_entrega = inicio de la franja.
      * Con $incluirReservas = true se suman las reservas en cualquier estado (pendientes, aprobadas, etc.).
      */
-    public function listar($estado = null, $ciCliente = null, $incluirReservas = false) {
+    public function listar($estado = null, $ciCliente = null) {
         if ($estado !== null && $estado !== '' && !in_array($estado, EstadoSolicitud::TODOS, true)) {
             throw new ErrorNegocio('Estado de solicitud no válido.');
         }
+
+        $param = [];
+
+        // 1. Consulta para Préstamos
         $sql = "SELECT s.id_solicitud, s.estado, s.fecha_solicitud, s.fecha_validacion, s.motivo_rechazo,
                        s.ci_cliente, CONCAT(u.nombre, ' ', u.apellido) AS cliente,
                        p.materia, p.horas_solicitadas, p.fecha_entrega, p.fecha_devolucion,
                        (SELECT GROUP_CONCAT(CONCAT(pp.cantidad, ' × ', pp.nombre_material) ORDER BY pp.nombre_material SEPARATOR ', ')
                           FROM prestamo_pedido pp WHERE pp.id_solicitud = s.id_solicitud) AS pedido,
-                       0 AS es_reserva, NULL AS fin_previsto,
-                       NULL AS reserva_fecha, NULL AS hora_inicio, NULL AS hora_fin
+                       0 AS es_reserva, NULL AS fin_previsto
                   FROM solicitud s
                   JOIN prestamo p ON p.id_solicitud = s.id_solicitud
                   JOIN usuario  u ON u.ci = s.ci_cliente
                  WHERE 1 = 1";
-        $param = [];
         if ($estado !== null && $estado !== '') {
             $sql .= " AND s.estado = ?";
             $param[] = $estado;
@@ -47,20 +49,20 @@ class Modelo_Prestamo {
             $param[] = $ciCliente;
         }
 
-        // UNIÓN CON RESERVAS: Si es para un cliente o para listar general, incluimos las reservas para que aparezcan en su historial
+        // 2. Consulta para Reservas (incluidas en todos sus estados)
         $sql .= " UNION ALL
-            SELECT s.id_solicitud, s.estado, s.fecha_solicitud, s.fecha_validacion, s.motivo_rechazo,
-                   s.ci_cliente, CONCAT(u.nombre, ' ', u.apellido) AS cliente,
-                   NULL AS materia,
-                   GREATEST(1, CEIL(TIMESTAMPDIFF(MINUTE, CONCAT(r.fecha, ' ', r.hora_inicio), CONCAT(r.fecha, ' ', r.hora_fin)) / 60)) AS horas_solicitadas,
-                   CONCAT(r.fecha, ' ', r.hora_inicio) AS fecha_entrega, NULL AS fecha_devolucion,
-                   (SELECT GROUP_CONCAT(CONCAT(rp.cantidad, ' × ', rp.nombre_material) ORDER BY rp.nombre_material SEPARATOR ', ')
-                      FROM reserva_pedido rp WHERE rp.id_solicitud = s.id_solicitud) AS pedido,
-                   1 AS es_reserva, CONCAT(r.fecha, ' ', r.hora_fin) AS fin_previsto
-              FROM solicitud s
-              JOIN reserva r ON r.id_solicitud = s.id_solicitud
-              JOIN usuario u ON u.ci = s.ci_cliente
-             WHERE 1 = 1";
+                SELECT s.id_solicitud, s.estado, s.fecha_solicitud, s.fecha_validacion, s.motivo_rechazo,
+                       s.ci_cliente, CONCAT(u.nombre, ' ', u.apellido) AS cliente,
+                       NULL AS materia,
+                       GREATEST(1, CEIL(TIMESTAMPDIFF(MINUTE, CONCAT(r.fecha, ' ', r.hora_inicio), CONCAT(r.fecha, ' ', r.hora_fin)) / 60)) AS horas_solicitadas,
+                       CONCAT(r.fecha, ' ', r.hora_inicio) AS fecha_entrega, NULL AS fecha_devolucion,
+                       (SELECT GROUP_CONCAT(CONCAT(rp.cantidad, ' × ', rp.nombre_material) ORDER BY rp.nombre_material SEPARATOR ', ')
+                          FROM reserva_pedido rp WHERE rp.id_solicitud = s.id_solicitud) AS pedido,
+                       1 AS es_reserva, CONCAT(r.fecha, ' ', r.hora_fin) AS fin_previsto
+                  FROM solicitud s
+                  JOIN reserva r ON r.id_solicitud = s.id_solicitud
+                  JOIN usuario u ON u.ci = s.ci_cliente
+                 WHERE 1 = 1";
         if ($estado !== null && $estado !== '') {
             $sql .= " AND s.estado = ?";
             $param[] = $estado;

@@ -122,6 +122,7 @@ class Modelo_Usuario {
                 $stmtFK->execute([$ciNueva, $ciOriginal]);
             }
 
+            // Solo modificamos los teléfonos si el array no viene vacío desde el cliente
             if (!empty($telefonos)) {
                 $stmtDel = $this->conexion->prepare("DELETE FROM telefono WHERE ci_usuario = ?");
                 $stmtDel->execute([$ciNueva]);
