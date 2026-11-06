@@ -1522,3 +1522,32 @@ function cerrarModalConfirmacion() {
     const modal = document.getElementById('customConfirmModal');
     if (modal) modal.style.display = 'none';
 }
+
+// Función para aprobar con tu modal personalizado
+function confirmarAprobacion(idSolicitud) {
+   
+    
+    if (typeof mostrarModalPersonalizado === 'function') {
+        mostrarModalPersonalizado(
+            "¿Seguro de que desea aprobar este préstamo?",
+            "Aprobar",
+            () => aprobarReserva(idSolicitud)
+        );
+    } else {
+      
+        aprobarReserva(idSolicitud);
+    }
+}
+
+// Función para iniciar uso con tu modal personalizado
+function confirmarInicioUso(idSolicitud) {
+    if (typeof mostrarModalPersonalizado === 'function') {
+        mostrarModalPersonalizado(
+            "¿Seguro de que desea iniciar el uso de esta reserva?",
+            "Iniciar uso",
+            () => iniciarUsoReserva(idSolicitud)
+        );
+    } else {
+        iniciarUsoReserva(idSolicitud);
+    }
+}

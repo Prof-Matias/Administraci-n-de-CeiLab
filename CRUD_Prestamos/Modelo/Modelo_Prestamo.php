@@ -46,37 +46,35 @@ class Modelo_Prestamo {
             $sql .= " AND s.ci_cliente = ?";
             $param[] = $ciCliente;
         }
-        if ($incluirReservas || $estado === null || $estado === '' || $estado === EstadoSolicitud::ACTIVO) {
-            $sql .= " UNION ALL
-                SELECT s.id_solicitud, s.estado, s.fecha_solicitud, s.fecha_validacion, s.motivo_rechazo,
-                       s.ci_cliente, CONCAT(u.nombre, ' ', u.apellido) AS cliente,
-                       IF(s.estado = 'ACTIVO', 'Reserva en uso', 'Reserva') AS materia,
-                       GREATEST(1, CEIL(TIMESTAMPDIFF(MINUTE, CONCAT(r.fecha, ' ', r.hora_inicio), CONCAT(r.fecha, ' ', r.hora_fin)) / 60)) AS horas_solicitadas,
-                       IF(s.estado = 'ACTIVO', CONCAT(r.fecha, ' ', r.hora_inicio), NULL) AS fecha_entrega, NULL AS fecha_devolucion,
-                       (SELECT GROUP_CONCAT(CONCAT(rp.cantidad, ' × ', rp.nombre_material) ORDER BY rp.nombre_material SEPARATOR ', ')
-                          FROM reserva_pedido rp WHERE rp.id_solicitud = s.id_solicitud) AS pedido,
-                       1 AS es_reserva, CONCAT(r.fecha, ' ', r.hora_fin) AS fin_previsto,
-                       r.fecha AS reserva_fecha, r.hora_inicio, r.hora_fin
-                  FROM solicitud s
-                  JOIN reserva r ON r.id_solicitud = s.id_solicitud
-                  JOIN usuario u ON u.ci = s.ci_cliente
-                 WHERE " . ($incluirReservas ? '1 = 1' : "s.estado = 'ACTIVO'");
-            if ($incluirReservas && $estado !== null && $estado !== '') {
-                $sql .= " AND s.estado = ?";
-                $param[] = $estado;
-            }
-            if ($ciCliente !== null) {
-                $sql .= " AND s.ci_cliente = ?";
-                $param[] = $ciCliente;
-            }
+
+        // UNIÓN CON RESERVAS: Si es para un cliente o para listar general, incluimos las reservas para que aparezcan en su historial
+        $sql .= " UNION ALL
+            SELECT s.id_solicitud, s.estado, s.fecha_solicitud, s.fecha_validacion, s.motivo_rechazo,
+                   s.ci_cliente, CONCAT(u.nombre, ' ', u.apellido) AS cliente,
+                   NULL AS materia,
+                   GREATEST(1, CEIL(TIMESTAMPDIFF(MINUTE, CONCAT(r.fecha, ' ', r.hora_inicio), CONCAT(r.fecha, ' ', r.hora_fin)) / 60)) AS horas_solicitadas,
+                   CONCAT(r.fecha, ' ', r.hora_inicio) AS fecha_entrega, NULL AS fecha_devolucion,
+                   (SELECT GROUP_CONCAT(CONCAT(rp.cantidad, ' × ', rp.nombre_material) ORDER BY rp.nombre_material SEPARATOR ', ')
+                      FROM reserva_pedido rp WHERE rp.id_solicitud = s.id_solicitud) AS pedido,
+                   1 AS es_reserva, CONCAT(r.fecha, ' ', r.hora_fin) AS fin_previsto
+              FROM solicitud s
+              JOIN reserva r ON r.id_solicitud = s.id_solicitud
+              JOIN usuario u ON u.ci = s.ci_cliente
+             WHERE 1 = 1";
+        if ($estado !== null && $estado !== '') {
+            $sql .= " AND s.estado = ?";
+            $param[] = $estado;
         }
+        if ($ciCliente !== null) {
+            $sql .= " AND s.ci_cliente = ?";
+            $param[] = $ciCliente;
+        }
+
         $sql .= " ORDER BY fecha_solicitud DESC, id_solicitud DESC";
         $st = $this->conexion->prepare($sql);
         $st->execute($param);
         $filas = $st->fetchAll(PDO::FETCH_ASSOC);
 
-        // «atrasada»: está en uso y ya pasó el momento en que debía volver (reserva: fin de la franja;
-        // préstamo: entrega + horas). Se calcula con la hora de PHP, la misma que usa Disponibilidad.
         $ahora = Disponibilidad::ahora()->format('Y-m-d H:i:s');
         foreach ($filas as &$f) {
             $f['es_reserva'] = (int)$f['es_reserva'];

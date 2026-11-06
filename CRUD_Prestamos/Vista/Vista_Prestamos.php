@@ -107,7 +107,7 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
      MODAL: MIS PRÉSTAMOS (CLIENTE)
      = -->
 <div class="modal-overlay" id="modalMisPrestamos">
-    <div class="modal-content" style="max-width:1000px;">
+    <div class="modal-content" style="max-width:1050px;">
         <div class="modal-header">
             <h3>Mis solicitudes</h3>
             <button class="modal-close" onclick="cerrarModal('modalMisPrestamos')">&times;</button>
@@ -128,21 +128,30 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
     const ETIQUETA_ESTADO = {
         DISPONIBLE: 'Disponible', PRESTADO: 'Prestado', EN_MANTENIMIENTO: 'En mantenimiento', DADO_DE_BAJA: 'Dado de baja',
         PENDIENTE: 'Pendiente', APROBADO: 'Aprobado', RECHAZADO: 'Rechazado', ACTIVO: 'Activo (entregado)',
-        FINALIZADO: 'Finalizado', CANCELADO: 'Cancelado'
+        FINALIZADO: 'Finalizado', CANCELADO: 'Cancelado', RESERVADO: 'Reservado'
     };
 
     /** Escapa texto para insertarlo en HTML. */
     function esc(v) {
         return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     }
-    function chipEstado(e) { return `<span class="estado estado-${esc(e)}">${esc(ETIQUETA_ESTADO[e] || e)}</span>`; }
+    
+    function chipEstado(e) { 
+        const estadoUpper = String(e || '').toUpperCase();
+        if (estadoUpper === 'RESERVADO') {
+            return `<span class="badge-reservado">Reservado</span>`;
+        }
+        return `<span class="estado estado-${esc(e)}">${esc(ETIQUETA_ESTADO[e] || e)}</span>`; 
+    }
+
     /* Estado de una fila de la lista: las reservas que ya empezaron se ven como «Reserva en uso»
-       y, si pasó la hora en que debía volver el material, con la marca «Atrasado». */
+        y, si pasó la hora en que debía volver el material, con la marca «Atrasado». */
     function chipFila(p) {
         const base = p.es_reserva && p.estado === 'ACTIVO'
             ? '<span class="estado estado-ACTIVO">Reserva en uso</span>' : chipEstado(p.estado);
         return base + (p.atrasada ? ' <span class="estado" style="background:#fde2e2; color:#a11d1d;">Atrasado</span>' : '');
     }
+    
     function fecha(f) { return f ? esc(String(f).slice(0, 16).replace('T', ' ')) : '—'; }
     /* Columna «Pedido»: en las reservas que todavía no empezaron se agrega el día y el horario. */
     function pedidoFila(p) {
@@ -658,13 +667,27 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
         document.getElementById('modalMisPrestamos').classList.add('active');
         const r = await pedirJSON(`${RUTA_CONTROLADOR_PRESTAMOS}?action=mis_prestamos`);
         if (!r) return;
-        document.getElementById('bodyMisPrestamos').innerHTML = r.data.length ? r.data.map(p => `
-            <tr><td>${p.id_solicitud}</td><td>${chipFila(p)}${p.motivo_rechazo ? `<br><small>${esc(p.motivo_rechazo)}</small>` : ''}</td>
-                <td>${p.es_reserva ? 'Reserva' : 'Préstamo'}</td>
-                <td>${pedidoFila(p)}</td><td>${fecha(p.fecha_solicitud)}</td>
-                <td>${fecha(p.fecha_entrega)}</td><td>${fecha(p.fecha_devolucion)}</td>
-                <td>${['PENDIENTE', 'APROBADO'].includes(p.estado) ? `<button class="btn-modal btn-eliminar" onclick="${p.es_reserva ? 'cancelarMiReserva' : 'cancelarMiPrestamo'}(${p.id_solicitud})">Cancelar</button>` : ''}</td></tr>`).join('')
-            : '<tr><td colspan="8" style="text-align:center;">Todavía no hiciste solicitudes.</td></tr>';
+        
+        document.getElementById('bodyMisPrestamos').innerHTML = r.data.length ? r.data.map(p => {
+            let columnaAccionDetalle = '—';
+            if (['PENDIENTE', 'APROBADO'].includes(p.estado)) {
+                columnaAccionDetalle = `<button class="btn-modal btn-eliminar" onclick="cancelarMiPrestamo(${p.id_solicitud})">Cancelar</button>`;
+            } else if (p.estado === 'RECHAZADO' && p.motivo_rechazo) {
+                columnaAccionDetalle = `<small style="color: #b91c1c;"><b>Motivo:</b> ${esc(p.motivo_rechazo)}</small>`;
+            }
+
+            return `
+                <tr>
+                    <td>${p.id_solicitud}</td>
+                    <td>${chipFila(p)}</td>
+                    <td>${esc(p.pedido || '—')}</td>
+                    <td>${esc(p.materia || '—')}</td>
+                    <td>${fecha(p.fecha_solicitud)}</td>
+                    <td>${fecha(p.fecha_entrega)}</td>
+                    <td>${fecha(p.fecha_devolucion)}</td>
+                    <td>${columnaAccionDetalle}</td>
+                </tr>`;
+        }).join('') : '<tr><td colspan="8" style="text-align:center;">Todavía no hiciste solicitudes.</td></tr>';
     }
 
     async function cancelarMiReserva(id) {
