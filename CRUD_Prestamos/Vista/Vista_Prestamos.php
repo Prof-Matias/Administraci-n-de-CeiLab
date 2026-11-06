@@ -109,7 +109,7 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
 <div class="modal-overlay" id="modalMisPrestamos">
     <div class="modal-content" style="max-width:1000px;">
         <div class="modal-header">
-            <h3>Mis préstamos</h3>
+            <h3>Mis solicitudes</h3>
             <button class="modal-close" onclick="cerrarModal('modalMisPrestamos')">&times;</button>
         </div>
         <div class="table-responsive">
@@ -337,10 +337,6 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
                     <div class="series-grid">${opciones || '<i>No hay unidades disponibles.</i>'}</div></div>`;
         }).join('');
         return `<h4>Entrega</h4>${lineas}
-            <div class="form-group">
-                <label>O escaneá / escribí las series (una por línea o separadas por coma):</label>
-                <textarea id="seriesEscaneadas" rows="2" placeholder="CEIB-0003, CEIB-0004"></textarea>
-            </div>
             <div style="display:flex; gap:10px;">
                 <button class="btn-modal btn-crear" onclick="entregarPrestamo(${p.id_solicitud})">Confirmar entrega</button>
                 ${botonEditarPrestamo(p)}
@@ -416,14 +412,15 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
     }
 
     async function entregarPrestamo(id) {
-        const marcadas = [...document.querySelectorAll('.serie-entrega:checked')].map(c => c.value);
-        const escritas = document.getElementById('seriesEscaneadas').value.split(/[\s,;]+/).filter(Boolean);
-        const series = [...new Set([...marcadas, ...escritas.map(s => s.toUpperCase())])];
-        if (await postJSON(`${RUTA_CONTROLADOR_PRESTAMOS}?action=entregar`, { id_solicitud: id, series })) {
-            alert('Entrega registrada: las unidades quedaron en estado «Prestado».');
-            refrescarPrestamo(id);
-        }
+    const marcadas = [...document.querySelectorAll('.serie-entrega:checked')].map(c => c.value);
+    const campo = document.getElementById('seriesEscaneadas');
+    const escritas = campo ? campo.value.split(/[\s,;]+/).filter(Boolean) : [];
+    const series = [...new Set([...marcadas, ...escritas.map(s => s.toUpperCase())])];
+    if (await postJSON(`${RUTA_CONTROLADOR_PRESTAMOS}?action=entregar`, { id_solicitud: id, series })) {
+        alert('Entrega registrada: las unidades quedaron en estado «Prestado».');
+        refrescarPrestamo(id);
     }
+}
     async function devolverPrestamo(id) {
         const items = [...document.querySelectorAll('#bodyDevolucion tr')]
             .filter(tr => tr.querySelector('.dev-sel').checked)

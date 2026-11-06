@@ -147,7 +147,7 @@ if (!isset($_SESSION['ci'])) {
                     </button>
                     <!-- NUEVA TARJETA ESTILIZADA PARA CLIENTE -->
                     <button type="button" class="action-card" id="MisPrestamos" onclick="abrirModalMisPrestamos()">
-                        <span class="card-title">Mis Préstamos</span>
+                        <span class="card-title">Mis Solicitudes</span>
                         <span class="card-desc">Revisa el historial y estado de tus solicitudes activas o pasadas.</span>
                     </button>
                 <?php endif; ?>
