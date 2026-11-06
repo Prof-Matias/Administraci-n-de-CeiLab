@@ -109,14 +109,25 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
      MODAL: MIS PRÉSTAMOS (CLIENTE)
      ====================================================================== -->
 <div class="modal-overlay" id="modalMisPrestamos">
-    <div class="modal-content" style="max-width:1000px;">
+    <div class="modal-content" style="max-width:1050px;">
         <div class="modal-header">
-            <h3>Mis préstamos</h3>
+            <h3>Mis préstamos y reservas</h3>
             <button class="modal-close" onclick="cerrarModal('modalMisPrestamos')">&times;</button>
         </div>
         <div class="table-responsive">
             <table class="tabla-modal">
-                <thead><tr><th>#</th><th>Estado</th><th>Pedido</th><th>Especialidad</th><th>Solicitado</th><th>Entregado</th><th>Devuelto</th><th></th></tr></thead>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Estado</th>
+                        <th>Pedido</th>
+                        <th>Especialidad</th>
+                        <th>Solicitado</th>
+                        <th>Entregado / Inicio</th>
+                        <th>Devuelto</th>
+                        <th>Acción / Detalle</th>
+                    </tr>
+                </thead>
                 <tbody id="bodyMisPrestamos"></tbody>
             </table>
         </div>
@@ -645,12 +656,27 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
         document.getElementById('modalMisPrestamos').classList.add('active');
         const r = await pedirJSON(`${RUTA_CONTROLADOR_PRESTAMOS}?action=mis_prestamos`);
         if (!r) return;
-        document.getElementById('bodyMisPrestamos').innerHTML = r.data.length ? r.data.map(p => `
-            <tr><td>${p.id_solicitud}</td><td>${chipFila(p)}${p.motivo_rechazo ? `<br><small>${esc(p.motivo_rechazo)}</small>` : ''}</td>
-                <td>${esc(p.pedido || '—')}</td><td>${esc(p.materia || '—')}</td><td>${fecha(p.fecha_solicitud)}</td>
-                <td>${fecha(p.fecha_entrega)}</td><td>${fecha(p.fecha_devolucion)}</td>
-                <td>${['PENDIENTE', 'APROBADO'].includes(p.estado) ? `<button class="btn-modal btn-eliminar" onclick="cancelarMiPrestamo(${p.id_solicitud})">Cancelar</button>` : ''}</td></tr>`).join('')
-            : '<tr><td colspan="8" style="text-align:center;">Todavía no hiciste solicitudes.</td></tr>';
+        
+        document.getElementById('bodyMisPrestamos').innerHTML = r.data.length ? r.data.map(p => {
+            let columnaAccionDetalle = '—';
+            if (['PENDIENTE', 'APROBADO'].includes(p.estado)) {
+                columnaAccionDetalle = `<button class="btn-modal btn-eliminar" onclick="cancelarMiPrestamo(${p.id_solicitud})">Cancelar</button>`;
+            } else if (p.estado === 'RECHAZADO' && p.motivo_rechazo) {
+                columnaAccionDetalle = `<small style="color: #b91c1c;"><b>Motivo:</b> ${esc(p.motivo_rechazo)}</small>`;
+            }
+
+            return `
+                <tr>
+                    <td>${p.id_solicitud}</td>
+                    <td>${chipFila(p)}</td>
+                    <td>${esc(p.pedido || '—')}</td>
+                    <td>${esc(p.materia || '—')}</td>
+                    <td>${fecha(p.fecha_solicitud)}</td>
+                    <td>${fecha(p.fecha_entrega)}</td>
+                    <td>${fecha(p.fecha_devolucion)}</td>
+                    <td>${columnaAccionDetalle}</td>
+                </tr>`;
+        }).join('') : '<tr><td colspan="8" style="text-align:center;">Todavía no hiciste solicitudes.</td></tr>';
     }
 
     async function cancelarMiPrestamo(id) {
