@@ -1,12 +1,4 @@
 <?php 
-/**
- * Pagina_Principal.php
- * 
- * Vista principal de la aplicación CeiLab.
- * Controla el acceso por roles, despliega las herramientas administrativas y de cliente,
- * y gestiona las ventanas modales mediante JavaScript (Fetch API).
- */
-
 // Inclusión de la configuración de conexión y la verificación de sesión activa
 require_once "../Config/Conexion.php";
 require_once "Verificar_Usuario.php";
@@ -17,281 +9,175 @@ if (!isset($_SESSION['Rol'])) {
     exit();
 }
 ?>
+<?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Si no hay sesión activa pero sí existe la cookie "Recuérdame", se restaura la sesión
+if (!isset($_SESSION['ci']) && isset($_COOKIE['usuario_recuerdame'])) {
+    $_SESSION['ci'] = $_COOKIE['usuario_recuerdame'];
+    $_SESSION['CI'] = $_COOKIE['usuario_recuerdame'];
+}
+
+// Si ni la sesión ni la cookie existen, redirige al login
+if (!isset($_SESSION['ci'])) {
+    header("Location: ../index.php");
+    exit();
+}
+?>
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="Diseño_Principal.css">
+    <link rel="stylesheet" href="Diseño_Principal.css?v=5">
+    <link rel="stylesheet" href="Diseño2.css?v=4">
+    <link rel="stylesheet" href="animaciones.css">
     <title>CeiLab - Gestión Principal</title>
-    
-    <style>
-    /* ==========================================================================
-       ESTILOS CSS: VENTANAS EMERGENTES (MODALS) Y TABLAS
-       ========================================================================== */
-    
-    /* Fondo oscuro para las ventanas modales */
-    .modal-overlay {
-        display: none;
-        position: fixed;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
-        background: rgba(0, 0, 0, 0.6);
-        z-index: 1000;
-        justify-content: center;
-        align-items: center;
-    }
-
-    /* Clase activa para desplegar la ventana emergente */
-    .modal-overlay.active {
-        display: flex;
-    }
-
-    /* Contenedor blanco interno del modal */
-    .modal-content {
-        background: #ffffff;
-        padding: 24px;
-        border-radius: 8px;
-        width: 95vw;
-        max-width: 1600px;
-        max-height: 90vh;
-        overflow-y: auto;
-        overflow-x: hidden;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        position: relative;
-        box-sizing: border-box;
-    }
-
-    /* Encabezado del modal */
-    .modal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-bottom: 1px solid #e0e0e0;
-        padding-bottom: 10px;
-        margin-bottom: 15px;
-    }
-
-    /* Botón para cerrar el modal (X) */
-    .modal-close {
-        background: none;
-        border: none;
-        font-size: 24px;
-        cursor: pointer;
-        color: #666;
-    }
-
-    /* ==========================================================================
-       ESTILOS CSS: TABLAS RESPONSIVE
-       ========================================================================== */
-    .table-responsive {
-        width: 100%;
-        overflow-x: auto; /* Habilita el scroll horizontal */
-        -webkit-overflow-scrolling: touch; /* Suavidad en dispositivos táctiles */
-        margin-top: 15px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-    }
-
-    .tabla-modal {
-        width: 100%;
-        min-width: 800px; /* Fuerza el scroll en pantallas pequeñas */
-        border-collapse: collapse;
-    }
-
-    .tabla-modal th, .tabla-modal td {
-        border: 1px solid #ddd;
-        padding: 10px;
-        text-align: left;
-        vertical-align: middle;
-    }
-
-    .tabla-modal th {
-        background-color: #f4f4f4;
-        position: sticky;
-        top: 0;
-        z-index: 2;
-    }
-
-    /* Estilos de los agrupadores de formularios */
-    .form-group {
-        margin-bottom: 12px;
-    }
-
-    .form-group label {
-        display: block;
-        margin-bottom: 4px;
-        font-weight: bold;
-    }
-
-    .form-group input, .form-group select, .form-group textarea {
-        width: 100%;
-        padding: 8px;
-        box-sizing: border-box;
-    }
-
-    /* Botones de acción */
-    .btn-modal {
-        padding: 8px 14px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        margin-right: 5px;
-        font-weight: bold;
-    }
-
-    .btn-crear { background-color: #28a745; color: white; }
-    .btn-editar { background-color: #ffc107; color: black; }
-    .btn-eliminar { background-color: #dc3545; color: white; }
-    .btn-cancelar { background-color: #6c757d; color: white; }
-    .error-msg { color: #dc3545; font-size: 13px; margin-top: 4px; display: none; }
-
-    /* ==========================================================================
-       ESTILOS CSS: VISTA DE TARJETAS PARA CLIENTES
-       ========================================================================== */
-    .grid-productos {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-        gap: 20px;
-        padding: 10px 0;
-    }
-
-    .tarjeta-producto {
-        background-color: #fff;
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        overflow: hidden;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        display: flex;
-        flex-direction: column;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .tarjeta-producto:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-    }
-
-    .tarjeta-producto img {
-        width: 100%;
-        height: 180px;
-        object-fit: cover;
-        border-bottom: 1px solid #e0e0e0;
-        background: #f8f9fa;
-    }
-
-    .tarjeta-cuerpo {
-        padding: 15px;
-        display: flex;
-        flex-direction: column;
-        flex-grow: 1;
-    }
-
-    .tarjeta-cuerpo h4 {
-        margin: 0 0 10px 0;
-        font-size: 1.1rem;
-        color: #333;
-    }
-
-    .tarjeta-cuerpo p {
-        margin: 4px 0;
-        color: #555;
-        font-size: 0.9rem;
-    }
-
-    .btn-prestamo {
-        margin-top: 15px;
-        background-color: #0d6efd;
-        color: white;
-        border: none;
-        padding: 10px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-weight: bold;
-        text-align: center;
-        transition: background-color 0.3s;
-    }
-
-    .btn-prestamo:hover {
-        background-color: #0b5ed7;
-    }
-
-    .btn-sin-stock {
-        background-color: #6c757d;
-        cursor: not-allowed;
-    }
-    .btn-sin-stock:hover {
-        background-color: #6c757d;
-    }
-    </style>
 </head>
 <body>
 
-    <!-- ==========================================================================
-         BARRA DE NAVEGACIÓN PRINCIPAL
-         ========================================================================== -->
+    <!-- MARCO CONTENEDOR PRINCIPAL DE LA MAQUETA -->
+    <div class="app-container">
+        
+        <!-- BARRA DE NAVEGACIÓN SUPERIOR -->
+        <!-- BARRA DE NAVEGACIÓN SUPERIOR -->
     <header class="Barra">
-        <a href="Pagina_Principal.php"><img src="../Material_Visual/Logo2.png" alt="Logo CeiLab"></a>
-        <div class="dropdown">
-            <button class="dropbtn" id="menuBtn"><?php echo htmlspecialchars($_SESSION['Nombre']); ?></button>
-            <div class="dropdown-content" id="menuContent">
-                <a href="">Ver Perfil</a>
-                <a href="../Index.php" class="logout-link">Cerrar Sesión</a>
-            </div>
-        </div>
-    </header>
+        <a href="sobre-nosotros.php" target="_blank" rel="noopener noreferrer" class="brand-logo">
+            <img src="../Material_Visual/itrio.png" alt="Logo ITRIO" class="logo-itrio">
+            <span class="brand-text">CEILAB</span>
+        </a>
 
-    <!-- Mensaje de Bienvenida personalizado -->
-    <div>
-        <h2>Bienvenido al sistema de prestaciones del CeiLab del Cerp del Este</h2>
+
+            <div class="nav-actions">
+                <!-- Switch animado de modo oscuro -->
+                <label class="theme-switch" for="theme-toggle" title="Alternar Modo Oscuro">
+                    <input type="checkbox" id="theme-toggle" onchange="toggleTheme()">
+                    <span class="slider">
+                        <span class="slider-thumb">
+                            <span class="icon sun">☀️</span>
+                            <span class="icon moon">🌙</span>
+                        </span>
+                    </span>
+                </label>
+
+                <!-- MENÚ DESPLEGABLE DE PERFIL CON FUNCIONALIDAD DIRECTA -->
+                <div class="dropdown">
+                    <button class="dropbtn" id="menuBtn" type="button" onclick="toggleDropdown(event)">
+                        <?php echo htmlspecialchars($_SESSION['Nombre']); ?>
+                    </button>
+                    <div class="dropdown-content" id="menuContent">
+                        <a href="#" onclick="abrirModalVerPerfil(event)">Ver Perfil</a>
+                        <!-- En tu barra de navegación o cabecera HTML -->
+                        <!-- Opción enlace <a> -->
+                    <a href="CerrarSesion.php" class="btn btn-danger" onclick="mostrarConfirmacionCerrarSesion(this.href); return false;">
+                                Cerrar Sesión
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+    <!-- Modal Personalizado de Confirmación (Cerrar Sesión) -->
+<div id="customConfirmModal" class="custom-modal-overlay">
+  <div class="custom-modal-box">
+    <div class="custom-modal-header">
+      <h3>Cerrar Sesión</h3>
+    </div>
+    <div class="custom-modal-body">
+      <p id="customConfirmMessage">¿Estás seguro de que deseas salir del sistema?</p>
+    </div>
+    <div class="custom-modal-footer">
+      <button type="button" class="btn-custom-modal btn-cancelar" onclick="cerrarModalConfirmacion()">Cancelar</button>
+      <button type="button" class="btn-custom-modal btn-confirmar" id="btnAceptarConfirmacion">Salir</button>
+    </div>
+  </div>
+</div>
+        <!-- SECCIÓN DE ENCABEZADO CON LA IMAGEN Y TEXTO -->
+        <section class="hero-section">
+            <div class="hero-overlay">
+                <h1>Bienvenida/o al<br>Sistema de gestión</h1>
+                <p class="hero-subtitle">Impulsado por Itrio Team</p>
+            </div>
+        </section>
+
+        <!-- SECCIÓN DE ACCIONES (PRÉSTAMOS Y RESERVAS) -->
+        <section class="actions-section">
+            <h3>Préstamos y Reservas</h3>
+
+            <div class="buttons-grid">
+                <?php if ($_SESSION['Rol'] == "ADMINISTRADOR"): ?>
+                    <!-- Opciones para Administradores -->
+                    <button type="button" class="action-card" id="Usuarios" onclick="abrirModalGestionUsuarios()">
+                        <span class="card-title">Gestionar Usuarios</span>
+                        <span class="card-desc">Administra cuentas, roles y accesos.</span>
+                    </button>
+                    <button type="button" class="action-card" id="Productos" onclick="abrirModalGestionProductos()">
+                        <span class="card-title">Gestionar Productos</span>
+                        <span class="card-desc">Carga, edita o quita equipos del inventario.</span>
+                    </button>
+                    <button type="button" class="action-card" id="Prestamo" onclick="abrirModalGestionPrestamos('')">
+                        <span class="card-title">Gestionar Préstamos</span>
+                        <span class="card-desc">Controla las entregas y devoluciones.</span>
+                    </button>
+                    <button type="button" class="action-card" id="Reservas" onclick="abrirModalGestionReservas()">
+                        <span class="card-title">Gestionar Reservas</span>
+                        <span class="card-desc">Revisa el calendario de reservas semanales.</span>
+                    </button>
+                    <button type="button" class="action-card" id="Solicitud" onclick="abrirModalGestionPrestamos('PENDIENTE', true)">
+                        <span class="card-title">Ver Solicitudes</span>
+                        <span class="card-desc">Atiende las peticiones pendientes.</span>
+                    </button>
+                    <button type="button" class="action-card" id="Historial" onclick="abrirHistorialGeneral()">
+                        <span class="card-title">Ver Historial</span>
+                        <span class="card-desc">Consulta el registro general de movimientos.</span>
+                    </button>
+
+                <?php elseif ($_SESSION['Rol'] == "CLIENTE"): ?>
+                    <!-- Opciones para Clientes -->
+                    <button type="button" class="action-card" id="SolicitarPres" onclick="abrirModalSolicitarPrestamo()">
+                        <span class="card-title">Solicitar Préstamo</span>
+                        <span class="card-desc">Crea una solicitud para pedir equipos prestados del ceilab.</span>
+                    </button>
+                    <button type="button" class="action-card" id="SolicitarRes" onclick="abrirModalHacerReserva()">
+                        <span class="card-title">Hacer Reserva</span>
+                        <span class="card-desc">Crea una solicitud para reservar equipos en la semana.</span>
+                    </button>
+                    <!-- NUEVA TARJETA ESTILIZADA PARA CLIENTE -->
+                    <button type="button" class="action-card" id="MisPrestamos" onclick="abrirModalMisPrestamos()">
+                        <span class="card-title">Mis Solicitudes</span>
+                        <span class="card-desc">Revisa el historial y estado de tus solicitudes activas o pasadas.</span>
+                    </button>
+                <?php endif; ?>
+            </div>
+        </section>
+
+        <!-- FOOTER INFERIOR DE LA MAQUETA -->
+        <footer class="app-footer">
+            <div class="footer-contact">
+                <a href="https://cerpdeleste.cfe.edu.uy/"><p>🌐Página del Cerp del Este</p></a>
+                <p>📞Teléfonos: 4225 4422 / 4225 4430 / 4225 4431</p>
+                <p>✉️ cerpdeleste.cfe@gmail.com o cerpdeleste@cfe.edu.uy.</p>
+            </div>
+            <div class="footer-brand">
+                <a href="https://cerpdeleste.cfe.edu.uy/"><img src="../Material_Visual/Logo2.png" alt="Logo CeRP del Este" class="footer-logo"></a>
+            </div>
+        </footer>
+
     </div>
 
-    <!-- ==========================================================================
-         MENÚ SEGÚN EL ROL DEL USUARIO AUTENTICADO
-         ========================================================================== -->
-    <?php if ($_SESSION['Rol'] == "ADMINISTRADOR"): ?>
-        <!-- Opciones para Administradores -->
-        <input type="button" id="Usuarios" value="Gestionar Usuarios" onclick="abrirModalGestionUsuarios()">
-        <input type="button" id="Productos" value="Gestionar Productos" onclick="abrirModalGestionProductos()">
-        <input type="button" id="Prestamo" value="Gestionar Préstamos">
-        <input type="button" id="Reservas" value="Gestionar Reservas">
-        <input type="button" id="Solicitud" value="Ver Solicitudes">
-        <input type="button" id="Historial" value="Ver historial de solicitudes">
-    <?php elseif ($_SESSION['Rol'] == "CLIENTE"): ?>
-        <!-- Opciones para Clientes -->
-        <input type="button" id="SolicitarPres" value="Solicitar Préstamo" onclick="abrirModalSolicitarPrestamo()">
-        <input type="button" id="SolicitarRes" value="Solicitar Reservas">
-    <?php endif; ?>
-
-    <!-- ==========================================================================
-         MODAL: CATÁLOGO DE PRODUCTOS (VISTA CLIENTE)
-         ========================================================================== -->
-    <div class="modal-overlay" id="modalSolicitarPrestamo">
-        <div class="modal-content" style="max-width: 1200px;">
-            <div class="modal-header">
-                <h3>Catálogo de Materiales - Solicitar Préstamo</h3>
-                <button class="modal-close" onclick="cerrarModal('modalSolicitarPrestamo')">&times;</button>
-            </div>
-            
-            <div id="contenedor-productos-cliente" class="grid-productos">
-                <!-- Las tarjetas de productos se renderizan dinámicamente aquí -->
-            </div>
-        </div>
-    </div>
-
-    <!-- ==========================================================================
-         MODAL 1: TABLA DE GESTIÓN DE USUARIOS
-         ========================================================================== -->
+    <!--
+         VENTANAS MODALES (SISTEMA INTERNO)
+         -->
     <div class="modal-overlay" id="modalGestionUsuarios">
         <div class="modal-content">
             <div class="modal-header">
                 <h3>Gestión de Usuarios</h3>
                 <button class="modal-close" onclick="cerrarModal('modalGestionUsuarios')">&times;</button>
             </div>
-            
             <button class="btn-modal btn-crear" onclick="abrirModalFormulario()">+ Nuevo Usuario</button>
-            
-            <!-- CONTENEDOR RESPONSIVE AÑADIDO AQUÍ -->
             <div class="table-responsive">
                 <table class="tabla-modal">
                     <thead>
@@ -300,81 +186,88 @@ if (!isset($_SESSION['Rol'])) {
                             <th>Nombre</th>
                             <th>Apellido</th>
                             <th>Email</th>
+                            <th>Teléfono(s)</th>
                             <th>Rol</th>
                             <th>Especialidad</th>
-                            <th style="width: 160px;">Acciones</th>
+                            <th style="width: 280px;">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody id="bodyTablaUsuarios">
-                        <!-- Filas renderizadas dinámicamente mediante JavaScript -->
-                    </tbody>
+                    <tbody id="bodyTablaUsuarios"></tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <!-- ==========================================================================
-         MODAL 2: FORMULARIO DE REGISTRO / EDICIÓN DE USUARIO
-         ========================================================================== -->
     <div class="modal-overlay" id="modalFormularioUsuario">
         <div class="modal-content" style="max-width: 500px;">
             <div class="modal-header">
                 <h3 id="tituloFormUsuario">Usuario</h3>
                 <button class="modal-close" onclick="cerrarModal('modalFormularioUsuario')">&times;</button>
             </div>
-            
             <form id="formUsuario" onsubmit="solicitarConfirmacion(event)">
                 <input type="hidden" id="cedula_original" name="cedula_original">
                 <input type="hidden" id="contrasena_actual" name="contrasena_actual">
-                
                 <div class="form-group">
                     <label>Cédula (CI)</label>
-                    <input type="text" id="cedula" name="cedula" inputmode="numeric" minlength="8" maxlength="8" placeholder="8 dígitos (Ej: 12345678)" required>
-                    <span id="errorCedula" class="error-msg">La Cédula ingresada no es válida.</span>
+                    <input type="text" id="cedula" name="cedula" inputmode="numeric" minlength="8" maxlength="8" placeholder="8 dígitos" required>
+                    <span id="errorCedula" class="error-msg" style="display:none; color: #ef4444; font-size: 12px;">La Cédula ingresada no es válida.</span>
                 </div>
-                
                 <div class="form-group">
                     <label>Nombre</label>
                     <input type="text" id="nombre" name="nombre" required>
                 </div>
-                
                 <div class="form-group">
                     <label>Apellido</label>
                     <input type="text" id="apellido" name="apellido" required>
                 </div>
-                
                 <div class="form-group">
                     <label>Email</label>
                     <input type="email" id="correo" name="correo" required>
                 </div>
-                
+                <div class="form-group" id="contenedor-telefonos">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <label id="labelTelefonos" style="margin: 0;">Teléfono(s) *</label>
+                        <button type="button" class="btn-modal btn-editar" style="padding: 3px 8px; font-size: 12px;" onclick="agregarCampoTelefono()">+ Agregar Teléfono</button>
+                    </div>
+                    <div id="lista-telefonos"></div>
+                </div>
                 <div class="form-group">
                     <label>Contraseña</label>
                     <input type="password" id="contrasena" name="contrasena">
                     <small id="helpPass" style="display:none; color: #666;">Dejar en blanco para conservar la actual.</small>
                 </div>
-                
                 <div class="form-group">
                     <label>Rol</label>
                     <select name="rol" id="rol" required>
-                        <option value="ADMINISTRADOR">Administrador</option>
                         <option value="CLIENTE">Cliente</option>
+                        <option value="ADMINISTRADOR">Administrador</option>
                     </select>
                 </div>
-                
                 <div class="form-group">
                     <label>Especialidad</label>
-                    <input type="text" id="especialidad" name="especialidad" required>
+                    <select id="especialidad" name="especialidad" >
+                        <option value="" disabled selected>Selecciona una opción</option>
+                        <option value="Informatica">Informatica</option>
+                        <option value="Biologia">Biologia</option>
+                        <option value="Quimica">Quimica</option>
+                        <option value="Historia">Historia</option>
+                        <option value="Literatura">Literatura</option>
+                        <option value="Idioma_español">Idioma español</option>
+                        <option value="Derecho">Derecho</option>
+                        <option value="Filosofia">Filosofia</option>
+                        <option value="Ingles">Ingles</option>
+                        <option value="Matematica">Matematica</option>
+                        <option value="Sociologia">Sociologia</option>
+                        <option value="Geografia">Geografia</option>
+                        <option value="Educador_Social">Educador Social</option>
+
+                </select>
                 </div>
-                
-                <button type="submit" class="btn-modal btn-crear" style="width: 100%; margin-top: 10px;">Guardar</button>
+                <button type="submit" class="btn-modal btn-crear" style="width: 100%; margin-top: 10px;">Guardar Usuario</button>
             </form>
         </div>
     </div>
 
-    <!-- ==========================================================================
-         MODAL 3: CONFIRMACIÓN DE OPERACIÓN DE USUARIOS
-         ========================================================================== -->
     <div class="modal-overlay" id="modalConfirmacionGuardar" style="z-index: 1100;">
         <div class="modal-content" style="max-width: 380px; text-align: center;">
             <h3 style="margin-top: 0;">Confirmación</h3>
@@ -386,24 +279,20 @@ if (!isset($_SESSION['Rol'])) {
         </div>
     </div>
 
-    <!-- ==========================================================================
-         MODAL 4: TABLA DE GESTIÓN DE PRODUCTOS / MATERIALES
-         ========================================================================== -->
     <div class="modal-overlay" id="modalGestionProductos">
         <div class="modal-content">
             <div class="modal-header">
                 <h3>Gestión de Productos / Materiales</h3>
                 <button class="modal-close" onclick="cerrarModal('modalGestionProductos')">&times;</button>
             </div>
-            
             <button class="btn-modal btn-crear" onclick="abrirModalFormularioProducto()">+ Nuevo Producto</button>
-            
-            <!-- CONTENEDOR RESPONSIVE AÑADIDO AQUÍ -->
+            <button class="btn-modal btn-editar" onclick="abrirModalStockStock()">Imprimir Stock</button>
             <div class="table-responsive">
                 <table class="tabla-modal">
                     <thead>
                         <tr>
                             <th style="width: 50px;">ID</th>
+                            <th style="width: 50px;">Serial</th>
                             <th style="width: 70px;">Imagen</th>
                             <th>Nombre</th>
                             <th>Descripción</th>
@@ -414,75 +303,69 @@ if (!isset($_SESSION['Rol'])) {
                             <th style="width: 160px;">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody id="bodyTablaProductos">
-                        <!-- Filas renderizadas dinámicamente mediante JavaScript -->
-                    </tbody>
+                    <tbody id="bodyTablaProductos"></tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <!-- ==========================================================================
-         MODAL 5: FORMULARIO DE REGISTRO / EDICIÓN DE PRODUCTO
-         ========================================================================== -->
     <div class="modal-overlay" id="modalFormularioProducto">
         <div class="modal-content" style="max-width: 550px;">
             <div class="modal-header">
                 <h3 id="tituloFormProducto">Nuevo Producto</h3>
                 <button class="modal-close" onclick="cerrarModal('modalFormularioProducto')">&times;</button>
             </div>
-            
             <form id="formProducto" enctype="multipart/form-data" onsubmit="solicitarConfirmacionProducto(event)">
                 <input type="hidden" id="id_material" name="id_material">
                 <input type="hidden" id="foto_actual" name="foto_actual">
-                
+                <div class="form-group">
+                    <label>Tipo de control</label>
+                    <select id="prod_tipo" name="tipo_control" onchange="ajustarFormularioProducto()" required>
+                        <option value="SERIE">Por número de serie (un registro por equipo)</option>
+                        <option value="CANTIDAD">Por cantidad (consumibles sin serie)</option>
+                    </select>
+                </div>
                 <div class="form-group">
                     <label>Nombre del Producto / Material</label>
                     <input type="text" id="prod_nombre" name="nombre" required>
+                    <small>Los equipos del mismo tipo comparten el nombre (por ejemplo, «Ceibalita»).</small>
                 </div>
-                
                 <div class="form-group">
                     <label>Descripción</label>
                     <textarea id="prod_descripcion" name="descripcion" rows="3" required></textarea>
                 </div>
-                
                 <div class="form-group">
                     <label>Categoría</label>
                     <input type="text" id="prod_categoria" name="categoria" required>
                 </div>
-                
-                <div class="form-group">
-                    <label>Cantidad Total</label>
-                    <input type="number" id="prod_cant_total" name="cantidad_total" min="0" required>
+                <div class="form-group" id="grupoSeries">
+                    <label>Números de serie (uno por línea)</label>
+                    <textarea id="prod_series" name="series" rows="4" placeholder="CEIB-0011&#10;CEIB-0012"></textarea>
                 </div>
-                
-                <div class="form-group">
-                    <label>Cantidad Disponible</label>
-                    <input type="number" id="prod_cant_disp" name="cantidad_disponible" min="0" required>
+                <div class="form-group" id="grupoSerie" style="display:none;">
+                    <label>Número de serie</label>
+                    <input type="text" id="prod_id_serie" name="id_serie">
                 </div>
-                
-                <div class="form-group">
-                    <label>Estado</label>
-                    <select id="prod_estado" name="estado" required>
-                        <option value="Disponible">Disponible</option>
-                        <option value="En Mantenimiento">En Mantenimiento</option>
-                        <option value="Agotado">Agotado</option>
-                    </select>
+                <div class="form-group" id="grupoCantidad" style="display:none;">
+                    <label>Cantidad total</label>
+                    <input type="number" id="prod_cant_total" name="cantidad_total" min="0">
+                    <small>El disponible se calcula: total menos lo que está prestado.</small>
                 </div>
-                
+                <div class="form-group" id="grupoAplicar" style="display:none;">
+                    <label style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="prod_aplicar" name="aplicar_al_grupo" value="1" checked style="width:auto; margin:0;"> 
+                        Aplicar nombre, descripción, categoría y foto a todas las unidades
+                    </label>
+                </div>
                 <div class="form-group">
-                    <label>Imagen del Producto (Acepta cualquier formato)</label>
+                    <label>Imagen del Producto (JPG, PNG, GIF o WEBP)</label>
                     <input type="file" id="prod_foto" name="foto_material" accept="image/*">
                 </div>
-                
                 <button type="submit" class="btn-modal btn-crear" style="width: 100%; margin-top: 10px;">Guardar Producto</button>
             </form>
         </div>
     </div>
 
-    <!-- ==========================================================================
-         MODAL 6: CONFIRMACIÓN DE OPERACIÓN DE PRODUCTOS
-         ========================================================================== -->
     <div class="modal-overlay" id="modalConfirmacionGuardarProducto" style="z-index: 1100;">
         <div class="modal-content" style="max-width: 380px; text-align: center;">
             <h3 style="margin-top: 0;">Confirmación</h3>
@@ -494,453 +377,212 @@ if (!isset($_SESSION['Rol'])) {
         </div>
     </div>
 
-    <!-- ==========================================================================
-         LÓGICA JAVASCRIPT / CLIENTE
-         ========================================================================== -->
-    <script>
-        // Ruta del controlador PHP encargado de procesar las solicitudes de usuarios
-        const RUTA_CONTROLADOR = '../CRUD_Usuarios/Controlador/Controlador_Usuarios.php';
-        let esEdicion = false;
-
-        // Ruta del controlador PHP encargado de procesar las solicitudes de productos
-        const RUTA_CONTROLADOR_PRODUCTOS = '../CRUD_Productos/Controlador/Controlador_Productos.php';
-        let esEdicionProducto = false;
-
-        /**
-         * Algoritmo del Módulo 10 para validar el Dígito Verificador de la Cédula Uruguaya (CI).
-         */
-        function validarCedulaUruguayaJS(ci) {
-            ci = ci.replace(/[^0-9]/g, '');
-            if (ci.length !== 8) return false;
-
-            const factores = [2, 9, 8, 7, 6, 3, 4];
-            let suma = 0;
-
-            for (let i = 0; i < 7; i++) {
-                suma += parseInt(ci[i]) * factores[i];
-            }
-
-            const digitoEsperado = (10 - (suma % 10)) % 10;
-            const digitoReal = parseInt(ci[7]);
-
-            return digitoEsperado === digitoReal;
-        }
-
-        // Configuración del menú desplegable de perfil
-        const menuBtn = document.getElementById('menuBtn');
-        const menuContent = document.getElementById('menuContent');
-        if (menuBtn) {
-            menuBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                menuContent.classList.toggle('show');
-            });
-            document.addEventListener('click', (e) => {
-                if (!menuContent.contains(e.target) && !menuBtn.contains(e.target)) {
-                    menuContent.classList.remove('show');
-                }
-            });
-        }
-
-        // Restricción de entrada: Permite solo números en el campo de Cédula
-        document.addEventListener('DOMContentLoaded', () => {
-            const cedulaInput = document.getElementById('cedula');
-            const errorCedula = document.getElementById('errorCedula');
-
-            if (cedulaInput) {
-                cedulaInput.addEventListener('input', (e) => {
-                    e.target.value = e.target.value.replace(/[^0-9]/g, '');
-                    if (errorCedula) errorCedula.style.display = 'none';
-                });
-            }
-        });
-
-        /**
-         * Oculta una ventana modal por su ID.
-         */
-        function cerrarModal(id) {
-            document.getElementById(id).classList.remove('active');
-        }
-
-        /* ==========================================================================
-           MÓDULO VISTA CLIENTE (TARJETAS DE PRÉSTAMO)
-           ========================================================================== */
-        async function abrirModalSolicitarPrestamo() {
-            document.getElementById('modalSolicitarPrestamo').classList.add('active');
-            await cargarProductosCliente();
-        }
-
-        async function cargarProductosCliente() {
-            try {
-                const res = await fetch(`${RUTA_CONTROLADOR_PRODUCTOS}?action=listar`);
-                const textoRespuesta = await res.text();
-                
-                let productos;
-                try {
-                    productos = JSON.parse(textoRespuesta);
-                } catch (e) {
-                    console.error("Respuesta del servidor no válida:", textoRespuesta);
-                    return;
-                }
-
-                const contenedor = document.getElementById('contenedor-productos-cliente');
-                if (!contenedor) return; 
-
-                if (!Array.isArray(productos) || productos.length === 0) {
-                    contenedor.innerHTML = `<p style="text-align:center; width:100%; grid-column: 1 / -1;">No hay productos disponibles en este momento.</p>`;
-                    return;
-                }
-
-                contenedor.innerHTML = productos.map(p => {
-                    const fotoLimpia = p.Foto_Material ? p.Foto_Material.replace(/^\/+/, '') : '';
-                    const fotoRuta = fotoLimpia ? `../CRUD_Productos/${fotoLimpia}` : '';
-                    const stock = parseInt(p.Cantidad_Disponible) || 0;
-                    
-                    let btnHtml = '';
-                    if (stock > 0 && p.Estado !== 'En Mantenimiento') {
-                        btnHtml = `<button onclick="iniciarProcesoPrestamo(${p.ID_Material}, '${p.Nombre}')" class="btn-prestamo">Solicitar Préstamo</button>`;
-                    } else {
-                        btnHtml = `<button class="btn-prestamo btn-sin-stock" disabled>Agotado / No Disponible</button>`;
-                    }
-
-                    return `
-                        <div class="tarjeta-producto">
-                            <img src="${fotoRuta}" alt="${p.Nombre}" onerror="this.src=''; this.style.display='none';">
-                            <div class="tarjeta-cuerpo">
-                                <h4>${p.Nombre}</h4>
-                                <p><strong>Categoría:</strong> ${p.Categoria || '-'}</p>
-                                <p><strong>Descripción:</strong> ${p.Descripcion || '-'}</p>
-                                <p><strong>Disponibles:</strong> ${stock}</p>
-                                ${btnHtml}
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-
-            } catch (error) {
-                console.error("Error al cargar el catálogo de cliente:", error);
-            }
-        }
-
-        function iniciarProcesoPrestamo(idProducto, nombreProducto) {
-            alert(`Iniciando solicitud para el material: ${nombreProducto} (ID: ${idProducto})\n\n(Funcionalidad en desarrollo)`);
-        }
-
-
-        /* ==========================================================================
-           MÓDULO USUARIOS (ADMINISTRADOR)
-           ========================================================================== */
-        async function abrirModalGestionUsuarios() {
-            document.getElementById('modalGestionUsuarios').classList.add('active');
-            await cargarUsuarios();
-        }
-
-        async function cargarUsuarios() {
-            try {
-                const res = await fetch(`${RUTA_CONTROLADOR}?action=listar`);
-                const usuarios = await res.json();
-                
-                const tbody = document.getElementById('bodyTablaUsuarios');
-                tbody.innerHTML = usuarios.map(u => `
+    <!-- MODAL: VISTA PREVIA DE IMPRESIÓN DE STOCK -->
+<div class="modal-overlay" id="modalImprimirStock" style="z-index:1300;">
+    <div class="modal-content" style="max-width:750px; max-height:85vh; overflow-y:auto;">
+        <div class="modal-header">
+            <h3>Control de Stock Actual - Inventario CeiLab</h3>
+            <button class="modal-close" onclick="cerrarModal('modalImprimirStock')">&times;</button>
+        </div>
+        
+        <div class="table-responsive" style="margin-top: 15px;">
+            <table class="tabla-modal">
+                <thead>
                     <tr>
-                        <td>${u.ci}</td>
-                        <td>${u.nombre}</td>
-                        <td>${u.apellido}</td>
-                        <td>${u.email}</td>
-                        <td>${u.rol}</td>
-                        <td>${u.especialidad}</td>
-                        <td style="white-space: nowrap;">
-                            <button class="btn-modal btn-editar" onclick="editarUsuario('${u.ci}')">Editar</button>
-                            <button class="btn-modal btn-eliminar" onclick="eliminarUsuario('${u.ci}')">Eliminar</button>
-                        </td>
+                        <th>Material</th>
+                        <th>Total</th>
+                        <th>Disponible</th>
+                        <th>Comprometidos</th>
+                        <th>Aprobados</th>
+                        <th>Prestados</th>
                     </tr>
-                `).join('');
-            } catch (error) {
-                console.error("Error al cargar usuarios:", error);
-            }
-        }
+                </thead>
+                <tbody id="bodyImprimirStock"></tbody>
+            </table>
+        </div>
 
-        function abrirModalFormulario() {
-            esEdicion = false;
-            document.getElementById('formUsuario').reset();
-            document.getElementById('cedula_original').value = '';
-            document.getElementById('cedula').readOnly = false;
-            document.getElementById('errorCedula').style.display = 'none';
-            document.getElementById('tituloFormUsuario').innerText = 'Nuevo Usuario';
-            document.getElementById('helpPass').style.display = 'none';
-            document.getElementById('contrasena').required = true;
-            document.getElementById('modalFormularioUsuario').classList.add('active');
-        }
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+            <button class="btn-modal btn-crear" onclick="window.print()">Imprimir / Guardar PDF</button>
+            <button class="btn-modal btn-cancelar" onclick="cerrarModal('modalImprimirStock')">Cerrar</button>
+        </div>
+    </div>
+</div>
 
-        async function editarUsuario(cedula) {
-            esEdicion = true;
-            try {
-                const res = await fetch(`${RUTA_CONTROLADOR}?action=ver&cedula=${cedula}`);
-                const u = await res.json();
-
-                document.getElementById('cedula_original').value = u.ci;
-                document.getElementById('cedula').value = u.ci;
-                document.getElementById('cedula').readOnly = false;
-                document.getElementById('errorCedula').style.display = 'none';
-                
-                document.getElementById('nombre').value = u.nombre;
-                document.getElementById('apellido').value = u.apellido;
-                document.getElementById('correo').value = u.email;
-                document.getElementById('rol').value = u.rol;
-                document.getElementById('especialidad').value = u.especialidad;
-                
-                document.getElementById('contrasena_actual').value = u.contrasenia;
-                document.getElementById('contrasena').value = '';
-                document.getElementById('contrasena').required = false;
-                document.getElementById('helpPass').style.display = 'block';
-
-                document.getElementById('tituloFormUsuario').innerText = 'Editar Usuario';
-                document.getElementById('modalFormularioUsuario').classList.add('active');
-            } catch (error) {
-                console.error("Error al cargar el usuario:", error);
-            }
-        }
-
-        function solicitarConfirmacion(e) {
-            e.preventDefault();
-            const form = document.getElementById('formUsuario');
-            const cedulaVal = document.getElementById('cedula').value;
-            const errorCedula = document.getElementById('errorCedula');
-
-            if (!form.checkValidity()) {
-                form.reportValidity();
-                return;
-            }
-
-            if (!validarCedulaUruguayaJS(cedulaVal)) {
-                errorCedula.style.display = 'block';
-                document.getElementById('cedula').focus();
-                return;
-            } else {
-                errorCedula.style.display = 'none';
-            }
-
-            const mensaje = esEdicion 
-                ? '¿Estás seguro de actualizar este usuario?' 
-                : '¿Estás seguro de registrar este nuevo usuario?';
-
-            document.getElementById('textoConfirmacion').innerText = mensaje;
-            document.getElementById('modalConfirmacionGuardar').classList.add('active');
-        }
-
-        async function ejecutarGuardado() {
-            cerrarModal('modalConfirmacionGuardar');
-
-            const form = document.getElementById('formUsuario');
-            const formData = new FormData(form);
-            const accion = esEdicion ? 'actualizar' : 'guardar';
-
-            try {
-                const res = await fetch(`${RUTA_CONTROLADOR}?action=${accion}`, {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const textoRespuesta = await res.text();
-                let data;
-
-                try {
-                    data = JSON.parse(textoRespuesta);
-                } catch (e) {
-                    console.error("El servidor no devolvió JSON:", textoRespuesta);
-                    alert("Error del servidor (PHP):\n" + textoRespuesta.substring(0, 300));
-                    return;
-                }
-
-                if (data.success) {
-                    alert(esEdicion ? '¡Usuario actualizado con éxito!' : '¡Usuario creado con éxito!');
-                    cerrarModal('modalFormularioUsuario');
-                    form.reset();
-                    cargarUsuarios();
-                } else {
-                    alert(data.message || 'Ocurrió un error al procesar la solicitud.');
-                }
-            } catch (error) {
-                console.error("Error de red/petición:", error);
-                alert('Error de conexión con el servidor: ' + error.message);
-            }
-        }   
-
-        async function eliminarUsuario(cedula) {
-            if (confirm('¿Desea eliminar el usuario seleccionado?')) {
-                try {
-                    const res = await fetch(`${RUTA_CONTROLADOR}?action=eliminar&cedula=${cedula}`);
-                    const data = await res.json();
-                    if (data.success) {
-                        cargarUsuarios();
-                    } else {
-                        alert('No se pudo eliminar el usuario.');
-                    }
-                } catch (error) {
-                    console.error("Error al eliminar:", error);
-                }
-            }
-        }
-
-        /* ==========================================================================
-           MÓDULO PRODUCTOS / MATERIALES (ADMINISTRADOR)
-           ========================================================================== */
-        async function abrirModalGestionProductos() {
-            document.getElementById('modalGestionProductos').classList.add('active');
-            await cargarProductos();
-        }
-
-        async function cargarProductos() {
-            try {
-                const res = await fetch(`${RUTA_CONTROLADOR_PRODUCTOS}?action=listar`);
-                const textoRespuesta = await res.text();
-
-                let productos;
-                try {
-                    productos = JSON.parse(textoRespuesta);
-                } catch (e) {
-                    console.error("Respuesta del servidor no válida:", textoRespuesta);
-                    return;
-                }
-
-                const tbody = document.getElementById('bodyTablaProductos');
-                if (!Array.isArray(productos) || productos.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;">No hay productos registrados.</td></tr>`;
-                    return;
-                }
-
-                tbody.innerHTML = productos.map(p => {
-                    const fotoLimpia = p.Foto_Material ? p.Foto_Material.replace(/^\/+/, '') : '';
-                    const fotoRuta = fotoLimpia ? `../CRUD_Productos/${fotoLimpia}` : '';
-
-                    return `
+    <div class="modal-overlay" id="modalHistorialProducto" style="z-index: 1200;">
+        <div class="modal-content" style="max-width: 750px;">
+            <div class="modal-header">
+                <h3 id="tituloModalHistorial">Historial de Estados</h3>
+                <button class="modal-close" onclick="cerrarModal('modalHistorialProducto')">&times;</button>
+            </div>
+            <div class="table-responsive" style="max-height: 380px; overflow-y: auto;">
+                <table class="tabla-modal">
+                    <thead>
                         <tr>
-                            <td>${p.id_material}</td>
-                            <td>
-                                <img src="${fotoRuta}" 
-                                     style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; background: #eee;" 
-                                     alt="Img" 
-                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                                <span style="display:none; font-size: 11px; color: #777;">Sin foto</span>
-                            </td>
-                            <td><b>${p.nombre}</b></td>
-                            <td>${p.descripcion || '-'}</td>
-                            <td>${p.categoria || '-'}</td>
-                            <td>${p.cantidad_total}</td>
-                            <td>${p.cantidad_disponible}</td>
-                            <td>${p.estado || '-'}</td>
-                            <td style="white-space: nowrap;">
-                                <button class="btn-modal btn-editar" onclick="editarProducto(${p.id_material})">Editar</button>
-                                <button class="btn-modal btn-eliminar" onclick="eliminarProducto(${p.id_material})">Eliminar</button>
-                            </td>
+                            <th>Fecha</th>
+                            <th>Estado Anterior</th>
+                            <th>Estado Nuevo</th>
+                            <th>Evento</th>
+                            <th>Resp. (CI)</th>
+                            <th>Motivo</th>
                         </tr>
-                    `;
-                }).join('');
-            } catch (error) {
-                console.error("Error al cargar productos:", error);
-            }
-        }   
+                    </thead>
+                    <tbody id="bodyTablaHistorial"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- VENTANA MODAL: VER PERFIL DE USUARIO -->
+    <div class="modal-overlay" id="modalVerPerfil">
+        <div class="modal-content perfil-card-modal">
+            <div class="modal-header">
+                <h3>Perfil de Usuario</h3>
+                <button type="button" class="modal-close" onclick="cerrarModal('modalVerPerfil')">&times;</button>
+            </div>
+            
+            <div class="perfil-card-body">
+                <!-- Encabezado con Avatar -->
+                <div class="perfil-avatar-section">
+                    <div class="avatar-circle">
+                        <?php echo strtoupper(substr($_SESSION['Nombre'], 0, 1)); ?>
+                    </div>
+                    <h4><?php echo htmlspecialchars($_SESSION['Nombre'] . ' ' . ($_SESSION['Apellido'] ?? '')); ?></h4>
+                    <span class="badge-rol"><?php echo htmlspecialchars($_SESSION['Rol']); ?></span>
+                </div>
 
-        function abrirModalFormularioProducto() {
-            esEdicionProducto = false;
-            document.getElementById('formProducto').reset();
-            document.getElementById('id_material').value = '';
-            document.getElementById('foto_actual').value = '';
-            document.getElementById('tituloFormProducto').innerText = 'Nuevo Producto';
-            document.getElementById('modalFormularioProducto').classList.add('active');
-        }
+                <!-- Lista de Datos en Filas Separadas -->
+                <div class="perfil-details-list">
+                    <div class="perfil-item">
+                        <span class="item-label">Cédula de Identidad</span>
+                        <span class="item-value"><?php echo htmlspecialchars($_SESSION['Cedula'] ?? $_SESSION['CI'] ?? '10000001'); ?></span>
+                    </div>
 
-        async function editarProducto(id) {
-            esEdicionProducto = true;
-            try {
-                const res = await fetch(`${RUTA_CONTROLADOR_PRODUCTOS}?action=ver&id=${id}`);
-                const p = await res.json();
+                    <div class="perfil-item">
+                        <span class="item-label">Correo Electrónico</span>
+                        <span class="item-value"><?php echo htmlspecialchars($_SESSION['Correo'] ?? $_SESSION['Email'] ?? 'lucia.fernandez@cerpdeleste.edu.uy'); ?></span>
+                    </div>
 
-                document.getElementById('id_material').value = p.id_material;
-                document.getElementById('prod_nombre').value = p.nombre;
-                document.getElementById('prod_descripcion').value = p.descripcion || '';
-                document.getElementById('prod_categoria').value = p.categoria || '';
-                document.getElementById('prod_cant_total').value = p.cantidad_total;
-                document.getElementById('prod_cant_disp').value = p.cantidad_disponible;
-                document.getElementById('prod_estado').value = p.estado || 'Disponible';
-                document.getElementById('foto_actual').value = p.foto_material || '';
+                    <div class="perfil-item">
+                        <span class="item-label">Especialidad / Cargo</span>
+                        <span class="item-value"><?php echo htmlspecialchars($_SESSION['Especialidad'] ?? 'Sin especificar'); ?></span>
+                    </div>
+                </div>
 
-                document.getElementById('tituloFormProducto').innerText = 'Editar Producto';
-                document.getElementById('modalFormularioProducto').classList.add('active');
-            } catch (error) {
-                console.error("Error al cargar el producto:", error);
-            }
-        }
+                <!-- Acciones -->
+                <button type="button" class="btn-editar-perfil-main" onclick="abrirEditarPerfilPropio()">
+                    Editar mis Datos
+                </button>
+            </div>
+        </div>
+    </div>
 
-        function solicitarConfirmacionProducto(e) {
-            e.preventDefault();
-            const form = document.getElementById('formProducto');
 
-            if (!form.checkValidity()) {
-                form.reportValidity();
-                return;
-            }
+    <!--MODAL: CATÁLOGO DE PRODUCTOS (VISTA CLIENTE)-->
+    <div class="modal-overlay" id="modalSolicitarPrestamo">
+        <div class="modal-content" style="max-width: 1200px;">
+            <div class="modal-header">
+                <h3>Catálogo de Materiales - Solicitar Préstamo</h3>
+                <button class="modal-close" onclick="cerrarModal('modalSolicitarPrestamo')">&times;</button>
+            </div>
+            
+            <div id="avisoBloqueoPrestamo" class="aviso-bloqueo-prestamo"></div>
 
-            const mensaje = esEdicionProducto 
-                ? '¿Estás seguro de actualizar este producto?' 
-                : '¿Estás seguro de registrar este nuevo producto?';
+            <div id="contenedor-productos-cliente" class="grid-productos">
+                <!-- Las tarjetas de productos se renderizan dinámicamente aquí -->
+            </div>
 
-            document.getElementById('textoConfirmacionProducto').innerText = mensaje;
-            document.getElementById('modalConfirmacionGuardarProducto').classList.add('active');
-        }
+            <!-- v7: el cliente arma un pedido por tipo de material; el administrador asigna las series al entregar -->
+            <div class="carrito">
+                <h4>Tu pedido</h4>
+                <div id="carritoPrestamo"><p><i>Todavía no agregaste materiales.</i></p></div>
+            </div>
+        </div>
+    </div>
 
-        async function ejecutarGuardadoProducto() {
-            cerrarModal('modalConfirmacionGuardarProducto');
+    <!-- MODAL EXCLUSIVO PARA NUEVO PRÉSTAMO DESDE ADMINISTRACIÓN -->
+<div id="modalPrestamoAdmin" class="modal-admin-overlay" style="display: none;">
+    <div class="modal-admin-contenedor">
+        <!-- Cabecera -->
+        <div class="modal-admin-header">
+            <h3>Nuevo Préstamo (Administración)</h3>
+            <span class="modal-admin-cerrar" onclick="adminCerrarModal()">&times;</span>
+        </div>
 
-            const form = document.getElementById('formProducto');
-            const formData = new FormData(form);
-            const accion = esEdicionProducto ? 'actualizar' : 'guardar';
+        <!-- Cuerpo del Modal -->
+        <div class="modal-admin-body">
+            <!-- Formulario Superior (Cliente, Materia, Horas) -->
+            <div class="panel-admin-datos">
+                <div class="campo-admin" style="flex: 2;">
+                    <label>Seleccionar Cliente / Usuario *</label>
+                    <select id="admin_select_cliente" onchange="PedidoAdminState.clienteCedula = this.value;">
+                        <option value="">-- Cargando usuarios... --</option>
+                    </select>
+                </div>
+                <div class="campo-admin" style="flex: 1;">
+                    <label>Materia / Motivo</label>
+                    <select  id="admin_input_materia" placeholder="Ej: Física" oninput="PedidoAdminState.materia = this.value;">
+                                    <option value="" disabled selected>Selecciona una opción</option>
+                        <option value="Informatica">Informatica</option>
+                        <option value="Biologia">Biologia</option>
+                        <option value="Quimica">Quimica</option>
+                        <option value="Historia">Historia</option>
+                        <option value="Literatura">Literatura</option>
+                        <option value="Idioma_español">Idioma español</option>
+                        <option value="Derecho">Derecho</option>
+                        <option value="Filosofia">Filosofia</option>
+                        <option value="Ingles">Ingles</option>
+                        <option value="Matematica">Matematica</option>
+                        <option value="Sociologia">Sociologia</option>
+                        <option value="Geografia">Geografia</option>
+                        <option value="Educador_Social">Educador Social</option>
+                </select>
+                </div>
+                <div class="campo-admin" style="flex: 1;">
+                    <label>Duración (Horas)</label>
+                    <input type="number" id="admin_input_horas" value="2" min="1" max="24" onchange="PedidoAdminState.horas = parseInt(this.value) || 2;">
+                </div>
+            </div>
 
-            try {
-                const res = await fetch(`${RUTA_CONTROLADOR_PRODUCTOS}?action=${accion}`, {
-                    method: 'POST',
-                    body: formData
-                });
+            <!-- Catálogo de Productos -->
+            <div id="admin-catalogo-productos" class="catalogo-grid">
+                <!-- Se dibuja dinámicamente -->
+            </div>
 
-                const textoRespuesta = await res.text();
-                let data;
+            <!-- Resumen del Pedido (Tu Pedido) -->
+            <div class="caja-tu-pedido">
+                <h4>Tu pedido</h4>
+                <div id="admin-resumen-items">
+                    <p class="texto-vacio">Todavía no agregaste materiales.</p>
+                </div>
+            </div>
+        </div>
 
-                try {
-                    data = JSON.parse(textoRespuesta);
-                } catch (e) {
-                    console.error("El servidor no devolvió JSON:", textoRespuesta);
-                    alert("Error del servidor (PHP):\n" + textoRespuesta.substring(0, 300));
-                    return;
-                }
+        <!-- Pie con Botón de Confirmación -->
+        <div class="modal-admin-footer">
+            <button type="button" class="btn-cancelar-admin" onclick="adminCerrarModal()">Cancelar</button>
+            <button type="button" class="btn-confirmar-admin" onclick="adminProcesarSolicitudDirecta()">✓ Registrar Préstamo Directo</button>
+        </div>
+    </div>
+</div>
 
-                if (data.success) {
-                    alert(esEdicionProducto ? '¡Producto actualizado con éxito!' : '¡Producto guardado con éxito!');
-                    cerrarModal('modalFormularioProducto');
-                    form.reset();
-                    cargarProductos();
-                } else {
-                    alert(data.message || 'El producto ya existe o no se pudo guardar.');
-                }
-            } catch (error) {
-                console.error("Error de red/petición:", error);
-                alert('Error de conexión con el servidor: ' + error.message);
-            }
-        }
+<script>
+    window.USUARIO_ACTUAL = {
+        cedula: "<?php echo $_SESSION['Cedula'] ?? $_SESSION['CI'] ?? ''; ?>",
+        nombre: "<?php echo $_SESSION['Nombre'] ?? ''; ?>",
+        apellido: "<?php echo $_SESSION['Apellido'] ?? ''; ?>",
+        correo: "<?php echo $_SESSION['Correo'] ?? $_SESSION['Email'] ?? ''; ?>",
+        especialidad: "<?php echo $_SESSION['Especialidad'] ?? ''; ?>",
+        rol: "<?php echo $_SESSION['Rol'] ?? ''; ?>"
+    };
+</script>
 
-        async function eliminarProducto(id) {
-            if (confirm('¿Desea eliminar el producto seleccionado?')) {
-                try {
-                    const res = await fetch(`${RUTA_CONTROLADOR_PRODUCTOS}?action=eliminar&id=${id}`);
-                    const data = await res.json();
-                    if (data.success) {
-                        cargarProductos();
-                    } else {
-                        alert('No se pudo eliminar el producto.');
-                    }
-                } catch (error) {
-                    console.error("Error al eliminar producto:", error);
-                }
-            }
-        }
-    </script>
+<!-- 1. Primero cargamos el Script general de la página donde viven toggleDropdown y funciones base -->
+<script src="Script.js?v=3"></script>
+
+
+<!-- 2. Luego incluimos la vista de préstamos (que define abrirModalSolicitarPrestamo y los fetch) UNA SOLA VEZ -->
+<?php include __DIR__ . '/../CRUD_Prestamos/Vista/Vista_Prestamos.php'; ?>
+<?php include __DIR__ . '/../CRUD_Reservas/Vista/Vista_Reservas.php'; ?>
+
 </body>
 </html>

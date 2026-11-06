@@ -1,6 +1,6 @@
-/* =========================================================
+/* 
    VARIABLES DE COLOR (SISTEMA CLARO Y OSCURO)
-   ========================================================= */
+    */
 :root {
   --panel-bg: #eaeaea;        
   --title-color: #0f172a;     
@@ -15,9 +15,9 @@ body.dark-mode {
   --btn-hover: #030303;       
 }
 
-/* =========================================================
+/* 
    RESET BÁSICO Y CONFIGURACIÓN PANTALLA COMPLETA
-   ========================================================= */
+    */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -43,9 +43,9 @@ body {
   transition: background-color 0.3s ease;
 }
 
-/* =========================================================
+/* 
    SWITCH ANIMADO PARA ALTERNAR TEMA (SOL / LUNA)
-   ========================================================= */
+    */
 .theme-switch {
   position: absolute;
   top: 20px;
@@ -131,9 +131,9 @@ input:checked + .slider .moon {
   transform: rotate(0deg) scale(1);
 }
 
-/* =========================================================
+/* 
    CONTENEDOR PRINCIPAL (.mb-3) - PANTALLA COMPLETA
-   ========================================================= */
+    */
 .mb-3 {
   width: 100vw;
   height: 100vh;
@@ -165,9 +165,9 @@ input:checked + .slider .moon {
   display: none;
 }
 
-/* =========================================================
+/* 
    1. FOTO DEL EDIFICIO (MITAD DERECHA - 60%)
-   ========================================================= */
+    */
 .mb-3::after {
   content: "";
   position: absolute;
@@ -183,9 +183,9 @@ input:checked + .slider .moon {
   pointer-events: none;
 }
 
-/* =========================================================
+/* 
    2. LOGO SUPERIOR (ITRIO TEAM) 
-   ========================================================= */
+    */
 .mb-3 > img:first-of-type {
   display: block;
   width: 100%;
@@ -197,9 +197,9 @@ input:checked + .slider .moon {
   margin-top: 2rem;
 }
 
-/* =========================================================
+/* 
    3. FORMULARIO (AMPLIO Y CENTRADO)
-   ========================================================= */
+    */
 form {
   display: flex;
   flex-direction: column;
@@ -311,9 +311,9 @@ form::before {
   text-align: center;
 }
 
-/* =========================================================
+/* 
    4. LOGO INFERIOR (CERP DEL ESTE)
-   ========================================================= */
+    */
 .Logo,
 img.Logo {
   display: block;
@@ -324,9 +324,9 @@ img.Logo {
   margin: 0;
 }
 
-/* =========================================================
+/* 
    RESPONSIVIDAD (PANTALLAS MÓVILES Y TABLETS)
-   ========================================================= */
+    */
 @media screen and (max-width: 768px) {
   html, body {
     overflow-y: auto;
@@ -350,3 +350,8 @@ img.Logo {
     max-width: 180px;
   }
 }
+
+.form-check label {
+  color: var(--title-color) !important; 
+  transition: color 0.4s ease;
+}   

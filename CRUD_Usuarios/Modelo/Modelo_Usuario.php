@@ -1,18 +1,9 @@
 <?php
-/**
- * Modelo_Usuario.php
- * 
- * Clase encargada de la gestión de persistencia y consulta de datos
- * de la tabla 'usuario' en la base de datos utilizando PDO.
- */
 
 require_once __DIR__ . '/../../Config/Conexion.php';
 
 class Modelo_Usuario {
-    /**
-     * Instancia de conexión a la base de datos (PDO).
-     * @var PDO
-     */
+    /** @var PDO */
     private $conexion;
 
     public function __construct() {
@@ -20,70 +11,87 @@ class Modelo_Usuario {
     }
 
     /**
-     * Obtiene la lista completa de usuarios.
+     * Obtiene todos los usuarios (incluye estado_cuenta) con sus teléfonos.
      */
     public function obtenerUsuarios() {
-        $stmt = $this->conexion->prepare("SELECT ci, nombre, apellido, email, rol, especialidad FROM usuario");
+        $stmt = $this->conexion->prepare(
+            "SELECT ci, nombre, apellido, email, rol, especialidad, estado_cuenta FROM usuario"
+        );
         $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $usuarios = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($usuarios as &$u) {
+            $u['telefonos'] = $this->obtenerTelefonosPorCI($u['ci']);
+        }
+        return $usuarios;
     }
 
-    // Alias para compatibilidad
     public function obtenerTodos() {
         return $this->obtenerUsuarios();
     }
 
-    /**
-     * Busca y retorna los datos de un usuario específico mediante su Cédula (CI).
-     */
-    public function obtenerUsuarioPorCI($ci) {
-        $stmt = $this->conexion->prepare("SELECT ci, nombre, apellido, email, rol, especialidad, contrasenia FROM usuario WHERE ci = ?");
+    public function obtenerTelefonosPorCI($ci) {
+        $stmt = $this->conexion->prepare("SELECT telefono FROM telefono WHERE ci_usuario = ?");
         $stmt->execute([$ci]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        return $stmt->fetchAll(PDO::FETCH_COLUMN);
     }
 
-    // Alias para compatibilidad
+    public function obtenerUsuarioPorCI($ci) {
+        $stmt = $this->conexion->prepare(
+            "SELECT ci, nombre, apellido, email, rol, especialidad, contrasenia, estado_cuenta FROM usuario WHERE ci = ?"
+        );
+        $stmt->execute([$ci]);
+        $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($usuario) {
+            $usuario['telefonos'] = $this->obtenerTelefonosPorCI($ci);
+        }
+        return $usuario;
+    }
+
     public function obtenerPorCedula($ci) {
         return $this->obtenerUsuarioPorCI($ci);
     }
 
-    /**
-     * Registra un nuevo usuario en la base de datos.
-     */
-    public function guardarUsuario($ci, $nombre, $apellido, $email, $contrasenia, $rol, $especialidad) {
+    public function guardarUsuario($ci, $nombre, $apellido, $email, $contrasenia, $rol, $especialidad, $telefonos = []) {
         try {
+            $this->conexion->beginTransaction();
             $especialidad = !empty($especialidad) ? $especialidad : null;
-            
-            // Si la contraseña no está encriptada aún, se le aplica el hash
+
             if (password_get_info($contrasenia)['algo'] === 0) {
                 $contrasenia = password_hash($contrasenia, PASSWORD_DEFAULT);
             }
 
+            // estado_cuenta toma su valor por defecto 'ACTIVA'
             $stmt = $this->conexion->prepare(
                 "INSERT INTO usuario (ci, nombre, apellido, email, contrasenia, rol, especialidad) 
                  VALUES (?, ?, ?, ?, ?, ?, ?)"
             );
-            
-            return $stmt->execute([$ci, $nombre, $apellido, $email, $contrasenia, $rol, $especialidad]);
-        } catch (PDOException $e) {
+            $stmt->execute([$ci, $nombre, $apellido, $email, $contrasenia, $rol, $especialidad]);
+
+            if (empty($telefonos)) {
+                throw new Exception("Debe ingresar al menos un teléfono.");
+            }
+            $this->insertarTelefonosBD($ci, $telefonos);
+
+            $this->conexion->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->conexion->rollBack();
             return false;
         }
     }
 
-    // Alias para compatibilidad
-    public function crearUsuario($ci, $nombre, $apellido, $email, $contrasenia, $rol, $especialidad) {
-        return $this->guardarUsuario($ci, $nombre, $apellido, $email, $contrasenia, $rol, $especialidad);
+    public function crearUsuario($ci, $nombre, $apellido, $email, $contrasenia, $rol, $especialidad, $telefonos = []) {
+        return $this->guardarUsuario($ci, $nombre, $apellido, $email, $contrasenia, $rol, $especialidad, $telefonos);
     }
 
-    /**
-     * Actualiza los datos de un usuario existente.
-     */
-    public function actualizarUsuario($ciOriginal, $ciNueva, $nombre, $apellido, $email, $contrasenia, $rol, $especialidad, $cambiarPass = true) {
+    public function actualizarUsuario($ciOriginal, $ciNueva, $nombre, $apellido, $email, $contrasenia, $rol, $especialidad, $telefonos = [], $cambiarPass = true) {
         try {
+            $this->conexion->beginTransaction();
             $especialidad = !empty($especialidad) ? $especialidad : null;
 
-            // Si se debe cambiar contraseña y no viene hasheada
-            if ($cambiarPass && password_get_info($contrasenia)['algo'] === 0) {
+            if ($cambiarPass && !empty($contrasenia) && password_get_info($contrasenia)['algo'] === 0) {
                 $contrasenia = password_hash($contrasenia, PASSWORD_DEFAULT);
             }
 
@@ -96,10 +104,9 @@ class Modelo_Usuario {
                         rol = :rol, 
                         especialidad = :especialidad 
                     WHERE ci = :cedulaOriginal";
-                    
+
             $stmt = $this->conexion->prepare($sql);
-            
-            return $stmt->execute([
+            $stmt->execute([
                 ':cedulaNueva'    => $ciNueva,
                 ':nombre'         => $nombre,
                 ':apellido'       => $apellido,
@@ -109,23 +116,64 @@ class Modelo_Usuario {
                 ':especialidad'   => $especialidad,
                 ':cedulaOriginal' => $ciOriginal
             ]);
-        } catch (PDOException $e) {
+
+            if ($ciOriginal !== $ciNueva) {
+                $stmtFK = $this->conexion->prepare("UPDATE telefono SET ci_usuario = ? WHERE ci_usuario = ?");
+                $stmtFK->execute([$ciNueva, $ciOriginal]);
+            }
+
+            if (!empty($telefonos)) {
+                $stmtDel = $this->conexion->prepare("DELETE FROM telefono WHERE ci_usuario = ?");
+                $stmtDel->execute([$ciNueva]);
+                $this->insertarTelefonosBD($ciNueva, $telefonos);
+            }
+
+            $this->conexion->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->conexion->rollBack();
             return false;
+        }
+    }
+
+    private function insertarTelefonosBD($ci, $telefonos) {
+        $stmtTel = $this->conexion->prepare("INSERT INTO telefono (ci_usuario, telefono) VALUES (?, ?)");
+        foreach ($telefonos as $tel) {
+            $telLimpio = trim($tel);
+            if (!empty($telLimpio)) {
+                $stmtTel->execute([$ci, $telLimpio]);
+            }
         }
     }
 
     /**
-     * Elimina el registro de un usuario.
+     * Baja lógica: cambia estado_cuenta a 'ACTIVA' o 'INACTIVA'.
      */
-    public function eliminarUsuario($ci) {
+    public function cambiarEstadoCuenta($ci, $estado) {
         try {
-            $stmt = $this->conexion->prepare("DELETE FROM usuario WHERE ci = ?");
-            return $stmt->execute([$ci]);
+            $stmt = $this->conexion->prepare("UPDATE usuario SET estado_cuenta = ? WHERE ci = ?");
+            return $stmt->execute([$estado, $ci]);
         } catch (PDOException $e) {
+            error_log($e->getMessage());
             return false;
         }
     }
+
+        /**
+     * Verifica si el usuario tiene un préstamo activo (ya entregado).
+     * Retorna el array con el id_solicitud o false si no tiene ninguno.
+     */
+    public function obtenerPrestamoActivo($cedula) {
+        $st = $this->conexion->prepare(
+            "SELECT id_solicitud 
+            FROM solicitud 
+            WHERE ci_cliente = ? AND estado = 'ACTIVO' 
+            LIMIT 1"
+        );
+        $st->execute([$cedula]);
+        return $st->fetch(PDO::FETCH_ASSOC);
+    }
 }
 
-// Alias de la clase para evitar errores de instanciación
+// Alias de la clase
 class ModeloUsuarios extends Modelo_Usuario {}

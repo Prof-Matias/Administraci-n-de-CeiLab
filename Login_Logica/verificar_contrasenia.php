@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../Config/Conexion.php';
 session_start();
 
-// Verifica que exista la cédula temporal
+// Verifica que exista la cédula temporal de la primera etapa del login
 if (!isset($_SESSION['cedula_temp'])) {
     header("Location: ../index.php");
     exit();
@@ -11,9 +11,11 @@ if (!isset($_SESSION['cedula_temp'])) {
 $cedula = $_SESSION['cedula_temp'];
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    // Captura el parámetro de contraseña (soporta varias nomenclaturas comunes)
+    // Captura la contraseña desde el formulario
     $contrasenia = $_POST["contrasenia"] ?? $_POST["contrasena"] ?? $_POST["Contraseña"] ?? '';
-    
+    // Captura el estado del checkbox "Recuérdame" (true si fue marcado, false si no)
+    $recuerdame  = isset($_POST['recuerdame']);
+
     if (!empty($contrasenia)) {
         try {
             $pdo = Conexion::conectar();
@@ -28,7 +30,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 // Regenerar el ID de sesión por seguridad al autenticar correctamente
                 session_regenerate_id(true);
 
-                // Cargar datos del usuario en la sesión usando las claves normalizadas en minúsculas/ASCII
+                // Cargar datos del usuario en la sesión (minúsculas)
                 $_SESSION['ci']           = $usuario['ci']; 
                 $_SESSION['nombre']       = $usuario['nombre']; 
                 $_SESSION['apellido']     = $usuario['apellido'];
@@ -36,7 +38,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 $_SESSION['rol']          = $usuario['rol'];
                 $_SESSION['especialidad'] = $usuario['especialidad'];
 
-                // Para mantener compatibilidad con código existente que use claves en mayúsculas:
+                // Compatibilidad con claves en mayúsculas
                 $_SESSION['CI']           = $usuario['ci']; 
                 $_SESSION['Nombre']       = $usuario['nombre']; 
                 $_SESSION['Apellido']     = $usuario['apellido'];
@@ -44,7 +46,23 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 $_SESSION['Rol']          = $usuario['rol'];
                 $_SESSION['Especialidad'] = $usuario['especialidad'];
 
-                // Limpiar la cédula temporal
+                // Lógica de "Recuérdame"
+                if ($recuerdame) {
+                    // Solo crear la cookie persistente por 30 días si SE MARCÓ el checkbox
+                    setcookie("usuario_recuerdame", $usuario['ci'], [
+                        'expires'  => time() + (86400 * 30), // 30 días
+                        'path'     => '/',
+                        'httponly' => true,
+                        'samesite' => 'Lax'
+                    ]);
+                } else {
+                    // Si NO se marcó el checkbox, nos aseguramos de borrar cualquier cookie previa
+                    if (isset($_COOKIE['usuario_recuerdame'])) {
+                        setcookie("usuario_recuerdame", "", time() - 3600, "/");
+                    }
+                }
+
+                // Limpiar la cédula temporal de la sesión
                 unset($_SESSION['cedula_temp']);
 
                 // Normalizar el rol a mayúsculas ("ADMINISTRADOR" / "CLIENTE")
@@ -65,10 +83,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             }
 
         } catch (PDOException $e) {
-    // Si ocurre una falla con la BD, redirige de forma segura
-    header("Location: ../Contrasenia.php?error=db");
-    exit();
-}
+            header("Location: ../Contrasenia.php?error=db");
+            exit();
+        }
     } else {
         header("Location: ../Contrasenia.php?error=empty");
         exit();

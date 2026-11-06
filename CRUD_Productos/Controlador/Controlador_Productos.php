@@ -6,7 +6,9 @@ header('Content-Type: application/json; charset=utf-8');
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
 require_once __DIR__ . '/../../Config/Guardia.php';
-$accionesParaTodos = ['listar', 'ver'];
+
+$accionesParaTodos = ['listar', 'ver', 'catalogo'];
+
 if (in_array($action, $accionesParaTodos, true)) {
     exigirSesion();
 } else {
@@ -16,31 +18,37 @@ if (in_array($action, $accionesParaTodos, true)) {
 try {
     $modelo = new Modelo_Producto();
 
-    // Función auxiliar para subir cualquier tipo de imagen
     function procesarImagen($fileInputName) {
         if (isset($_FILES[$fileInputName]) && $_FILES[$fileInputName]['error'] === UPLOAD_ERR_OK) {
             $directorioAbsoluto = __DIR__ . '/../uploads/';
             
-            // Crea la carpeta 'uploads' si no existe
             if (!file_exists($directorioAbsoluto)) {
                 mkdir($directorioAbsoluto, 0777, true);
+            }
+            $permitidas = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+            $extension  = strtolower(pathinfo($_FILES[$fileInputName]['name'], PATHINFO_EXTENSION));
+            if (!in_array($extension, $permitidas, true) || @getimagesize($_FILES[$fileInputName]['tmp_name']) === false) {
+                throw new Exception('La foto debe ser una imagen JPG, PNG, GIF o WEBP.');
             }
 
             $nombreOriginal = $_FILES[$fileInputName]['name'];
             $extension = pathinfo($nombreOriginal, PATHINFO_EXTENSION);
             
-            // Genera un nombre único conservando la extensión original
             $nombreArchivo = 'prod_' . uniqid() . '.' . strtolower($extension);
             $destino = $directorioAbsoluto . $nombreArchivo;
 
             if (move_uploaded_file($_FILES[$fileInputName]['tmp_name'], $destino)) {
-                return 'uploads/' . $nombreArchivo; // Ruta relativa para guardar en BD
+                return 'uploads/' . $nombreArchivo;
             }
         }
         return null;
     }
 
     switch ($action) {
+
+        case 'catalogo':
+            echo json_encode($modelo->catalogo());
+            break;
 
         case 'listar':
             echo json_encode($modelo->obtenerProductos());
@@ -52,78 +60,188 @@ try {
             break;
 
         case 'guardar':
-            $nombre = $_POST['nombre'] ?? '';
-            $cantidadTotal = (int)($_POST['cantidad_total'] ?? 0);
-            $cantidadDisponible = (int)($_POST['cantidad_disponible'] ?? 0);
+            $nombre = trim($_POST['nombre'] ?? '');
+            $tipoControl = strtoupper(trim($_POST['tipo_control'] ?? 'SERIE'));
+            $descripcion = $_POST['descripcion'] ?? '';
+            $categoria = $_POST['categoria'] ?? '';
+            $estado = strtoupper(trim($_POST['estado'] ?? 'DISPONIBLE'));
 
-            // VALIDACIONES DE CANTIDAD
-            if ($cantidadTotal < 0 || $cantidadDisponible < 0) {
-                echo json_encode(['success' => false, 'message' => 'Las cantidades no pueden ser números negativos.']);
-                break;
+            $rutaImagen = procesarImagen('foto_material') ?: 'uploads/default.png';
+
+            if ($tipoControl === 'SERIE') {
+                // Leer números de serie enviados (línea por línea)
+                $seriesRaw = $_POST['series'] ?? $_POST['id_serie'] ?? '';
+                $lineasSeries = array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $seriesRaw)));
+
+                if (empty($lineasSeries)) {
+                    echo json_encode(['success' => false, 'message' => 'Debe ingresar al menos un número de serie.']);
+                    break;
+                }
+
+                // Validar que ninguno de los números de serie exista en la BD
+                foreach ($lineasSeries as $serie) {
+                    if ($modelo->obtenerProductoPorSerie($serie)) {
+                        echo json_encode(['success' => false, 'message' => "El número de serie '{$serie}' ya está registrado en el sistema."]);
+                        break 2;
+                    }
+                }
+
+                // Registrar un producto individual por cada número de serie
+                foreach ($lineasSeries as $serie) {
+                    $modelo->guardarProducto(
+                        $serie,
+                        'SERIE',
+                        $nombre,
+                        $descripcion,
+                        $categoria,
+                        1, // total
+                        1, // disponible
+                        $estado,
+                        $rutaImagen
+                    );
+                }
+
+                echo json_encode(['success' => true]);
+            } else {
+                // Registro por CANTIDAD
+                $cantidadTotal = (int)($_POST['cantidad_total'] ?? 0);
+                $cantidadDisponible = $cantidadTotal;
+
+                if ($cantidadTotal <= 0) {
+                    echo json_encode(['success' => false, 'message' => 'La cantidad debe ser mayor a 0.']);
+                    break;
+                }
+
+                if ($modelo->obtenerProductoPorNombre($nombre)) {
+                    echo json_encode(['success' => false, 'message' => 'Un producto consumible con ese nombre ya existe.']);
+                    break;
+                }
+
+                $exito = $modelo->guardarProducto(
+                    null,
+                    'CANTIDAD',
+                    $nombre,
+                    $descripcion,
+                    $categoria,
+                    $cantidadTotal,
+                    $cantidadDisponible,
+                    $estado,
+                    $rutaImagen
+                );
+
+                echo json_encode(['success' => (bool)$exito]);
             }
-
-            if ($cantidadDisponible > $cantidadTotal) {
-                echo json_encode(['success' => false, 'message' => 'La cantidad disponible no puede ser mayor a la cantidad total.']);
-                break;
-            }
-
-            // 1. Verificación de duplicado por nombre
-            if ($modelo->obtenerProductoPorNombre($nombre)) {
-                echo json_encode(['success' => false, 'message' => 'El producto ya existe']);
-                break;
-            }
-
-            // 2. Procesar la imagen recibida
-            $rutaImagen = procesarImagen('foto_material');
-            if (!$rutaImagen) {
-                $rutaImagen = 'uploads/default.png'; // Imagen por defecto si no suben ninguna
-            }
-
-            // 3. Insertar en la base de datos
-            $exito = $modelo->guardarProducto(
-                $nombre,
-                $_POST['descripcion'] ?? '',
-                $_POST['categoria'] ?? '',
-                $cantidadTotal,
-                $cantidadDisponible,
-                $_POST['estado'] ?? 'Disponible',
-                $rutaImagen
-            );
-
-            echo json_encode(['success' => (bool)$exito]);
             break;
 
         case 'actualizar':
             $id = $_POST['id_material'] ?? 0;
             $fotoActual = $_POST['foto_actual'] ?? 'uploads/default.png';
-            $cantidadTotal = (int)($_POST['cantidad_total'] ?? 0);
-            $cantidadDisponible = (int)($_POST['cantidad_disponible'] ?? 0);
-
-            // VALIDACIONES DE CANTIDAD
-            if ($cantidadTotal < 0 || $cantidadDisponible < 0) {
-                echo json_encode(['success' => false, 'message' => 'Las cantidades no pueden ser números negativos.']);
+        
+            // 1. Obtener el producto actual de la BD
+            $productoActual = $modelo->obtenerProductoPorID($id);
+            if (!$productoActual) {
+                echo json_encode(['success' => false, 'message' => 'El producto no existe.']);
                 break;
             }
 
-            if ($cantidadDisponible > $cantidadTotal) {
-                echo json_encode(['success' => false, 'message' => 'La cantidad disponible no puede ser mayor a la cantidad total.']);
-                break;
+            $nombreOriginal = $productoActual['nombre'];
+            $nuevoNombre    = trim($_POST['nombre'] ?? $nombreOriginal);
+
+            // Los pedidos de préstamo se guardan por nombre
+            if ($nuevoNombre !== $nombreOriginal) {
+                $abiertos = $modelo->solicitudesAbiertasPorNombre($nombreOriginal);
+                if ($abiertos) {
+                    echo json_encode(['success' => false, 'message' => "No se puede cambiar el nombre de «{$nombreOriginal}»: está en los préstamos #"
+                        . implode(', #', $abiertos) . ' (aprobados o entregados). Esperá a que se finalicen o se cancelen.']);
+                    break;
+                }
+            }
+            $descripcion    = $_POST['descripcion'] ?? $productoActual['descripcion'];
+            $categoria      = $_POST['categoria'] ?? $productoActual['categoria'];
+            $tipoControl    = $productoActual['tipo_control'];
+            $idSerieFinal   = null;
+
+            if ($tipoControl === 'SERIE') {
+                $idSerieFinal = trim($_POST['id_serie'] ?? $productoActual['id_serie']);
+
+                if (empty($idSerieFinal)) {
+                    echo json_encode(['success' => false, 'message' => 'El número de serie no puede estar vacío.']);
+                    break;
+                }
+
+                if ($idSerieFinal !== $productoActual['id_serie'] && $productoActual['estado'] === 'PRESTADO') {
+                    $entregada = $modelo->cantidadEntregada($id);
+                    echo json_encode(['success' => false, 'message' => "La serie {$productoActual['id_serie']} está prestada"
+                        . ($entregada['solicitudes'] ? " (préstamo #{$entregada['solicitudes']})" : '')
+                        . ': no se puede cambiar su número de serie hasta que la devuelvan.']);
+                    break;
+                }
+
+                // Validar duplicado de serie
+                $productoDuplicado = $modelo->obtenerProductoPorSerie($idSerieFinal, $id);
+                if ($productoDuplicado) {
+                    echo json_encode(['success' => false, 'message' => "El número de serie '{$idSerieFinal}' ya pertenece a otro producto."]);
+                    break;
+                }
+
+                $cantidadTotal = 1;
+                $cantidadDisponible = (int)$productoActual['cantidad_disponible'];
+            } else {
+                $cantidadTotal = (int)($_POST['cantidad_total'] ?? $productoActual['cantidad_total']);
+                if ($cantidadTotal < 0) {
+                    echo json_encode(['success' => false, 'message' => 'La cantidad total no puede ser negativa.']);
+                    break;
+                }
+
+                $entregada = $modelo->cantidadEntregada($id);
+                if ($cantidadTotal < $entregada['cantidad']) {
+                    echo json_encode(['success' => false, 'message' => "No se puede bajar el total a {$cantidadTotal}: hay {$entregada['cantidad']} unidades "
+                        . "entregadas en préstamos activos (#{$entregada['solicitudes']}). Esperá a que las devuelvan o editá esos préstamos."]);
+                    break;
+                }
+
+                $cantidadDisponible = max(0, $cantidadTotal - (int)$entregada['cantidad']);
+
+                if ($cantidadTotal < (int)$productoActual['cantidad_total']) {
+                    $comprometida = $modelo->cantidadComprometida($productoActual['nombre']);
+                    if ($cantidadDisponible < $comprometida['cantidad']) {
+                        echo json_encode(['success' => false, 'message' => "Con un total de {$cantidadTotal} quedarían {$cantidadDisponible} disponibles, "
+                            . "pero hay {$comprometida['cantidad']} comprometidas en préstamos aprobados (#{$comprometida['solicitudes']})."]);
+                        break;
+                    }
+                }
             }
 
-            // Si se subió una nueva imagen, se usa la nueva; de lo contrario, conserva la anterior
+            // Procesar imagen
             $nuevaFoto = procesarImagen('foto_material');
             $fotoFinal = $nuevaFoto ? $nuevaFoto : $fotoActual;
 
+            $estadoFinal = isset($_POST['estado']) ? strtoupper(trim($_POST['estado'])) : $productoActual['estado'];
+
+            // Actualizar registro individual
             $exito = $modelo->actualizarProducto(
                 $id,
-                $_POST['nombre'] ?? '',
-                $_POST['descripcion'] ?? '',
-                $_POST['categoria'] ?? '',
+                $nuevoNombre,
+                $descripcion,
+                $categoria,
                 $cantidadTotal,
                 $cantidadDisponible,
-                $_POST['estado'] ?? 'Disponible',
-                $fotoFinal
+                $estadoFinal,
+                $fotoFinal,
+                $idSerieFinal
             );
+
+            $aplicarAlGrupo = isset($_POST['aplicar_al_grupo']) && ($_POST['aplicar_al_grupo'] === '1' || $_POST['aplicar_al_grupo'] === 'on');
+
+            if ($exito && $aplicarAlGrupo) {
+                $modelo->actualizarGrupoPorNombre(
+                    $nombreOriginal,
+                    $nuevoNombre,
+                    $descripcion,
+                    $categoria,
+                    $fotoFinal
+                );
+            }
 
             echo json_encode(['success' => (bool)$exito]);
             break;
@@ -134,9 +252,75 @@ try {
             echo json_encode(['success' => (bool)$exito]);
             break;
 
-        default:
-            echo json_encode(['success' => false, 'message' => 'Acción no reconocida']);
+        // ACCIÓN UNIFICADA: Soporta dar de baja y cambiar a cualquier estado (DISPONIBLE, EN_MANTENIMIENTO, DADO_DE_BAJA)
+        case 'darDeBaja':
+        case 'cambiarEstado':
+            $data = json_decode(file_get_contents("php://input"), true);
+            $id = $data['id_material'] ?? null;
+            $nuevoEstado = strtoupper(trim($data['nuevo_estado'] ?? $data['estado'] ?? 'DADO_DE_BAJA'));
+            $motivo = trim($data['motivo_baja'] ?? $data['motivo'] ?? '');
+
+            // Cédula del usuario responsable
+            $ciResponsable = $_SESSION['ci'] ?? $_SESSION['usuario']['ci'] ?? null;
+
+            if (!$id || empty($motivo)) {
+                echo json_encode(['success' => false, 'message' => 'Debe ingresar un motivo válido.']);
+                break;
+            }
+
+            // Si está comprometido en préstamo no permite cambiar estado
+            if ($modelo->esProductoComprometido($id)) {
+                echo json_encode([
+                    'success' => false, 
+                    'message' => 'Operación cancelada: El producto está PRESTADO o reservado.'
+                ]);
+                break;
+            }
+
+            // Llama al método flexible del modelo
+            $resultado = $modelo->cambiarEstadoMaterial($id, $nuevoEstado, $motivo, $ciResponsable);
+
+            if ($resultado) {
+                echo json_encode(['success' => true, 'message' => "Estado del material actualizado a '{$nuevoEstado}' correctamente."]);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'No se pudo actualizar el estado del producto.']);
+            }
             break;
+
+        case 'reactivar':
+            $data = json_decode(file_get_contents("php://input"), true);
+            $id = $data['id_material'] ?? null;
+            $ciResponsable = $_SESSION['ci'] ?? $_SESSION['usuario']['ci'] ?? null;
+
+            if ($id) {
+                $resultado = $modelo->reactivarProducto($id, $ciResponsable);
+                if ($resultado) {
+                    echo json_encode(['success' => true, 'message' => 'Producto reactivado correctamente.']);
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'No se pudo reactivar el producto.']);
+                }
+            } else {
+                echo json_encode(['success' => false, 'message' => 'ID no válido.']);
+            }
+            break;
+
+        case 'historial':
+            $id = $_GET['id'] ?? $_GET['id_material'] ?? 0;
+            if ($id) {
+                echo json_encode($modelo->obtenerHistorialProducto($id));
+            } else {
+                echo json_encode([]);
+            }
+            break;
+
+        case 'reporte_stock':
+            $stock = $modelo->obtenerReporteStock();
+            echo json_encode([
+                'success' => true,
+                'stock' => $stock
+            ]);
+            break;
+
     }
 
 } catch (Exception $e) {
