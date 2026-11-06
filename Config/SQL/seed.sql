@@ -10,6 +10,7 @@
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
 SET time_zone = "+00:00";
+SET FOREIGN_KEY_CHECKS = 0;
 
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
@@ -22,71 +23,27 @@ SET time_zone = "+00:00";
 --
 
 --
--- Volcado de datos para la tabla `historial_estado_material`
+-- Volcado de datos para la tabla `usuario`
 --
 
-INSERT INTO `historial_estado_material` (`id_cambio`, `id_material`, `estado_anterior`, `estado_nuevo`, `evento`, `fecha`, `ci_responsable`, `id_solicitud`, `motivo`) VALUES
-(1, 1, 'DISPONIBLE', 'PRESTADO', 'ENTREGAR', '2026-11-05 17:34:15', '10000001', 1, NULL),
-(2, 2, 'DISPONIBLE', 'PRESTADO', 'ENTREGAR', '2026-11-05 17:34:15', '10000001', 1, NULL),
-(3, 3, 'DISPONIBLE', 'PRESTADO', 'ENTREGAR', '2026-11-05 17:36:38', '10000001', 2, NULL),
-(4, 13, 'DISPONIBLE', 'PRESTADO', 'ENTREGAR', '2026-11-05 17:36:38', '10000001', 2, NULL),
-(5, 3, 'PRESTADO', 'EN_MANTENIMIENTO', 'DEVOLVER_CON_DANO', '2026-11-05 17:37:11', '10000001', 2, 'Batería fundida'),
-(6, 13, 'PRESTADO', 'EN_MANTENIMIENTO', 'DEVOLVER_CON_DANO', '2026-11-05 17:37:11', '10000001', 2, 'Placa quemada'),
-(7, 25, 'DISPONIBLE', 'EN_MANTENIMIENTO', 'CAMBIO_ESTADO', '2026-11-05 17:40:36', '10000001', NULL, 'Hélice rota.'),
-(8, 1, 'PRESTADO', 'DISPONIBLE', 'DEVOLVER', '2026-11-05 17:56:45', '10000001', 1, ''),
-(9, 2, 'PRESTADO', 'DISPONIBLE', 'DEVOLVER', '2026-11-05 17:56:45', '10000001', 1, ''),
-(10, 1, 'DISPONIBLE', 'RESERVADO', 'RESERVAR', '2026-11-05 22:27:24', '10000001', 15, 'Reserva aprobada directamente por administrador'),
-(11, 1, 'RESERVADO', 'PRESTADO', 'ENTREGAR', '2026-11-05 22:27:37', '10000001', 15, 'Inicio de uso de reserva'),
-(12, 1, 'PRESTADO', 'DISPONIBLE', 'DEVOLVER', '2026-11-05 22:28:30', '10000001', 15, 'Finalización de reserva'),
-(13, 1, 'DISPONIBLE', 'RESERVADO', 'RESERVAR', '2026-11-05 22:41:20', '10000001', 17, 'Reserva aprobada'),
-(14, 1, 'RESERVADO', 'PRESTADO', 'ENTREGAR', '2026-11-05 22:41:44', '10000001', 17, 'Inicio de uso de reserva'),
-(15, 1, 'PRESTADO', 'DISPONIBLE', 'DEVOLVER', '2026-11-05 23:10:15', '10000001', 17, 'Finalización de reserva'),
-(16, 1, 'DISPONIBLE', 'RESERVADO', 'RESERVAR', '2026-11-05 23:14:47', '10000001', 18, 'Reserva aprobada'),
-(17, 1, 'RESERVADO', 'PRESTADO', 'ENTREGAR', '2026-11-05 23:14:55', '10000001', 18, 'Inicio de uso de reserva'),
-(18, 1, 'PRESTADO', 'DISPONIBLE', 'DEVOLVER', '2026-11-05 23:15:01', '10000001', 18, 'Finalización de reserva'),
-(19, 1, 'DISPONIBLE', 'RESERVADO', 'RESERVAR', '2026-11-05 23:18:26', '10000001', 19, 'Reserva aprobada'),
-(20, 1, 'RESERVADO', 'PRESTADO', 'ENTREGAR', '2026-11-05 23:18:34', '10000001', 19, 'Inicio de uso de reserva'),
-(21, 1, 'PRESTADO', 'DISPONIBLE', 'DEVOLVER', '2026-11-05 23:18:39', '10000001', 19, 'Finalización de reserva'),
-(22, 31, 'DISPONIBLE', 'EN_MANTENIMIENTO', 'CAMBIO_ESTADO', '2026-11-06 00:00:06', '10000001', NULL, '5'),
-(23, 31, 'EN_MANTENIMIENTO', 'DISPONIBLE', 'CAMBIO_ESTADO', '2026-11-06 00:02:16', '10000001', NULL, '15'),
-(24, 31, 'DISPONIBLE', 'EN_MANTENIMIENTO', 'CAMBIO_ESTADO', '2026-11-06 00:02:42', '10000001', NULL, '5'),
-(25, 31, 'EN_MANTENIMIENTO', 'DISPONIBLE', 'CAMBIO_ESTADO', '2026-11-06 00:17:17', '10000001', NULL, 'Prueba'),
-(26, 31, 'DISPONIBLE', 'EN_MANTENIMIENTO', 'CAMBIO_ESTADO', '2026-11-06 00:17:32', '10000001', NULL, 'prueba'),
-(27, 31, 'EN_MANTENIMIENTO', 'DISPONIBLE', 'CAMBIO_ESTADO', '2026-11-06 00:24:39', '10000001', NULL, 'Prueba'),
-(31, 31, 'DISPONIBLE', 'EN_MANTENIMIENTO', 'CAMBIO_ESTADO', '2026-11-06 00:36:12', '10000001', NULL, 'p'),
-(32, 31, 'EN_MANTENIMIENTO', 'DISPONIBLE', 'CAMBIO_ESTADO', '2026-11-06 00:37:50', '10000001', NULL, 'p'),
-(33, 31, 'DISPONIBLE', 'EN_MANTENIMIENTO', 'CAMBIO_ESTADO', '2026-11-06 00:38:07', '10000001', NULL, 'p'),
-(34, 1, 'DISPONIBLE', 'RESERVADO', 'RESERVAR', '2026-11-06 02:13:59', '10000001', 24, 'Reserva aprobada'),
-(35, 1, 'RESERVADO', 'PRESTADO', 'ENTREGAR', '2026-11-06 02:14:07', '10000001', 24, 'Inicio de uso de reserva'),
-(36, 1, 'PRESTADO', 'DISPONIBLE', 'DEVOLVER', '2026-11-06 02:14:12', '10000001', 24, 'Finalización de reserva'),
-(37, 1, 'DISPONIBLE', 'RESERVADO', 'RESERVAR', '2026-11-06 02:17:17', '10000001', 25, 'Reserva aprobada directamente por administrador'),
-(38, 1, 'RESERVADO', 'PRESTADO', 'ENTREGAR', '2026-11-06 02:17:27', '10000001', 25, 'Inicio de uso de reserva'),
-(39, 1, 'PRESTADO', 'DISPONIBLE', 'DEVOLVER', '2026-11-06 02:23:43', '10000001', 25, 'Finalización de reserva');
+INSERT INTO `usuario` (`ci`, `nombre`, `apellido`, `contrasenia`, `email`, `rol`, `especialidad`, `estado_cuenta`) VALUES
+('10000001', 'Lucía', 'Fernández', '$2y$10$7fxnQ269MQlGq/qqg4MTOeTunygb75owxXHYr8crs7Qvx4vZG1CdS', 'lucia.fernandez@cerpdeleste.edu.uy', 'ADMINISTRADOR', NULL, 'ACTIVA'),
+('11111111', 'Administrador', 'Ceilab', '$2y$10$7k4lsbqX.Cg4jNO9ouLHv.fwW7ANtTLcp3FmIUTirPa3.LWh3zeQy', 'admn@ceilab.com', 'ADMINISTRADOR', NULL, 'ACTIVA'),
+('51191195', 'Carlos', 'Rodríguez', '$2y$10$qu9wa3osHlqs98cU5CN6ueM3Zek6BTmAjdHOh8Ybraa/qn88Zwbdm', 'tiki@example.com', 'CLIENTE', 'Informatica', 'ACTIVA'),
+('51191208', 'José', 'Rodríguez', '$2y$10$RkbbosLQRKDvbnxA7stNoOd28ENLB334NH//NJW/3IVSlBgDrokKG', 'joseR@ceilab.com', 'CLIENTE', 'Informatica', 'ACTIVA'),
+('55176319', 'Luciano', 'Delgado', '$2y$10$q5JUha3CQO5RDowzkvDERu.JQYIm3JGKQHPHqc.Wt.SA4ylb3xa0O', 'lucianoD@example.com', 'CLIENTE', 'Literatura', 'ACTIVA'),
+('56328492', 'Matías', 'Indart', '$2y$10$hY.7L.HAkDHWup7vRsscAeNAMuxF9e1g5BwAQQ9e0AQx8ZRtdK32O', 'matiCAPO@ceibal.com', 'CLIENTE', 'Informatica', 'ACTIVA');
 
 --
--- Volcado de datos para la tabla `historial_reserva`
+-- Volcado de datos para la tabla `telefono`
 --
 
-INSERT INTO `historial_reserva` (`id_historial`, `id_solicitud_origen`, `fecha_archivo`, `estado`, `fecha`, `hora_inicio`, `hora_fin`, `detalle`, `fecha_solicitud`, `fecha_validacion`, `ci_cliente`, `ci_administrador`) VALUES
-(1, 8, '2026-11-05 18:10:41', 'FINALIZADO', '2026-11-05', '18:10:00', '18:14:00', 'Ceibalita ×1 (CEIB-001)', '2026-11-05 18:10:00', '2026-11-05 18:10:22', '51191208', '10000001'),
-(2, 9, '2026-11-05 18:24:12', 'FINALIZADO', '2026-11-05', '18:12:00', '18:15:00', 'Ceibalita ×1 (CEIB-001)', '2026-11-05 18:11:40', '2026-11-05 18:11:50', '51191208', '10000001'),
-(3, 14, '2026-11-05 20:46:11', 'FINALIZADO', '2026-11-05', '20:46:00', '20:48:00', 'Ceibalita ×1', '2026-11-05 20:45:15', NULL, '51191195', '10000001'),
-(4, 15, '2026-11-05 22:28:30', 'FINALIZADO', '2026-11-05', '22:28:00', '22:30:00', 'Ceibalita ×1 (CEIB-001)', '2026-11-05 22:27:24', NULL, '51191195', '10000001'),
-(5, 17, '2026-11-05 23:10:15', 'FINALIZADO', '2026-11-05', '22:42:00', '22:46:00', 'Ceibalita ×1 (CEIB-001)', '2026-11-05 22:41:08', '2026-11-05 22:41:20', '51191208', '10000001'),
-(6, 13, '2026-11-05 23:10:17', 'FINALIZADO', '2026-11-05', '20:40:00', '20:42:00', 'Ceibalita ×1', '2026-11-05 20:39:23', NULL, '51191195', '10000001'),
-(7, 18, '2026-11-05 23:15:01', 'FINALIZADO', '2026-11-05', '23:15:00', '23:18:00', 'Ceibalita ×1 (CEIB-001)', '2026-11-05 23:14:32', '2026-11-05 23:14:47', '51191208', '10000001'),
-(8, 19, '2026-11-05 23:18:39', 'FINALIZADO', '2026-11-05', '23:19:00', '23:23:00', 'Ceibalita ×1 (CEIB-001)', '2026-11-05 23:18:13', '2026-11-05 23:18:26', '51191208', '10000001'),
-(9, 24, '2026-11-06 02:14:12', 'FINALIZADO', '2026-11-06', '02:14:00', '02:16:00', 'Ceibalita ×1 (CEIB-001)', '2026-11-06 02:13:49', '2026-11-06 02:13:59', '51191208', '10000001'),
-(10, 25, '2026-11-06 02:23:43', 'FINALIZADO', '2026-11-06', '02:18:00', '02:20:00', 'Ceibalita ×1 (CEIB-001)', '2026-11-06 02:17:17', NULL, '51191195', '10000001');
-
---
--- Volcado de datos para la tabla `historial_solicitud`
---
-
-INSERT INTO `historial_solicitud` (`id_historial`, `id_solicitud_origen`, `tipo`, `fecha_archivo`, `estado`, `fecha_solicitud`, `fecha_validacion`, `motivo_rechazo`, `ci_cliente`, `ci_administrador`) VALUES
-(1, 2, 'Prestamo', '2026-11-05 17:37:11', 'FINALIZADO', '2026-11-05 17:36:02', '2026-11-05 17:36:25', NULL, '51191195', '10000001'),
-(2, 1, 'Prestamo', '2026-11-05 17:56:45', 'FINALIZADO', '2026-11-05 17:33:51', '2026-11-05 17:34:09', NULL, '51191208', '10000001'),
-(3, 22, 'Prestamo', '2026-11-06 00:59:20', 'FINALIZADO', '2026-11-06 00:42:54', '2026-11-06 00:59:10', NULL, '51191208', '10000001');
+INSERT INTO `telefono` (`ci_usuario`, `telefono`) VALUES
+('11111111', '094111111'),
+('51191195', '091098941'),
+('51191208', '094190841'),
+('55176319', '093890845'),
+('56328492', '098760809');
 
 --
 -- Volcado de datos para la tabla `material`
@@ -125,6 +82,38 @@ INSERT INTO `material` (`id_material`, `id_serie`, `tipo_control`, `nombre`, `de
 (30, 'PMKY-005', 'SERIE', 'Placa Makey Makey', 'Dispositivo electrónico educativo que permite convertir objetos cotidianos (como frutas, plastilina, papel de aluminio o líquidos) en teclas o botones para interactuar con una computadora.', 'Robótica y Programación', 1, 1, 'DISPONIBLE', 'uploads/prod_6aece32fe6dee.jpg', NULL, NULL),
 (31, NULL, 'CANTIDAD', 'Sensor fisioquímico', 'Dispositivos que permiten registrar y obtener información de variables fisicoquímicas del ambiente, que luego se visualizan en un software de análisis de datos para generar prácticas que evidencien contenidos teóricos.', 'gadgets', 10, 9, 'DISPONIBLE', 'uploads/prod_6aece40f851c9.jpg', NULL, NULL),
 (32, NULL, 'CANTIDAD', 'Impresora 3D', 'Permite generar elementos tangibles a partir de un modelo 3D digital, lo que posibilita introducir y trabajar con conceptos vinculados al manejo de geometría, planos, volúmenes, primitivas y operaciones matemáticas, entre otros conocimientos.', 'Equipos', 1, 1, 'DISPONIBLE', 'uploads/prod_6aece47cb9b89.jpg', NULL, NULL);
+
+--
+-- Volcado de datos para la tabla `solicitud`
+--
+
+INSERT INTO `solicitud` (`id_solicitud`, `estado`, `fecha_solicitud`, `fecha_validacion`, `motivo_rechazo`, `ci_cliente`, `ci_administrador`) VALUES
+(1, 'FINALIZADO', '2026-11-05 17:33:51', '2026-11-05 17:34:09', NULL, '51191208', '10000001'),
+(2, 'FINALIZADO', '2026-11-05 17:36:02', '2026-11-05 17:36:25', NULL, '51191195', '10000001'),
+(3, 'RECHAZADO', '2026-11-05 17:37:42', '2026-11-05 17:38:19', 'Poco cuidado de préstamos anteriores', '51191195', '10000001'),
+(4, 'CANCELADO', '2026-11-05 17:38:41', NULL, NULL, '51191195', NULL),
+(5, 'CANCELADO', '2026-11-05 17:44:02', '2026-11-05 17:44:34', NULL, '51191195', '10000001'),
+(6, 'CANCELADO', '2026-11-05 17:45:15', '2026-11-05 17:45:45', NULL, '51191195', '10000001'),
+(7, 'CANCELADO', '2026-11-05 18:06:19', '2026-11-05 18:06:19', NULL, '51191208', '10000001'),
+(8, 'FINALIZADO', '2026-11-05 18:10:00', '2026-11-05 18:10:22', NULL, '51191208', '10000001'),
+(9, 'FINALIZADO', '2026-11-05 18:11:40', '2026-11-05 18:11:50', NULL, '51191208', '10000001'),
+(10, 'CANCELADO', '2026-11-05 20:11:56', NULL, NULL, '51191195', NULL),
+(11, 'CANCELADO', '2026-11-05 20:16:41', NULL, NULL, '51191195', NULL),
+(12, 'CANCELADO', '2026-11-05 20:17:20', NULL, NULL, '51191208', NULL),
+(13, 'FINALIZADO', '2026-11-05 20:39:23', NULL, NULL, '51191195', NULL),
+(14, 'FINALIZADO', '2026-11-05 20:45:15', NULL, NULL, '51191195', NULL),
+(15, 'FINALIZADO', '2026-11-05 22:27:24', NULL, NULL, '51191195', NULL),
+(16, 'CANCELADO', '2026-11-05 22:30:56', NULL, NULL, '51191208', NULL),
+(17, 'FINALIZADO', '2026-11-05 22:41:08', '2026-11-05 22:41:20', NULL, '51191208', '10000001'),
+(18, 'FINALIZADO', '2026-11-05 23:14:32', '2026-11-05 23:14:47', NULL, '51191208', '10000001'),
+(19, 'FINALIZADO', '2026-11-05 23:18:13', '2026-11-05 23:18:26', NULL, '51191208', '10000001'),
+(20, 'RECHAZADO', '2026-11-05 23:18:55', '2026-11-05 23:19:14', 'Yo quise', '51191208', '10000001'),
+(21, 'RECHAZADO', '2026-11-05 23:20:58', '2026-11-05 23:21:14', 'Prueba', '51191208', '10000001'),
+(22, 'FINALIZADO', '2026-11-06 00:42:54', '2026-11-06 00:59:10', NULL, '51191208', '10000001'),
+(23, 'RECHAZADO', '2026-11-06 00:59:47', '2026-11-06 01:00:58', 'Pintó', '51191208', '10000001'),
+(24, 'FINALIZADO', '2026-11-06 02:13:49', '2026-11-06 02:13:59', NULL, '51191208', '10000001'),
+(25, 'FINALIZADO', '2026-11-06 02:17:17', NULL, NULL, '51191195', NULL),
+(26, 'CANCELADO', '2026-11-06 02:23:55', '2026-11-06 02:23:55', NULL, '51191208', '10000001');
 
 --
 -- Volcado de datos para la tabla `prestamo`
@@ -237,59 +226,73 @@ INSERT INTO `reserva_pedido` (`id_solicitud`, `nombre_material`, `cantidad`) VAL
 (25, 'Ceibalita', 1);
 
 --
--- Volcado de datos para la tabla `solicitud`
+-- Volcado de datos para la tabla `historial_solicitud`
 --
 
-INSERT INTO `solicitud` (`id_solicitud`, `estado`, `fecha_solicitud`, `fecha_validacion`, `motivo_rechazo`, `ci_cliente`, `ci_administrador`) VALUES
-(1, 'FINALIZADO', '2026-11-05 17:33:51', '2026-11-05 17:34:09', NULL, '51191208', '10000001'),
-(2, 'FINALIZADO', '2026-11-05 17:36:02', '2026-11-05 17:36:25', NULL, '51191195', '10000001'),
-(3, 'RECHAZADO', '2026-11-05 17:37:42', '2026-11-05 17:38:19', 'Poco cuidado de préstamos anteriores', '51191195', '10000001'),
-(4, 'CANCELADO', '2026-11-05 17:38:41', NULL, NULL, '51191195', NULL),
-(5, 'CANCELADO', '2026-11-05 17:44:02', '2026-11-05 17:44:34', NULL, '51191195', '10000001'),
-(6, 'CANCELADO', '2026-11-05 17:45:15', '2026-11-05 17:45:45', NULL, '51191195', '10000001'),
-(7, 'CANCELADO', '2026-11-05 18:06:19', '2026-11-05 18:06:19', NULL, '51191208', '10000001'),
-(8, 'FINALIZADO', '2026-11-05 18:10:00', '2026-11-05 18:10:22', NULL, '51191208', '10000001'),
-(9, 'FINALIZADO', '2026-11-05 18:11:40', '2026-11-05 18:11:50', NULL, '51191208', '10000001'),
-(10, 'CANCELADO', '2026-11-05 20:11:56', NULL, NULL, '51191195', NULL),
-(11, 'CANCELADO', '2026-11-05 20:16:41', NULL, NULL, '51191195', NULL),
-(12, 'CANCELADO', '2026-11-05 20:17:20', NULL, NULL, '51191208', NULL),
-(13, 'FINALIZADO', '2026-11-05 20:39:23', NULL, NULL, '51191195', NULL),
-(14, 'FINALIZADO', '2026-11-05 20:45:15', NULL, NULL, '51191195', NULL),
-(15, 'FINALIZADO', '2026-11-05 22:27:24', NULL, NULL, '51191195', NULL),
-(16, 'CANCELADO', '2026-11-05 22:30:56', NULL, NULL, '51191208', NULL),
-(17, 'FINALIZADO', '2026-11-05 22:41:08', '2026-11-05 22:41:20', NULL, '51191208', '10000001'),
-(18, 'FINALIZADO', '2026-11-05 23:14:32', '2026-11-05 23:14:47', NULL, '51191208', '10000001'),
-(19, 'FINALIZADO', '2026-11-05 23:18:13', '2026-11-05 23:18:26', NULL, '51191208', '10000001'),
-(20, 'RECHAZADO', '2026-11-05 23:18:55', '2026-11-05 23:19:14', 'Yo quise', '51191208', '10000001'),
-(21, 'RECHAZADO', '2026-11-05 23:20:58', '2026-11-05 23:21:14', 'Prueba', '51191208', '10000001'),
-(22, 'FINALIZADO', '2026-11-06 00:42:54', '2026-11-06 00:59:10', NULL, '51191208', '10000001'),
-(23, 'RECHAZADO', '2026-11-06 00:59:47', '2026-11-06 01:00:58', 'Pintó', '51191208', '10000001'),
-(24, 'FINALIZADO', '2026-11-06 02:13:49', '2026-11-06 02:13:59', NULL, '51191208', '10000001'),
-(25, 'FINALIZADO', '2026-11-06 02:17:17', NULL, NULL, '51191195', NULL),
-(26, 'CANCELADO', '2026-11-06 02:23:55', '2026-11-06 02:23:55', NULL, '51191208', '10000001');
+INSERT INTO `historial_solicitud` (`id_historial`, `id_solicitud_origen`, `tipo`, `fecha_archivo`, `estado`, `fecha_solicitud`, `fecha_validacion`, `motivo_rechazo`, `ci_cliente`, `ci_administrador`) VALUES
+(1, 2, 'Prestamo', '2026-11-05 17:37:11', 'FINALIZADO', '2026-11-05 17:36:02', '2026-11-05 17:36:25', NULL, '51191195', '10000001'),
+(2, 1, 'Prestamo', '2026-11-05 17:56:45', 'FINALIZADO', '2026-11-05 17:33:51', '2026-11-05 17:34:09', NULL, '51191208', '10000001'),
+(3, 22, 'Prestamo', '2026-11-06 00:59:20', 'FINALIZADO', '2026-11-06 00:42:54', '2026-11-06 00:59:10', NULL, '51191208', '10000001');
 
 --
--- Volcado de datos para la tabla `telefono`
+-- Volcado de datos para la tabla `historial_reserva`
 --
 
-INSERT INTO `telefono` (`ci_usuario`, `telefono`) VALUES
-('11111111', '094111111'),
-('51191195', '091098941'),
-('51191208', '094190841'),
-('55176319', '093890845'),
-('56328492', '098760809');
+INSERT INTO `historial_reserva` (`id_historial`, `id_solicitud_origen`, `fecha_archivo`, `estado`, `fecha`, `hora_inicio`, `hora_fin`, `detalle`, `fecha_solicitud`, `fecha_validacion`, `ci_cliente`, `ci_administrador`) VALUES
+(1, 8, '2026-11-05 18:10:41', 'FINALIZADO', '2026-11-05', '18:10:00', '18:14:00', 'Ceibalita ×1 (CEIB-001)', '2026-11-05 18:10:00', '2026-11-05 18:10:22', '51191208', '10000001'),
+(2, 9, '2026-11-05 18:24:12', 'FINALIZADO', '2026-11-05', '18:12:00', '18:15:00', 'Ceibalita ×1 (CEIB-001)', '2026-11-05 18:11:40', '2026-11-05 18:11:50', '51191208', '10000001'),
+(3, 14, '2026-11-05 20:46:11', 'FINALIZADO', '2026-11-05', '20:46:00', '20:48:00', 'Ceibalita ×1', '2026-11-05 20:45:15', NULL, '51191195', '10000001'),
+(4, 15, '2026-11-05 22:28:30', 'FINALIZADO', '2026-11-05', '22:28:00', '22:30:00', 'Ceibalita ×1 (CEIB-001)', '2026-11-05 22:27:24', NULL, '51191195', '10000001'),
+(5, 17, '2026-11-05 23:10:15', 'FINALIZADO', '2026-11-05', '22:42:00', '22:46:00', 'Ceibalita ×1 (CEIB-001)', '2026-11-05 22:41:08', '2026-11-05 22:41:20', '51191208', '10000001'),
+(6, 13, '2026-11-05 23:10:17', 'FINALIZADO', '2026-11-05', '20:40:00', '20:42:00', 'Ceibalita ×1', '2026-11-05 20:39:23', NULL, '51191195', '10000001'),
+(7, 18, '2026-11-05 23:15:01', 'FINALIZADO', '2026-11-05', '23:15:00', '23:18:00', 'Ceibalita ×1 (CEIB-001)', '2026-11-05 23:14:32', '2026-11-05 23:14:47', '51191208', '10000001'),
+(8, 19, '2026-11-05 23:18:39', 'FINALIZADO', '2026-11-05', '23:19:00', '23:23:00', 'Ceibalita ×1 (CEIB-001)', '2026-11-05 23:18:13', '2026-11-05 23:18:26', '51191208', '10000001'),
+(9, 24, '2026-11-06 02:14:12', 'FINALIZADO', '2026-11-06', '02:14:00', '02:16:00', 'Ceibalita ×1 (CEIB-001)', '2026-11-06 02:13:49', '2026-11-06 02:13:59', '51191208', '10000001'),
+(10, 25, '2026-11-06 02:23:43', 'FINALIZADO', '2026-11-06', '02:18:00', '02:20:00', 'Ceibalita ×1 (CEIB-001)', '2026-11-06 02:17:17', NULL, '51191195', '10000001');
 
 --
--- Volcado de datos para la tabla `usuario`
+-- Volcado de datos para la tabla `historial_estado_material`
 --
 
-INSERT INTO `usuario` (`ci`, `nombre`, `apellido`, `contrasenia`, `email`, `rol`, `especialidad`, `estado_cuenta`) VALUES
-('10000001', 'Lucía', 'Fernández', '$2y$10$7fxnQ269MQlGq/qqg4MTOeTunygb75owxXHYr8crs7Qvx4vZG1CdS', 'lucia.fernandez@cerpdeleste.edu.uy', 'ADMINISTRADOR', NULL, 'ACTIVA'),
-('11111111', 'Administrador', 'Ceilab', '$2y$10$7k4lsbqX.Cg4jNO9ouLHv.fwW7ANtTLcp3FmIUTirPa3.LWh3zeQy', 'admn@ceilab.com', 'ADMINISTRADOR', NULL, 'ACTIVA'),
-('51191195', 'Carlos', 'Rodríguez', '$2y$10$qu9wa3osHlqs98cU5CN6ueM3Zek6BTmAjdHOh8Ybraa/qn88Zwbdm', 'tiki@example.com', 'CLIENTE', 'Informatica', 'ACTIVA'),
-('51191208', 'José', 'Rodríguez', '$2y$10$RkbbosLQRKDvbnxA7stNoOd28ENLB334NH//NJW/3IVSlBgDrokKG', 'joseR@ceilab.com', 'CLIENTE', 'Informatica', 'ACTIVA'),
-('55176319', 'Luciano', 'Delgado', '$2y$10$q5JUha3CQO5RDowzkvDERu.JQYIm3JGKQHPHqc.Wt.SA4ylb3xa0O', 'lucianoD@example.com', 'CLIENTE', 'Literatura', 'ACTIVA'),
-('56328492', 'Matías', 'Indart', '$2y$10$hY.7L.HAkDHWup7vRsscAeNAMuxF9e1g5BwAQQ9e0AQx8ZRtdK32O', 'matiCAPO@ceibal.com', 'CLIENTE', 'Informatica', 'ACTIVA');
+INSERT INTO `historial_estado_material` (`id_cambio`, `id_material`, `estado_anterior`, `estado_nuevo`, `evento`, `fecha`, `ci_responsable`, `id_solicitud`, `motivo`) VALUES
+(1, 1, 'DISPONIBLE', 'PRESTADO', 'ENTREGAR', '2026-11-05 17:34:15', '10000001', 1, NULL),
+(2, 2, 'DISPONIBLE', 'PRESTADO', 'ENTREGAR', '2026-11-05 17:34:15', '10000001', 1, NULL),
+(3, 3, 'DISPONIBLE', 'PRESTADO', 'ENTREGAR', '2026-11-05 17:36:38', '10000001', 2, NULL),
+(4, 13, 'DISPONIBLE', 'PRESTADO', 'ENTREGAR', '2026-11-05 17:36:38', '10000001', 2, NULL),
+(5, 3, 'PRESTADO', 'EN_MANTENIMIENTO', 'DEVOLVER_CON_DANO', '2026-11-05 17:37:11', '10000001', 2, 'Batería fundida'),
+(6, 13, 'PRESTADO', 'EN_MANTENIMIENTO', 'DEVOLVER_CON_DANO', '2026-11-05 17:37:11', '10000001', 2, 'Placa quemada'),
+(7, 25, 'DISPONIBLE', 'EN_MANTENIMIENTO', 'CAMBIO_ESTADO', '2026-11-05 17:40:36', '10000001', NULL, 'Hélice rota.'),
+(8, 1, 'PRESTADO', 'DISPONIBLE', 'DEVOLVER', '2026-11-05 17:56:45', '10000001', 1, ''),
+(9, 2, 'PRESTADO', 'DISPONIBLE', 'DEVOLVER', '2026-11-05 17:56:45', '10000001', 1, ''),
+(10, 1, 'DISPONIBLE', 'RESERVADO', 'RESERVAR', '2026-11-05 22:27:24', '10000001', 15, 'Reserva aprobada directamente por administrador'),
+(11, 1, 'RESERVADO', 'PRESTADO', 'ENTREGAR', '2026-11-05 22:27:37', '10000001', 15, 'Inicio de uso de reserva'),
+(12, 1, 'PRESTADO', 'DISPONIBLE', 'DEVOLVER', '2026-11-05 22:28:30', '10000001', 15, 'Finalización de reserva'),
+(13, 1, 'DISPONIBLE', 'RESERVADO', 'RESERVAR', '2026-11-05 22:41:20', '10000001', 17, 'Reserva aprobada'),
+(14, 1, 'RESERVADO', 'PRESTADO', 'ENTREGAR', '2026-11-05 22:41:44', '10000001', 17, 'Inicio de uso de reserva'),
+(15, 1, 'PRESTADO', 'DISPONIBLE', 'DEVOLVER', '2026-11-05 23:10:15', '10000001', 17, 'Finalización de reserva'),
+(16, 1, 'DISPONIBLE', 'RESERVADO', 'RESERVAR', '2026-11-05 23:14:47', '10000001', 18, 'Reserva aprobada'),
+(17, 1, 'RESERVADO', 'PRESTADO', 'ENTREGAR', '2026-11-05 23:14:55', '10000001', 18, 'Inicio de uso de reserva'),
+(18, 1, 'PRESTADO', 'DISPONIBLE', 'DEVOLVER', '2026-11-05 23:15:01', '10000001', 18, 'Finalización de reserva'),
+(19, 1, 'DISPONIBLE', 'RESERVADO', 'RESERVAR', '2026-11-05 23:18:26', '10000001', 19, 'Reserva aprobada'),
+(20, 1, 'RESERVADO', 'PRESTADO', 'ENTREGAR', '2026-11-05 23:18:34', '10000001', 19, 'Inicio de uso de reserva'),
+(21, 1, 'PRESTADO', 'DISPONIBLE', 'DEVOLVER', '2026-11-05 23:18:39', '10000001', 19, 'Finalización de reserva'),
+(22, 31, 'DISPONIBLE', 'EN_MANTENIMIENTO', 'CAMBIO_ESTADO', '2026-11-06 00:00:06', '10000001', NULL, '5'),
+(23, 31, 'EN_MANTENIMIENTO', 'DISPONIBLE', 'CAMBIO_ESTADO', '2026-11-06 00:02:16', '10000001', NULL, '15'),
+(24, 31, 'DISPONIBLE', 'EN_MANTENIMIENTO', 'CAMBIO_ESTADO', '2026-11-06 00:02:42', '10000001', NULL, '5'),
+(25, 31, 'EN_MANTENIMIENTO', 'DISPONIBLE', 'CAMBIO_ESTADO', '2026-11-06 00:17:17', '10000001', NULL, 'Prueba'),
+(26, 31, 'DISPONIBLE', 'EN_MANTENIMIENTO', 'CAMBIO_ESTADO', '2026-11-06 00:17:32', '10000001', NULL, 'prueba'),
+(27, 31, 'EN_MANTENIMIENTO', 'DISPONIBLE', 'CAMBIO_ESTADO', '2026-11-06 00:24:39', '10000001', NULL, 'Prueba'),
+(31, 31, 'DISPONIBLE', 'EN_MANTENIMIENTO', 'CAMBIO_ESTADO', '2026-11-06 00:36:12', '10000001', NULL, 'p'),
+(32, 31, 'EN_MANTENIMIENTO', 'DISPONIBLE', 'CAMBIO_ESTADO', '2026-11-06 00:37:50', '10000001', NULL, 'p'),
+(33, 31, 'DISPONIBLE', 'EN_MANTENIMIENTO', 'CAMBIO_ESTADO', '2026-11-06 00:38:07', '10000001', NULL, 'p'),
+(34, 1, 'DISPONIBLE', 'RESERVADO', 'RESERVAR', '2026-11-06 02:13:59', '10000001', 24, 'Reserva aprobada'),
+(35, 1, 'RESERVADO', 'PRESTADO', 'ENTREGAR', '2026-11-06 02:14:07', '10000001', 24, 'Inicio de uso de reserva'),
+(36, 1, 'PRESTADO', 'DISPONIBLE', 'DEVOLVER', '2026-11-06 02:14:12', '10000001', 24, 'Finalización de reserva'),
+(37, 1, 'DISPONIBLE', 'RESERVADO', 'RESERVAR', '2026-11-06 02:17:17', '10000001', 25, 'Reserva aprobada directamente por administrador'),
+(38, 1, 'RESERVADO', 'PRESTADO', 'ENTREGAR', '2026-11-06 02:17:27', '10000001', 25, 'Inicio de uso de reserva'),
+(39, 1, 'PRESTADO', 'DISPONIBLE', 'DEVOLVER', '2026-11-06 02:23:43', '10000001', 25, 'Finalización de reserva');
+
+SET FOREIGN_KEY_CHECKS = 1;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
