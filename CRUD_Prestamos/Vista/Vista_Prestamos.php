@@ -130,21 +130,30 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
     const ETIQUETA_ESTADO = {
         DISPONIBLE: 'Disponible', PRESTADO: 'Prestado', EN_MANTENIMIENTO: 'En mantenimiento', DADO_DE_BAJA: 'Dado de baja',
         PENDIENTE: 'Pendiente', APROBADO: 'Aprobado', RECHAZADO: 'Rechazado', ACTIVO: 'Activo (entregado)',
-        FINALIZADO: 'Finalizado', CANCELADO: 'Cancelado'
+        FINALIZADO: 'Finalizado', CANCELADO: 'Cancelado', RESERVADO: 'Reservado'
     };
 
     /** Escapa texto para insertarlo en HTML. */
     function esc(v) {
         return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     }
-    function chipEstado(e) { return `<span class="estado estado-${esc(e)}">${esc(ETIQUETA_ESTADO[e] || e)}</span>`; }
+    
+    function chipEstado(e) { 
+        const estadoUpper = String(e || '').toUpperCase();
+        if (estadoUpper === 'RESERVADO') {
+            return `<span class="badge-reservado">Reservado</span>`;
+        }
+        return `<span class="estado estado-${esc(e)}">${esc(ETIQUETA_ESTADO[e] || e)}</span>`; 
+    }
+
     /* Estado de una fila de la lista: las reservas que ya empezaron se ven como «Reserva en uso»
-       y, si pasó la hora en que debía volver el material, con la marca «Atrasado». */
+        y, si pasó la hora en que debía volver el material, con la marca «Atrasado». */
     function chipFila(p) {
         const base = p.es_reserva && p.estado === 'ACTIVO'
             ? '<span class="estado estado-ACTIVO">Reserva en uso</span>' : chipEstado(p.estado);
         return base + (p.atrasada ? ' <span class="estado" style="background:#fde2e2; color:#a11d1d;">Atrasado</span>' : '');
     }
+    
     function fecha(f) { return f ? esc(String(f).slice(0, 16).replace('T', ' ')) : '—'; }
 
     /**

@@ -13,9 +13,14 @@ class Modelo_Reservas {
         $this->disp     = new Disponibilidad($this->conexion);
     }
 
-    // Consultas
+    /* ==================================================================
+       CONSULTAS
+       ================================================================== */
 
-    // Materiales que se pueden reservar. Si llegan fecha y horario, agrega el stock de esa franja.
+    /**
+     * Tipos de material reservables. Con una franja (fecha + horas) agrega el stock de esa franja:
+     * capacidad, reservadas, prestadas, libres y los próximos a liberarse.
+     */
     public function catalogo($fecha = null, $horaInicio = null, $horaFin = null) {
         $franja = null;
         if ($fecha !== null && $fecha !== '' && $horaInicio && $horaFin) {
@@ -43,7 +48,11 @@ class Modelo_Reservas {
         return $salida;
     }
 
-    // Calendario de ocupación, sin datos de los clientes. Sin fechas muestra los próximos 7 días.
+    /**
+     * Calendario de ocupación (RF39). No muestra datos del cliente.
+     * Sin fechas, devuelve los próximos 7 días.
+     * @return array ['reservas' => [...], 'prestamos' => [...]]
+     */
     public function calendario($desde = null, $hasta = null, $nombre = null) {
         $hoy   = new DateTimeImmutable('today', new DateTimeZone('America/Montevideo'));
         $desde = $this->fechaValida($desde ?: $hoy->format('Y-m-d'));
@@ -67,7 +76,7 @@ class Modelo_Reservas {
         $st->execute($params);
         $reservas = $st->fetchAll(PDO::FETCH_ASSOC);
 
-        // Préstamos que ocupan stock en ese rango
+        // Préstamos que ocupan stock dentro del rango (RF39: «reservado u ocupado»)
         $ahoraTxt = Disponibilidad::ahora()->format('Y-m-d H:i:s');
         $rangoIni = $desde . ' 00:00:00';
         $rangoFin = $hasta . ' 23:59:59';
@@ -87,8 +96,11 @@ class Modelo_Reservas {
         return ['reservas' => $reservas, 'prestamos' => $prestamos];
     }
 
-    // Lista de reservas con sus materiales. Filtros: estado, ci_cliente y fecha.
-    // Las PENDIENTES avisan si hoy no alcanzaría el stock para aprobarlas.
+    /**
+     * Listado de reservas (RF42 cédula, RF43 fecha, RF44 ver). Cada fila trae sus ítems y, si está
+     * PENDIENTE, un aviso de si hoy no hay stock suficiente para aprobarla.
+     * $filtros: estado, ci_cliente, fecha
+     */
     public function listar(array $filtros = []) {
         $sql = "SELECT s.id_solicitud, s.estado, s.fecha_solicitud, s.fecha_validacion, s.motivo_rechazo,
                        s.ci_cliente, CONCAT(u.nombre, ' ', u.apellido) AS cliente, s.ci_administrador,
@@ -162,7 +174,7 @@ class Modelo_Reservas {
         return $filas;
     }
 
-    // Reservas finalizadas (historial). Filtros: ci_cliente y fecha.
+    /** Copias de reservas finalizadas (RF45–RF47). $filtros: ci_cliente, fecha */
     public function historial(array $filtros = [], $limite = 300) {
         $sql = "SELECT h.id_solicitud_origen AS id_solicitud, h.fecha_archivo, h.estado, h.fecha, h.hora_inicio, h.hora_fin,
                        h.detalle, h.ci_cliente, CONCAT(u.nombre, ' ', u.apellido) AS cliente, h.ci_administrador
@@ -183,14 +195,22 @@ class Modelo_Reservas {
         return $st->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // Solicitar
+    /* ==================================================================
+       SOLICITAR (cliente)
+       ================================================================== */
 
-    // Pide materiales para una fecha y un horario. La usan el cliente y el administrador.
-    // Si no alcanza el stock lanza ErrorDisponibilidad (SIN_STOCK o STOCK_PARCIAL), salvo que
-    // se acepte reservar una parte o anotar el resto en espera.
-    // Cuando el estado es APROBADO (la hace el administrador) se aprueba en el momento.
+    /**
+     * El cliente pide materiales para una fecha y franja.
+     *
+     * @param array $items        [['nombre' => 'Ceibalita', 'cantidad' => 5], ...]
+     * @param bool  $aceptarParcial  reservar solo lo que hay libre si no alcanza para todo
+     * @param bool  $anotarEspera    anotar en la lista de espera lo que no se puede cubrir (implica aceptarParcial)
+     *
+     * @throws ErrorDisponibilidad  SIN_STOCK (nada disponible) o STOCK_PARCIAL (hay una parte: pedir confirmación)
+     * @return array ['id_solicitud' => int|null, 'items' => [...], 'espera' => [ids], 'completo' => bool]
+     */
     public function solicitarReserva($fecha, $horaInicio, $horaFin, $items, $ciCliente = null, $estado = 'PENDIENTE',
-                                     $aceptarParcial = false, $anotarEspera = false, $ciAdmin = null) {
+                                   $aceptarParcial = false, $anotarEspera = false, $ciAdmin = null) {
         $porAdmin = ($estado === 'APROBADO');
         $ciCliente = trim((string)($ciCliente ?: ($_SESSION['CI'] ?? '')));
         $items = is_array($items) ? $items : [];
@@ -253,16 +273,41 @@ class Modelo_Reservas {
                 $info);
         }
 
-        // Se guarda la reserva con lo que hay y, si se pidió, la espera con lo que falta
-        $resultado = $this->enTransaccion(function () use ($ciCliente, $f, $ini, $fin, $plan, $anotarEspera, $ahora) {
+        // Se guarda la reserva directamente con el estado indicado
+        $resultado = $this->enTransaccion(function () use ($ciCliente, $f, $ini, $fin, $plan, $anotarEspera, $ahora, $estado, $ciAdmin, $porAdmin, $desde, $hasta) {
             $id = null;
             $conReserva = [];
             foreach ($plan as $nombre => $p) {
                 if ($p['otorga'] > 0) $conReserva[$nombre] = $p['otorga'];
             }
             if ($conReserva) {
-                $id = $this->insertarSolicitud($ciCliente, $f, $ini, $fin, $conReserva);
+                $id = $this->insertarSolicitud($ciCliente, $f, $ini, $fin, $conReserva, $estado);
+                
+                // Si la crea el administrador directamente aprobada, asignamos unidades y registramos el historial
+                if ($porAdmin) {
+                    $items = $this->itemsDe($id);
+                    $this->bloquearTipos(array_column($items, 'nombre'));
+                    $this->asignarUnidades($id, $items, $desde, $hasta);
+
+                    $stMat = $this->conexion->prepare("SELECT id_material FROM reserva_material WHERE id_solicitud = ?");
+                    $stMat->execute([$id]);
+                    $responsableHistorial = $ciAdmin ?: ($_SESSION['CI'] ?? $ciCliente);
+                    
+                    foreach ($stMat->fetchAll(PDO::FETCH_COLUMN) as $idMat) {
+                        HistorialEstado::registrarHistorialEstado(
+                            $this->conexion,
+                            $idMat,
+                            EstadoMaterial::DISPONIBLE,
+                            EstadoMaterial::RESERVADO,
+                            'RESERVAR',
+                            $responsableHistorial,
+                            $id,
+                            'Reserva aprobada directamente por administrador'
+                        );
+                    }
+                }
             }
+            
             $espera = [];
             if ($anotarEspera) {
                 foreach ($plan as $nombre => $p) {
@@ -278,44 +323,25 @@ class Modelo_Reservas {
             return ['nombre' => $nombre, 'solicitado' => $p['pedidas'], 'reservado' => $p['otorga'],
                     'en_espera' => $anotarEspera ? $p['falta'] : 0, 'sin_cubrir' => $anotarEspera ? 0 : $p['falta']];
         }, array_keys($plan), array_values($plan));
+        
         $resultado['completo'] = !$hayFalta;
+        $resultado['aprobada'] = $porAdmin;
 
-        // Si la hizo el administrador, se aprueba en el momento (asigna las unidades)
-        $resultado['aprobada'] = false;
-        if ($porAdmin && $resultado['id_solicitud']) {
-            $ciQueAprueba = $ciAdmin ?: ($_SESSION['CI'] ?? $ciCliente);
-            try {
-                $this->aprobar($resultado['id_solicitud'], $ciQueAprueba);
-                $resultado['aprobada'] = true;
-            } catch (ErrorNegocio $e) {
-                // Otro administrador ocupó el stock en el medio: queda pendiente para revisarla
-                $resultado['aviso'] = 'La reserva quedó pendiente: ' . $e->getMessage();
-            }
-        }
         return $resultado;
     }
 
-    // La persona tiene que existir y tener la cuenta activa
-    private function verificarTitular($ci) {
-        $st = $this->conexion->prepare("SELECT estado_cuenta FROM usuario WHERE ci = ?");
-        $st->execute([$ci]);
-        $estado = $st->fetchColumn();
-        if ($estado === false) {
-            throw new ErrorNegocio("No hay ningún usuario con la cédula {$ci}.");
-        }
-        if ($estado !== 'ACTIVA') {
-            throw new ErrorNegocio("La cuenta {$ci} está inactiva: no se le pueden hacer reservas.");
-        }
-    }
+    /* ==================================================================
+       TRANSICIONES (administrador / cliente)
+       ================================================================== */
 
-    // Cambios de estado
-
-    // Aprobar: se revisa el stock de cada línea en esa franja y se asignan las unidades.
-    // Si no alcanza, no se aprueba.
+    /**
+     * PENDIENTE -> APROBADO. Con los tipos bloqueados se revisa el stock de la franja de cada línea
+     * y se asignan las unidades concretas. Si no hay stock suficiente, no se aprueba.
+     */
     public function aprobar($idSolicitud, $ciAdmin) {
         return $this->enTransaccion(function () use ($idSolicitud, $ciAdmin) {
             $r = $this->bloquearReserva($idSolicitud);
-            EstadoSolicitud::destino($r['estado'], EstadoSolicitud::APROBAR);
+            EstadoSolicitud::destino($r['estado'], 'APROBAR');
             $items = $this->itemsDe($idSolicitud);
             $this->bloquearTipos(array_column($items, 'nombre'));
 
@@ -328,6 +354,22 @@ class Modelo_Reservas {
             $this->verificarStock($items, $desde, $hasta, $idSolicitud, $ahora, 'No se puede aprobar la reserva.');
             $this->asignarUnidades($idSolicitud, $items, $desde, $hasta);
 
+            // NUEVO: Registrar en el historial general los materiales que quedan reservados
+            $stMat = $this->conexion->prepare("SELECT id_material FROM reserva_material WHERE id_solicitud = ?");
+            $stMat->execute([$idSolicitud]);
+            foreach ($stMat->fetchAll(PDO::FETCH_COLUMN) as $idMat) {
+                HistorialEstado::registrarHistorialEstado(
+                    $this->conexion,
+                    $idMat,
+                    EstadoMaterial::DISPONIBLE,
+                    EstadoMaterial::RESERVADO,
+                    'RESERVAR',
+                    $ciAdmin,
+                    $idSolicitud,
+                    'Reserva aprobada'
+                );
+            }
+
             $this->conexion->prepare(
                 "UPDATE solicitud SET estado = 'APROBADO', fecha_validacion = NOW(), ci_administrador = ?
                   WHERE id_solicitud = ?")
@@ -335,7 +377,7 @@ class Modelo_Reservas {
         });
     }
 
-    // Rechazar: el motivo es obligatorio
+    /** PENDIENTE -> RECHAZADO, con motivo obligatorio. */
     public function rechazar($idSolicitud, $ciAdmin, $motivo) {
         if (trim((string)$motivo) === '') {
             throw new ErrorNegocio('Indicá el motivo del rechazo.');
@@ -350,7 +392,7 @@ class Modelo_Reservas {
         });
     }
 
-    // Cancelar si está PENDIENTE o APROBADO (el cliente solo las suyas). Libera stock, así que atiende la espera.
+    /** PENDIENTE | APROBADO -> CANCELADO. El cliente solo cancela las suyas. Libera stock: atiende la espera. */
     public function cancelar($idSolicitud, $ciUsuario, $esAdmin) {
         $this->enTransaccion(function () use ($idSolicitud, $ciUsuario, $esAdmin) {
             $r = $this->bloquearReserva($idSolicitud);
@@ -358,6 +400,25 @@ class Modelo_Reservas {
                 throw new ErrorNegocio('Solo podés cancelar tus propias reservas.');
             }
             EstadoSolicitud::destino($r['estado'], EstadoSolicitud::CANCELAR);
+
+            // NUEVO: Si la reserva ya estaba aprobada, tenía unidades asignadas que se liberan
+            if ($r['estado'] === EstadoSolicitud::APROBADO) {
+                $stMat = $this->conexion->prepare("SELECT id_material FROM reserva_material WHERE id_solicitud = ?");
+                $stMat->execute([$idSolicitud]);
+                foreach ($stMat->fetchAll(PDO::FETCH_COLUMN) as $idMat) {
+                    HistorialEstado::registrarHistorialEstado(
+                        $this->conexion,
+                        $idMat,
+                        EstadoMaterial::RESERVADO,
+                        EstadoMaterial::DISPONIBLE,
+                        'LIBERAR',
+                        $ciUsuario,
+                        $idSolicitud,
+                        'Reserva cancelada'
+                    );
+                }
+            }
+
             $this->conexion->prepare("UPDATE solicitud SET estado = 'CANCELADO' WHERE id_solicitud = ?")
                            ->execute([$idSolicitud]);
         });
@@ -365,8 +426,12 @@ class Modelo_Reservas {
         return true;
     }
 
-    // Modifica una reserva PENDIENTE o APROBADA. El admin puede cualquiera; el cliente solo las suyas
-    // y si están PENDIENTES. Se vuelve a revisar el stock sin contar la propia reserva.
+    /**
+     * Modificación de una reserva PENDIENTE o APROBADA (RF41).
+     * El administrador modifica cualquiera; el cliente solo las suyas y solo si están PENDIENTES.
+     * $cambios: fecha, hora_inicio, hora_fin, items [['nombre' =>, 'cantidad' =>]] (los que no se envían no cambian)
+     * Se vuelve a verificar el stock de la franja nueva sin contar la propia reserva.
+     */
     public function modificar($idSolicitud, $ciUsuario, $esAdmin, array $cambios) {
         $this->enTransaccion(function () use ($idSolicitud, $ciUsuario, $esAdmin, $cambios) {
             $r = $this->bloquearReserva($idSolicitud);
@@ -410,20 +475,44 @@ class Modelo_Reservas {
         return true;
     }
 
-    // Iniciar: pasa a ACTIVO cuando se empieza a usar. Solo desde el día de la reserva.
+    /**
+     * APROBADO -> ACTIVO: el cliente empieza a usar los materiales. Solo desde el día de la reserva.
+     */
     public function iniciar($idSolicitud, $ciAdmin) {
-        return $this->enTransaccion(function () use ($idSolicitud) {
+        return $this->enTransaccion(function () use ($idSolicitud, $ciAdmin) {
             $r = $this->bloquearReserva($idSolicitud);
             EstadoSolicitud::destino($r['estado'], EstadoSolicitud::ENTREGAR);
             if ($r['fecha'] > Disponibilidad::ahora()->format('Y-m-d')) {
                 throw new ErrorNegocio('La reserva es para el ' . $r['fecha'] . ': todavía no se puede iniciar el uso.');
             }
+            
             $this->conexion->prepare("UPDATE solicitud SET estado = 'ACTIVO' WHERE id_solicitud = ?")
                            ->execute([$idSolicitud]);
+
+            // NUEVO: Actualizar estado del material a PRESTADO y registrar en el historial general
+            $stMat = $this->conexion->prepare("SELECT id_material FROM reserva_material WHERE id_solicitud = ?");
+            $stMat->execute([$idSolicitud]);
+            foreach ($stMat->fetchAll(PDO::FETCH_COLUMN) as $idMat) {
+                $this->conexion->prepare("UPDATE material SET estado = 'PRESTADO', cantidad_disponible = 0 WHERE id_material = ?")
+                               ->execute([$idMat]);
+                HistorialEstado::registrarHistorialEstado(
+                    $this->conexion,
+                    $idMat,
+                    EstadoMaterial::RESERVADO,
+                    EstadoMaterial::PRESTADO,
+                    EstadoMaterial::ENTREGAR,
+                    $ciAdmin,
+                    $idSolicitud,
+                    'Inicio de uso de reserva'
+                );
+            }
         });
     }
 
-    // Finalizar: se copia en historial_reserva y libera el stock, así que atiende la espera.
+    /**
+     * ACTIVO (o APROBADO del día) -> FINALIZADO. Copia la reserva en historial_reserva (RF45–RF46)
+     * y libera el stock, así que atiende la lista de espera.
+     */
     public function finalizar($idSolicitud, $ciAdmin) {
         $this->enTransaccion(function () use ($idSolicitud, $ciAdmin) {
             $r = $this->bloquearReserva($idSolicitud);
@@ -438,6 +527,24 @@ class Modelo_Reservas {
 
             $this->conexion->prepare("UPDATE solicitud SET estado = 'FINALIZADO' WHERE id_solicitud = ?")
                            ->execute([$idSolicitud]);
+
+            // NUEVO: Liberar los materiales de vuelta a DISPONIBLE e historizar el movimiento
+            $stMat = $this->conexion->prepare("SELECT id_material FROM reserva_material WHERE id_solicitud = ?");
+            $stMat->execute([$idSolicitud]);
+            foreach ($stMat->fetchAll(PDO::FETCH_COLUMN) as $idMat) {
+                $this->conexion->prepare("UPDATE material SET estado = 'DISPONIBLE', cantidad_disponible = 1 WHERE id_material = ?")
+                               ->execute([$idMat]);
+                HistorialEstado::registrarHistorialEstado(
+                    $this->conexion,
+                    $idMat,
+                    EstadoMaterial::PRESTADO,
+                    EstadoMaterial::DISPONIBLE,
+                    EstadoMaterial::DEVOLVER,
+                    $ciAdmin,
+                    $idSolicitud,
+                    'Finalización de reserva'
+                );
+            }
 
             $detalle = [];
             foreach ($this->itemsDe($idSolicitud) as $i) {
@@ -464,9 +571,11 @@ class Modelo_Reservas {
         return true;
     }
 
-    // Lista de espera
+    /* ==================================================================
+       LISTA DE ESPERA
+       ================================================================== */
 
-    // Filtros: ci_cliente y estado
+    /** $filtros: ci_cliente, estado */
     public function listarEspera(array $filtros = []) {
         $sql = "SELECT e.id_espera, e.ci_cliente, CONCAT(u.nombre, ' ', u.apellido) AS cliente, e.nombre_material AS nombre,
                        e.cantidad, e.fecha, e.hora_inicio, e.hora_fin, e.estado, e.fecha_alta, e.fecha_atencion, e.id_solicitud_generada
@@ -503,8 +612,12 @@ class Modelo_Reservas {
         });
     }
 
-    // Recorre la espera por orden de llegada. Si ya hay stock para todo lo que alguien esperaba,
-    // se le crea una solicitud PENDIENTE y la espera queda ATENDIDA. Devuelve cuántas atendió.
+    /**
+     * Atiende la lista de espera en orden de llegada: si ya hay stock libre para TODO lo que un cliente
+     * esperaba, se crea una solicitud PENDIENTE a su nombre y la espera pasa a ATENDIDA. Las solicitudes
+     * generadas por espera «retienen» ese stock para que dos clientes no reciban lo mismo.
+     * Se puede llamar las veces que haga falta (es idempotente). Devuelve cuántas atendió.
+     */
     public function procesarEspera() {
         $ids = $this->conexion->query("SELECT id_espera FROM reserva_espera WHERE estado = 'ESPERANDO' ORDER BY id_espera")
                               ->fetchAll(PDO::FETCH_COLUMN);
@@ -524,8 +637,9 @@ class Modelo_Reservas {
                                    ->execute([(int)$idEspera]);
                     return false;
                 }
-                // Si la reserva parcial que la acompaña sigue PENDIENTE, se espera a que se resuelva
-                // para no prometer las mismas unidades dos veces
+                // Si se anotó en espera junto con una reserva parcial que todavía está PENDIENTE, esas
+                // unidades aún no se descuentan del stock: se espera a que esa reserva se resuelva
+                // para no prometer dos veces las mismas unidades.
                 if (!empty($e['id_solicitud_origen'])) {
                     $st = $this->conexion->prepare("SELECT estado FROM solicitud WHERE id_solicitud = ?");
                     $st->execute([(int)$e['id_solicitud_origen']]);
@@ -549,7 +663,7 @@ class Modelo_Reservas {
         return $atendidas;
     }
 
-    // Stock de la franja ya prometido a solicitudes PENDIENTES que salieron de la espera
+    /** Stock que ya prometieron solicitudes PENDIENTES creadas desde la lista de espera, en la franja. */
     private function retenidoPorEspera($nombre, $desde, $hasta) {
         $st = $this->conexion->prepare(
             "SELECT COALESCE(SUM(rp.cantidad), 0)
@@ -563,14 +677,18 @@ class Modelo_Reservas {
         return (int)$st->fetchColumn();
     }
 
-    // Internos
+    /* ==================================================================
+       INTERNOS
+       ================================================================== */
 
-    private function insertarSolicitud($ciCliente, $fecha, $ini, $fin, array $mapa) {
-        $this->conexion->prepare("INSERT INTO solicitud (estado, fecha_solicitud, ci_cliente) VALUES ('PENDIENTE', NOW(), ?)")
-                       ->execute([$ciCliente]);
+    private function insertarSolicitud($ciCliente, $fecha, $ini, $fin, array $mapa, $estado = 'PENDIENTE') {
+        $this->conexion->prepare("INSERT INTO solicitud (estado, fecha_solicitud, ci_cliente) VALUES (?, NOW(), ?)")
+                       ->execute([$estado, $ciCliente]);
         $id = (int)$this->conexion->lastInsertId();
+        
         $this->conexion->prepare("INSERT INTO reserva (id_solicitud, fecha, hora_inicio, hora_fin) VALUES (?, ?, ?, ?)")
                        ->execute([$id, $fecha, $ini, $fin]);
+                       
         $st = $this->conexion->prepare("INSERT INTO reserva_pedido (id_solicitud, nombre_material, cantidad) VALUES (?, ?, ?)");
         foreach ($mapa as $nombre => $cantidad) {
             $st->execute([$id, $nombre, $cantidad]);
@@ -586,7 +704,7 @@ class Modelo_Reservas {
         return (int)$this->conexion->lastInsertId();
     }
 
-    // Falla, con el detalle por producto, si en la franja no alcanza alguna línea
+    /** Falla (con detalle por producto) si en la franja no hay stock libre para alguna línea. */
     private function verificarStock(array $items, $desde, $hasta, $excluirId, DateTimeInterface $ahora, $mensaje) {
         $errores = [];
         $detalle = [];
@@ -611,8 +729,11 @@ class Modelo_Reservas {
         }
     }
 
-    // Asigna las unidades a cada línea. Con series, una por cada unidad pedida; con lotes se reparte
-    // entre las filas que tienen stock. Primero usa las que están DISPONIBLES ahora.
+    /**
+     * Asigna unidades concretas a cada línea. Para series: una unidad por cada una pedida;
+     * para lotes: se reparte la cantidad entre las filas con stock libre en la franja.
+     * Prefiere unidades que están DISPONIBLES ahora.
+     */
     private function asignarUnidades($idSolicitud, array $items, $desde, $hasta) {
         $ins = $this->conexion->prepare("INSERT INTO reserva_material (id_solicitud, id_material, cantidad) VALUES (?, ?, ?)");
         foreach ($items as $i) {
@@ -623,7 +744,7 @@ class Modelo_Reservas {
             $st->execute([$i['nombre']]);
             $filas = $st->fetchAll(PDO::FETCH_ASSOC);
 
-            // Lo que usan otras reservas aprobadas que se pisan (el máximo a la vez)
+            // Uso de cada fila por otras reservas aprobadas que se superponen: se mide el máximo a la vez
             $st = $this->conexion->prepare(
                 "SELECT rm.id_material, rm.cantidad,
                         TIMESTAMP(r.fecha, r.hora_inicio) AS inicio, TIMESTAMP(r.fecha, r.hora_fin) AS fin
@@ -660,9 +781,11 @@ class Modelo_Reservas {
         }
     }
 
-    // Bloquea las filas de cada tipo en orden alfabético (igual que en préstamos)
-    // Material que la persona tiene y no devolvió (préstamo o reserva ACTIVA).
-    // Mientras tanto no puede reservar. Devuelve ['id_solicitud', 'tipo'] o null.
+    /** Bloquea las filas de cada tipo, siempre en orden alfabético (el mismo orden que usa el módulo de préstamos). */
+    /**
+     * Material que el cliente tiene en su poder y no devolvió: un préstamo ACTIVO o una reserva ACTIVA
+     * (ya empezó). Mientras tanto no puede reservar. Devuelve ['id_solicitud', 'tipo'] o null.
+     */
     public function usoSinDevolver($ciCliente) {
         $st = $this->conexion->prepare(
             "SELECT s.id_solicitud,
@@ -715,7 +838,7 @@ class Modelo_Reservas {
         return $r;
     }
 
-    // Devuelve nombre => cantidad, juntando repetidos y sacando los vacíos
+    /** @return array nombre => cantidad (junta repetidos y descarta lo vacío) */
     private function normalizarItems(array $items) {
         $mapa = [];
         foreach ($items as $clave => $i) {
@@ -743,7 +866,7 @@ class Modelo_Reservas {
         return $mapa;
     }
 
-    // Valida la fecha y las horas; devuelve [fecha, inicio, fin]
+    /** Valida fecha y horas; devuelve [fecha 'Y-m-d', inicio 'HH:MM:SS', fin 'HH:MM:SS']. */
     private function normalizarFranja($fecha, $horaInicio, $horaFin, $validarPasado = true) {
         $fecha = $this->fechaValida($fecha);
         $ini = $this->horaValida($horaInicio, 'de inicio');
@@ -777,7 +900,11 @@ class Modelo_Reservas {
         return strlen($hora) === 5 ? $hora . ':00' : $hora;
     }
 
-    // Usa READ COMMITTED para que, después de esperar un bloqueo, se vea lo que otro administrador acaba de confirmar
+    /**
+     * READ COMMITTED: cada consulta ve lo último confirmado. Con el nivel por defecto (REPEATABLE READ)
+     * la primera lectura común fija una «foto» de la base; si se toma antes de esperar el bloqueo,
+     * la revisión de stock no vería lo que otro administrador acaba de confirmar.
+     */
     private function enTransaccion(callable $fn) {
         $this->conexion->exec('SET TRANSACTION ISOLATION LEVEL READ COMMITTED');
         $this->conexion->beginTransaction();
@@ -801,14 +928,13 @@ class Modelo_Reservas {
         return $st->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // Lo mismo que catalogo(), pero con la fecha en dd/mm/aaaa
-    public function obtenerCatalogoDisponibilidad($fecha, $horaInicio, $horaFin) {
-        if (strpos((string)$fecha, '/') !== false) {
-            $partes = explode('/', $fecha);
-            if (count($partes) === 3) {
-                $fecha = "{$partes[2]}-{$partes[1]}-{$partes[0]}";
-            }
+    // Verifica que el cliente exista y tenga el rol correcto
+    public function verificarTitular($ciCliente) {
+        $st = $this->conexion->prepare("SELECT ci FROM usuario WHERE ci = ? AND rol = 'CLIENTE' AND estado_cuenta = 'ACTIVA'");
+        $st->execute([$ciCliente]);
+        if (!$st->fetch()) {
+            throw new ErrorNegocio('La cédula del cliente especificada no es válida o no se encuentra activa en el sistema.');
         }
-        return $this->catalogo($fecha, $horaInicio, $horaFin);
+        return true;
     }
 }

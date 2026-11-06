@@ -96,9 +96,20 @@ try {
                 $ciCliente = $ci;
                 $estadoInicial = 'PENDIENTE';
             }
-            ok($modelo->solicitarReserva($in['fecha'] ?? '', $in['hora_inicio'] ?? '', $in['hora_fin'] ?? '',
-                is_array($items) ? $items : [], $ciCliente, $estadoInicial,
-                bandera($in['aceptar_parcial'] ?? false), bandera($in['anotar_espera'] ?? false), $ci));
+            
+            $resultado = $modelo->solicitarReserva(
+                $in['fecha'] ?? '', 
+                $in['hora_inicio'] ?? '', 
+                $in['hora_fin'] ?? '',
+                is_array($items) ? $items : [], 
+                $ciCliente, 
+                $estadoInicial,
+                bandera($in['aceptar_parcial'] ?? false), 
+                bandera($in['anotar_espera'] ?? false), 
+                $ci
+            );
+            
+            ok($resultado);
             break;
 
     case 'mis_reservas':
@@ -193,6 +204,6 @@ try {
 } catch (Throwable $e) {
     http_response_code(500);
     error_log('[Reservas] ' . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => 'Error interno al procesar la reserva.'],
-                     JSON_UNESCAPED_UNICODE);
+    // Muestra temporalmente el error en pantalla para depurar:
+    echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage() . ' en línea ' . $e->getLine()], JSON_UNESCAPED_UNICODE);
 }

@@ -664,12 +664,35 @@ $nombreAdminReservas = trim(($_SESSION['Nombre'] ?? '') . ' ' . ($_SESSION['Apel
     }
 
     async function resAccion(accion, id) {
+        if (accion === 'iniciar') {
+            const confirmado = window.confirmar 
+                ? await window.confirmar('¿Seguro de que desea iniciar el uso de esta reserva?', { titulo: 'Iniciar uso' }) 
+                : confirm('¿Seguro de que desea iniciar el uso de esta reserva?');
+                
+            if (!confirmado) return;
+        }
+
+        if (accion === 'finalizar') {
+            const confirmado = window.confirmar 
+                ? await window.confirmar('¿Seguro de querer finalizar este préstamo?', { titulo: 'Finalizar préstamo' }) 
+                : confirm('¿Seguro de querer finalizar este préstamo?');
+                
+            if (!confirmado) return;
+        }
+
         const r = await resPost({ action: accion, id_solicitud: id });
         if (r && !r.ok) resAvisoError(r.json);
         resListarAdmin();
     }
+
    // --- NUEVO MENSAJE DE PRÉSTAMO APROBADO ---
     async function resAprobar(id) {
+        const confirmado = window.confirmar 
+            ? await window.confirmar('¿Seguro de que desea aprobar este préstamo?', { titulo: 'Aprobar préstamo' }) 
+            : confirm('¿Seguro de que desea aprobar este préstamo?');
+            
+        if (!confirmado) return;
+
         const r = await resPost({ action: 'aprobar', id_solicitud: id });
         if (r && r.ok) {
             if (window.avisar) window.avisar('Préstamo aprobado', { tipo: 'ok' });
