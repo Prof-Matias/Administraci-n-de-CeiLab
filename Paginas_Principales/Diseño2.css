@@ -1300,3 +1300,17 @@ body.dark-mode .custom-modal-box {
 @keyframes popIn {
   to { transform: scale(1); }
 }
+
+/* Etiqueta / Badge para Reservado */
+.badge-reservado, 
+.badge.reservado, 
+span.reservado {
+    background-color: #e0e7ff; /* Fondo azul claro y suave */
+    color: #3730a3;            /* Texto oscuro contrastante */
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;     /* Bordes redondeados tipo pastilla */
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: inline-block;
+    text-align: center;
+}

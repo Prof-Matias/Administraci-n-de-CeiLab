@@ -1,14 +1,5 @@
 <?php
 
-/** Este archivo define los estados de varias partes del código
- *  y las transiciones válidas entre ellos, para que no estén
- *  dispersos en el código y se pueda cambiar fácilmente en un solo lugar.
- * 
- * Esto sirve para mantener consistencia y evitar errores de lógica.
- * Ayuda a que los modelos y controladores puedan validar transiciones de estado sin repetir la lógica,
- * ni hacer cambios de estados sin pasar por aquí antes.
- */
-
 // ESTADOS DE MATERIAL
 
 /** Error de regla de negocio: se muestra tal cual al usuario. */
@@ -24,16 +15,19 @@ class ErrorNegocio extends Exception {
 
 final class EstadoMaterial {
     const DISPONIBLE       = 'DISPONIBLE';
+    const RESERVADO        = 'RESERVADO';
     const PRESTADO         = 'PRESTADO';
     const EN_MANTENIMIENTO = 'EN_MANTENIMIENTO';
     const DADO_DE_BAJA     = 'DADO_DE_BAJA';
 
-    const TODOS = [self::DISPONIBLE, self::PRESTADO, self::EN_MANTENIMIENTO, self::DADO_DE_BAJA];
+    const TODOS = [self::DISPONIBLE, self::RESERVADO, self::PRESTADO, self::EN_MANTENIMIENTO, self::DADO_DE_BAJA];
 
-    // Eventos                                            Quien se encarga de realizarlos:
-    const ENTREGAR             = 'ENTREGAR';              // sistema, al entregar un préstamo
-    const DEVOLVER             = 'DEVOLVER';              // sistema, devolución sin daños
-    const DEVOLVER_CON_DANO    = 'DEVOLVER_CON_DANO';     // sistema, devolución con daños
+    // Eventos                                             Quien se encarga de realizarlos:
+    const RESERVAR             = 'RESERVAR';             // sistema, al aprobar una solicitud
+    const LIBERAR              = 'LIBERAR';              // sistema, al cancelar/rechazar solicitud
+    const ENTREGAR             = 'ENTREGAR';             // sistema, al entregar un préstamo
+    const DEVOLVER             = 'DEVOLVER';             // sistema, devolución sin daños
+    const DEVOLVER_CON_DANO    = 'DEVOLVER_CON_DANO';    // sistema, devolución con daños
     const ENVIAR_MANTENIMIENTO = 'ENVIAR_MANTENIMIENTO';  // administrador
     const REINTEGRAR           = 'REINTEGRAR';            // administrador
     const DAR_DE_BAJA          = 'DAR_DE_BAJA';           // administrador
@@ -44,9 +38,14 @@ final class EstadoMaterial {
     /** [estado origen][evento] => estado destino o tambien llamado estado nuevo */
     const TRANSICIONES = [
         self::DISPONIBLE => [
+            self::RESERVAR             => self::RESERVADO,
             self::ENTREGAR             => self::PRESTADO,
             self::ENVIAR_MANTENIMIENTO => self::EN_MANTENIMIENTO,
             self::DAR_DE_BAJA          => self::DADO_DE_BAJA,
+        ],
+        self::RESERVADO => [
+            self::ENTREGAR             => self::PRESTADO,
+            self::LIBERAR              => self::DISPONIBLE,
         ],
         self::PRESTADO => [
             self::DEVOLVER             => self::DISPONIBLE,
@@ -61,6 +60,7 @@ final class EstadoMaterial {
     /** Etiquetas legibles para mostrar al usuario */
     const ETIQUETAS = [
         self::DISPONIBLE       => 'Disponible',
+        self::RESERVADO        => 'Reservado',
         self::PRESTADO         => 'Prestado',
         self::EN_MANTENIMIENTO => 'En mantenimiento',
         self::DADO_DE_BAJA     => 'Dado de baja',
@@ -84,6 +84,8 @@ final class EstadoMaterial {
 
     public static function verbo($evento) {
         switch ($evento) {
+            case self::RESERVAR:             return 'reservar';
+            case self::LIBERAR:              return 'liberar';
             case self::ENTREGAR:             return 'prestar';
             case self::DEVOLVER:
             case self::DEVOLVER_CON_DANO:    return 'devolver';
@@ -148,7 +150,7 @@ final class HistorialEstado {
      * como Modelo_Producto con la misma conexión (y la misma transacción, si hay una abierta).
      */
     public static function registrarHistorialEstado(PDO $conexion, $idMaterial, $estadoAnterior, $estadoNuevo,
-                                                    $evento, $ciResponsable, $idSolicitud = null, $motivo = null) {
+                                                     $evento, $ciResponsable, $idSolicitud = null, $motivo = null) {
         $sql = "INSERT INTO historial_estado_material
                     (id_material, estado_anterior, estado_nuevo, evento, fecha, ci_responsable, id_solicitud, motivo)
                 VALUES (?, ?, ?, ?, NOW(), ?, ?, ?)";

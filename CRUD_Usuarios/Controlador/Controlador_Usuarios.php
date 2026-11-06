@@ -76,58 +76,66 @@ switch ($action) {
         case 'actualizar':
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $cedulaOriginal = trim($_POST['cedula_original'] ?? $_POST['cedula'] ?? '');
-        $cedula         = trim($_POST['cedula'] ?? '');
-        $nombre         = trim($_POST['nombre'] ?? '');
-        $apellido       = trim($_POST['apellido'] ?? '');
-        $email          = trim($_POST['correo'] ?? $_POST['email'] ?? '');
-        $contrasenia    = $_POST['contrasena'] ?? $_POST['contrasenia'] ?? '';
-        $contraseniaAct = $_POST['contrasena_actual'] ?? '';
-        $rol            = trim($_POST['rol'] ?? 'CLIENTE');
-        $especialidad   = trim($_POST['especialidad'] ?? '');
-        $telefonos      = $_POST['telefonos'] ?? [];
+            $cedula         = trim($_POST['cedula'] ?? '');
+            $nombre         = trim($_POST['nombre'] ?? '');
+            $apellido       = trim($_POST['apellido'] ?? '');
+            $email          = trim($_POST['correo'] ?? $_POST['email'] ?? '');
+            $contrasenia    = $_POST['contrasena'] ?? $_POST['contrasenia'] ?? '';
+            $contraseniaAct = $_POST['contrasena_actual'] ?? '';
+            $rol            = trim($_POST['rol'] ?? 'CLIENTE');
+            $especialidad   = trim($_POST['especialidad'] ?? '');
+            $telefonos      = $_POST['telefonos'] ?? [];
 
-        if (empty($cedula) || empty($nombre) || empty($apellido)) {
-            echo json_encode([
-                'success' => false,
-                'message' => 'Cédula, nombre y apellido son campos obligatorios.'
-            ]);
-            exit();
-        }
+            if (empty($cedula) || empty($nombre) || empty($apellido)) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Cédula, nombre y apellido son campos obligatorios.'
+                ]);
+                exit();
+            }
 
-        $telefonosValidos = [];
-        if (is_array($telefonos)) {
-            foreach ($telefonos as $tel) {
-                $telLimpio = trim($tel);
-                if (!empty($telLimpio)) {
-                    if (!ctype_digit($telLimpio)) {
-                        echo json_encode(['success' => false, 'message' => 'Los números de teléfono solo deben contener dígitos.']);
-                        exit();
+            $telefonosValidos = [];
+            if (is_array($telefonos)) {
+                foreach ($telefonos as $tel) {
+                    $telLimpio = trim($tel);
+                    if (!empty($telLimpio)) {
+                        if (!ctype_digit($telLimpio)) {
+                            echo json_encode(['success' => false, 'message' => 'Los números de teléfono solo deben contener dígitos.']);
+                            exit();
+                        }
+                        $telefonosValidos[] = $telLimpio;
                     }
-                    $telefonosValidos[] = $telLimpio;
                 }
             }
-        }
 
-        // --- ENCRIPTACIÓN Y MANEJO DE CONTRASEÑA ---
-        $cambiarPass = !empty(trim($contrasenia));
-        
-        if ($cambiarPass) {
-            // Si escribió una contraseña nueva, la encriptamos antes de mandarla al modelo
-            $passFinal = password_hash(trim($contrasenia), PASSWORD_BCRYPT);
-        } else {
-            // Si no cambió la contraseña, mantenemos la contraseña actual (que ya debería venir encriptada)
-            $passFinal = $contraseniaAct;
-        }
+            // --- ENCRIPTACIÓN Y MANEJO DE CONTRASEÑA ---
+            $cambiarPass = !empty(trim($contrasenia));
+            
+            if ($cambiarPass) {
+                // Si escribió una contraseña nueva, la encriptamos
+                $passFinal = password_hash(trim($contrasenia), PASSWORD_BCRYPT);
+            } else {
+                // Si no cambió la contraseña, mantenemos la actual que viene del formulario o BD
+                $passFinal = $contraseniaAct;
+            }
 
         $modelo = new Modelo_Usuario();
-        $resultado = $modelo->actualizarUsuario($cedulaOriginal, $cedula, $nombre, $apellido, $email, $passFinal, $rol, $especialidad, $telefonosValidos, $cambiarPass);
+            $resultado = $modelo->actualizarUsuario($cedulaOriginal, $cedula, $nombre, $apellido, $email, $passFinal, $rol, $especialidad, $telefonosValidos, $cambiarPass);
 
-        if ($resultado) {
-            echo json_encode(['success' => true, 'message' => 'Usuario actualizado con éxito.']);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'No se pudo actualizar el usuario.']);
+            if ($resultado) {
+                // Actualizar la sesión de PHP de inmediato si el usuario editó su propio perfil
+                if ($cedula === $cedulaSesion || $cedulaOriginal === $cedulaSesion) {
+                    $_SESSION['Nombre'] = $nombre;
+                    $_SESSION['Apellido'] = $apellido;
+                    $_SESSION['Correo'] = $email;
+                    $_SESSION['Especialidad'] = $especialidad;
+                }
+
+                echo json_encode(['success' => true, 'message' => 'Usuario actualizado con éxito.']);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'No se pudo actualizar el usuario.']);
+            }
         }
-     }
         break;
 
     // ---- BAJA LÓGICA: desactivar / reactivar cuenta ----

@@ -515,8 +515,12 @@ async function editarUsuario(cedula) {
         document.getElementById('nombre').value = u.nombre || '';
         document.getElementById('apellido').value = u.apellido || '';
         document.getElementById('correo').value = u.email || u.correo || '';
-        document.getElementById('rol').value = u.rol || 'CLIENTE';
-        document.getElementById('especialidad').value = u.especialidad || '';
+        
+        const selectRol = document.getElementById('rol');
+        if (selectRol) selectRol.value = u.rol || 'CLIENTE';
+
+        const selectEsp = document.getElementById('especialidad');
+        if (selectEsp) selectEsp.value = u.especialidad || '';
 
         const lista = document.getElementById('lista-telefonos');
         if (lista) {
@@ -531,13 +535,16 @@ async function editarUsuario(cedula) {
         const labelTel = document.getElementById('labelTelefonos');
         if (labelTel) labelTel.innerText = 'Teléfono(s) (Opcional)';
 
+        // Guardar la contraseña actual de forma segura para que el backend sepa que debe conservarla si viene vacía
         const passActual = document.getElementById('contrasena_actual');
-        if (passActual) passActual.value = u.contrasenia || u.contrasena || '';
+        if (passActual) {
+            passActual.value = u.contrasenia || u.contrasena || '';
+        }
 
         const passInput = document.getElementById('contrasena');
         if (passInput) {
-            passInput.value = '';
-            passInput.required = false;
+            passInput.value = ''; // Se deja en blanco intencionalmente para indicar que no se quiere cambiar a menos que se escriba una nueva
+            passInput.required = false; // <-- Clave para que no sea obligatoria al editar
         }
 
         const helpPass = document.getElementById('helpPass');
@@ -553,6 +560,7 @@ async function editarUsuario(cedula) {
         window.avisar("Error al obtener los datos del usuario.");
     }
 }
+
 
 function solicitarConfirmacion(e) {
     e.preventDefault();
@@ -603,7 +611,11 @@ async function ejecutarGuardado() {
             window.avisar(data.message || 'Operación realizada con éxito.');
             cerrarModal('modalFormularioUsuario');
             form.reset();
-            cargarUsuarios();
+            
+            // Recargar la página para actualizar la sesión de PHP y el nombre en la barra superior
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
         } else {
             window.avisar(data.message || 'Ocurrió un error al guardar los datos.');
         }
@@ -686,7 +698,7 @@ async function cargarProductos() {
             if (!esBaja) {
                 botonesAccion = `
                     <button class="btn-modal btn-editar" onclick="editarProducto(${p.id_material})">Editar</button>
-                    <button class="btn-modal" style="background-color: #d97706; color: white;" onclick="abrirModalCambiarEstado(${p.id_material}, '${p.estado}')">Cambiar Estado</button>
+                    <button class="btn-modal" style="background-color: #d97706; color: white;" onclick="abrirModalCambiarEstado(${p.id_material}, '${p.estado}', '${p.tipo_control}', ${p.cantidad_disponible}, ${p.cantidad_total})">Cambiar Estado</button>
                     ${btnHistorial}
                 `;
             } else {
@@ -782,7 +794,7 @@ async function verHistorialProducto(idMaterial) {
 /*
    6. CAMBIAR ESTADO DE MATERIAL CON SELECTOR DESPLEGABLE
    */
-async function abrirModalCambiarEstado(idMaterial, estadoActual) {
+async function abrirModalCambiarEstado(idMaterial, estadoActual, tipoControl = 'SERIE', cantidadDisponibleMax = 0, cantidadTotal = 0) {
     const estados = [
         { valor: 'DISPONIBLE', etiqueta: 'DISPONIBLE' },
         { valor: 'EN_MANTENIMIENTO', etiqueta: 'EN MANTENIMIENTO' },
@@ -793,6 +805,17 @@ async function abrirModalCambiarEstado(idMaterial, estadoActual) {
         `<option value="${e.valor}" ${e.valor === estadoActual ? 'selected' : ''}>${e.etiqueta}</option>`
     ).join('');
 
+    const esCantidad = String(tipoControl).toUpperCase() === 'CANTIDAD';
+    const cantEnMantenimientoOBaja = Math.max(0, cantidadTotal - cantidadDisponibleMax);
+
+    const htmlCantidadParcial = esCantidad ? `
+        <div style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px;">
+            <label for="modal_cantidad_afectada" id="label_cant_afectada" style="font-weight: 600; font-size: 13px; color: #334155;">Cantidad de unidades a modificar</label>
+            <input type="number" id="modal_cantidad_afectada" class="cl-dlg-input" value="1" min="1" style="margin: 0; padding: 8px 10px;">
+            <small id="info_limite_cant" style="color: #64748b; font-size: 11px;"></small>
+        </div>
+    ` : '';
+
     const contenidoModal = `
         <div style="display: flex; flex-direction: column; gap: 14px; text-align: left;">
             <div style="display: flex; flex-direction: column; gap: 4px;">
@@ -801,6 +824,7 @@ async function abrirModalCambiarEstado(idMaterial, estadoActual) {
                     ${opcionesHTML}
                 </select>
             </div>
+            ${htmlCantidadParcial}
             <div style="display: flex; flex-direction: column; gap: 4px;">
                 <label for="modal_motivo_estado" style="font-weight: 600; font-size: 13px; color: #334155;">Motivo del cambio</label>
                 <textarea id="modal_motivo_estado" class="cl-dlg-input" rows="3" placeholder="Escriba la razón o detalle del cambio..." style="margin: 0; padding: 8px 10px; resize: vertical; min-height: 70px; font-family: inherit;"></textarea>
@@ -837,8 +861,34 @@ async function abrirModalCambiarEstado(idMaterial, estadoActual) {
 
         const selectEstado = dlg.querySelector('#modal_nuevo_estado');
         const txtMotivo = dlg.querySelector('#modal_motivo_estado');
+        const inputCant = dlg.querySelector('#modal_cantidad_afectada');
+        const labelCant = dlg.querySelector('#label_cant_afectada');
+        const infoLimite = dlg.querySelector('#info_limite_cant');
         const btnGuardar = dlg.querySelector('#btnGuardarEstado');
         const btnCancelar = dlg.querySelector('#btnCancelarEstado');
+
+        function actualizarLimites() {
+            if (!esCantidad) return;
+            const nuevoE = selectEstado.value;
+            let maxVal = 0;
+            
+            if (nuevoE === 'DISPONIBLE') {
+                maxVal = cantEnMantenimientoOBaja;
+                labelCant.textContent = `Cantidad a devolver a Disponible (Máx. ${maxVal})`;
+            } else {
+                maxVal = cantidadDisponibleMax;
+                labelCant.textContent = `Cantidad a enviar a ${nuevoE} (Máx. ${maxVal})`;
+            }
+            
+            inputCant.max = maxVal;
+            inputCant.value = Math.min(parseInt(inputCant.value) || 1, maxVal || 1);
+            infoLimite.textContent = `Límite disponible para esta acción: ${maxVal}`;
+        }
+
+        if (esCantidad) {
+            selectEstado.addEventListener('change', actualizarLimites);
+            actualizarLimites();
+        }
 
         txtMotivo.focus();
 
@@ -851,22 +901,30 @@ async function abrirModalCambiarEstado(idMaterial, estadoActual) {
         btnGuardar.addEventListener('click', () => {
             const nuevoEstado = selectEstado.value;
             const motivo = txtMotivo.value.trim();
+            const cantidadAfectada = inputCant ? parseInt(inputCant.value, 10) || 1 : 1;
+            
+            let maxPermitido = (nuevoEstado === 'DISPONIBLE') ? cantEnMantenimientoOBaja : cantidadDisponibleMax;
 
             if (!motivo) {
                 window.avisar("Debe ingresar un motivo para registrar el cambio de estado.");
                 return;
             }
 
-            cerrar({ estado: nuevoEstado, motivo: motivo });
+            if (esCantidad && (cantidadAfectada < 1 || cantidadAfectada > maxPermitido)) {
+                window.avisar(`La cantidad debe estar entre 1 y ${maxPermitido}.`);
+                return;
+            }
+
+            cerrar({ estado: nuevoEstado, motivo: motivo, cantidad: cantidadAfectada });
         });
     });
 
     if (resultado) {
-        await guardarNuevoEstadoMaterial(idMaterial, resultado.estado, resultado.motivo);
+        await guardarNuevoEstadoMaterial(idMaterial, resultado.estado, resultado.motivo, resultado.cantidad);
     }
 }
 
-async function guardarNuevoEstadoMaterial(idMaterial, nuevoEstado, motivo) {
+async function guardarNuevoEstadoMaterial(idMaterial, nuevoEstado, motivo, cantidadAfectada = 1) {
     try {
         const res = await fetch(`${RUTA_CONTROLADOR_PRODUCTOS}?action=cambiarEstado`, {
             method: 'POST',
@@ -876,7 +934,8 @@ async function guardarNuevoEstadoMaterial(idMaterial, nuevoEstado, motivo) {
                 nuevo_estado: nuevoEstado,
                 estado: nuevoEstado,
                 motivo_baja: motivo,
-                motivo: motivo
+                motivo: motivo,
+                cantidad_afectada: cantidadAfectada
             })
         });
 
@@ -1276,42 +1335,35 @@ window.abrirModalVerPerfil = function(event) {
     if (modal) modal.classList.add('active');
 };
 
-window.abrirEditarPerfilPropio = function() {
+window.abrirEditarPerfilPropio = async function(event) {
+    if (event) event.preventDefault();
+    
+    const dropdown = document.getElementById('menuContent');
+    if (dropdown) dropdown.classList.remove('show');
+
     cerrarModal('modalVerPerfil');
 
-    const modalForm = document.getElementById('modalFormularioUsuario');
-    if (!modalForm) return;
-    
-    modalForm.classList.add('active');
-
-    const titulo = document.getElementById('tituloFormUsuario');
-    if (titulo) titulo.textContent = 'Editar Mi Perfil';
-
     const user = window.USUARIO_ACTUAL || {};
+    const ci = user.cedula || user.ci || '';
 
-    const inputCedulaOriginal = document.getElementById('cedula_original');
-    const inputCedula = document.getElementById('cedula');
-    const inputNombre = document.getElementById('nombre');
-    const inputApellido = document.getElementById('apellido');
-    const inputCorreo = document.getElementById('correo');
-    const inputPass = document.getElementById('contrasena');
-    const helpPass = document.getElementById('helpPass');
+    if (ci) {
+        // Carga todos los datos reales de la BD (incluyendo cedula_original y contrasena_actual)
+        await editarUsuario(ci);
 
-    if (inputCedulaOriginal) inputCedulaOriginal.value = user.cedula || '';
-    if (inputCedula) inputCedula.value = user.cedula || '';
-    if (inputNombre) inputNombre.value = user.nombre || '';
-    if (inputApellido) inputApellido.value = user.apellido || '';
-    if (inputCorreo) inputCorreo.value = user.correo || '';
-    if (inputPass) inputPass.value = '';
-    if (helpPass) helpPass.style.display = 'block';
+        // Ajustar título y ocultar campos que el cliente no debe modificar en su perfil
+        const titulo = document.getElementById('tituloFormUsuario');
+        if (titulo) titulo.textContent = 'Editar Mi Perfil';
 
-    const campoCedula = inputCedula ? inputCedula.closest('.form-group') : null;
-    const campoRol = document.getElementById('rol') ? document.getElementById('rol').closest('.form-group') : null;
-    const campoEspecialidad = document.getElementById('especialidad') ? document.getElementById('especialidad').closest('.form-group') : null;
+        const campoCedula = document.getElementById('cedula')?.closest('.form-group');
+        const campoRol = document.getElementById('rol')?.closest('.form-group');
+        const campoEspecialidad = document.getElementById('especialidad')?.closest('.form-group');
 
-    if (campoCedula) campoCedula.style.setProperty('display', 'none', 'important');
-    if (campoRol) campoRol.style.setProperty('display', 'none', 'important');
-    if (campoEspecialidad) campoEspecialidad.style.setProperty('display', 'none', 'important');
+        if (campoCedula) campoCedula.style.setProperty('display', 'none', 'important');
+        if (campoRol) campoRol.style.setProperty('display', 'none', 'important');
+        if (campoEspecialidad) campoEspecialidad.style.setProperty('display', 'none', 'important');
+    } else {
+        window.avisar("No se encontró la sesión del usuario actual.");
+    }
 };
 
 /*
@@ -1521,4 +1573,33 @@ function mostrarConfirmacionCerrarSesion(urlLogout) {
 function cerrarModalConfirmacion() {
     const modal = document.getElementById('customConfirmModal');
     if (modal) modal.style.display = 'none';
+}
+
+// Función para aprobar con tu modal personalizado
+function confirmarAprobacion(idSolicitud) {
+   
+    
+    if (typeof mostrarModalPersonalizado === 'function') {
+        mostrarModalPersonalizado(
+            "¿Seguro de que desea aprobar este préstamo?",
+            "Aprobar",
+            () => aprobarReserva(idSolicitud)
+        );
+    } else {
+      
+        aprobarReserva(idSolicitud);
+    }
+}
+
+// Función para iniciar uso con tu modal personalizado
+function confirmarInicioUso(idSolicitud) {
+    if (typeof mostrarModalPersonalizado === 'function') {
+        mostrarModalPersonalizado(
+            "¿Seguro de que desea iniciar el uso de esta reserva?",
+            "Iniciar uso",
+            () => iniciarUsoReserva(idSolicitud)
+        );
+    } else {
+        iniciarUsoReserva(idSolicitud);
+    }
 }
