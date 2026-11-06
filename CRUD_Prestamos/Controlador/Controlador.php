@@ -1,14 +1,4 @@
 <?php
-/**
- *
- * Acciones del cliente:        catalogo*, solicitar, mis_prestamos, prestamo_bloqueante, cancelar
- * Acciones del administrador:  listar, detalle, aprobar, rechazar,
- *                              unidades_entrega, entregar, devolver, editar, cancelar,
- *                              historial_material
- * (*) el catálogo lo sirve Controlador_Productos (action=catalogo).
- *
- * Las acciones que cambian estado solo se aceptan por POST.
- */
 require_once __DIR__ . '/../../Config/Guardia.php';
 require_once __DIR__ . '/../Modelo/Modelo_Prestamo.php';
 
@@ -61,7 +51,7 @@ try {
             break;
 
         case 'mis_prestamos':
-            ok($modelo->listar($_GET['estado'] ?? null, $ci));
+            ok($modelo->listar($_GET['estado'] ?? null, $ci, true));
             break;
 
         case 'cancelar':
@@ -75,7 +65,7 @@ try {
 
         /* ---------- Administrador ---------- */
         case 'listar':
-            ok($modelo->listar($_GET['estado'] ?? null));
+            ok($modelo->listar($_GET['estado'] ?? null, null, !empty($_GET['incluir_reservas'])));
             break;
 
         case 'detalle':

@@ -126,7 +126,7 @@ if (!isset($_SESSION['ci'])) {
                         <span class="card-title">Gestionar Reservas</span>
                         <span class="card-desc">Revisa el calendario de reservas semanales.</span>
                     </button>
-                    <button type="button" class="action-card" id="Solicitud" onclick="abrirModalGestionPrestamos('PENDIENTE')">
+                    <button type="button" class="action-card" id="Solicitud" onclick="abrirModalGestionPrestamos('PENDIENTE', true)">
                         <span class="card-title">Ver Solicitudes</span>
                         <span class="card-desc">Atiende las peticiones pendientes.</span>
                     </button>
@@ -147,7 +147,7 @@ if (!isset($_SESSION['ci'])) {
                     </button>
                     <!-- NUEVA TARJETA ESTILIZADA PARA CLIENTE -->
                     <button type="button" class="action-card" id="MisPrestamos" onclick="abrirModalMisPrestamos()">
-                        <span class="card-title">Mis Préstamos</span>
+                        <span class="card-title">Mis Solicitudes</span>
                         <span class="card-desc">Revisa el historial y estado de tus solicitudes activas o pasadas.</span>
                     </button>
                 <?php endif; ?>

@@ -1,17 +1,5 @@
 <?php
-/**
- *
- * Ciclo de un préstamo:
- *   1. solicitar  (cliente)  -> PENDIENTE. Pide por nombre: «2 Ceibalitas».
- *   2. aprobar    (admin)    -> APROBADO. Verifica que haya unidades libres.
- *      rechazar   (admin)    -> RECHAZADO, con motivo.
- *   3. entregar   (admin)    -> ACTIVO. El admin indica qué series entrega;
- *                               cada unidad debe estar DISPONIBLE y pasa a PRESTADO.
- *   4. devolver   (admin)    -> cada unidad vuelve DISPONIBLE o EN_MANTENIMIENTO.
- *                               Cuando vuelve todo, la solicitud pasa a FINALIZADO
- *                               y se archiva en historial_solicitud (RNF7).
- *   cancelar (cliente o admin) desde PENDIENTE o APROBADO -> CANCELADO.
- */
+
 require_once __DIR__ . '/../../Config/Conexion.php';
 require_once __DIR__ . '/../../Config/Estados.php';
 require_once __DIR__ . '/../../Config/Disponibilidad.php';
@@ -24,16 +12,17 @@ class Modelo_Prestamo {
         $this->conexion = $conexion ?: Conexion::conectar();
     }
 
-    /* ==============================================================
+    /* 
        CONSULTAS
-       ============================================================== */
+        */
 
     /**
      * Lista préstamos, opcionalmente filtrados por estado o por cliente.
      * Las reservas que ya empezaron (estado ACTIVO) se muestran como un préstamo más:
      * traen es_reserva = 1 y fecha_entrega = inicio de la franja.
+     * Con $incluirReservas = true se suman las reservas en cualquier estado (pendientes, aprobadas, etc.).
      */
-    public function listar($estado = null, $ciCliente = null) {
+    public function listar($estado = null, $ciCliente = null, $incluirReservas = false) {
         if ($estado !== null && $estado !== '' && !in_array($estado, EstadoSolicitud::TODOS, true)) {
             throw new ErrorNegocio('Estado de solicitud no válido.');
         }
@@ -42,7 +31,8 @@ class Modelo_Prestamo {
                        p.materia, p.horas_solicitadas, p.fecha_entrega, p.fecha_devolucion,
                        (SELECT GROUP_CONCAT(CONCAT(pp.cantidad, ' × ', pp.nombre_material) ORDER BY pp.nombre_material SEPARATOR ', ')
                           FROM prestamo_pedido pp WHERE pp.id_solicitud = s.id_solicitud) AS pedido,
-                       0 AS es_reserva, NULL AS fin_previsto
+                       0 AS es_reserva, NULL AS fin_previsto,
+                       NULL AS reserva_fecha, NULL AS hora_inicio, NULL AS hora_fin
                   FROM solicitud s
                   JOIN prestamo p ON p.id_solicitud = s.id_solicitud
                   JOIN usuario  u ON u.ci = s.ci_cliente
@@ -252,9 +242,9 @@ class Modelo_Prestamo {
         return $st->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
-    /* ==============================================================
+    /* 
        TRANSICIONES DE LA SOLICITUD
-       ============================================================== */
+        */
 
     /**
      * El cliente pide materiales por nombre.
@@ -892,9 +882,9 @@ class Modelo_Prestamo {
         }
     }
 
-    /* ==============================================================
+    /* 
        AUXILIARES
-       ============================================================== */
+        */
 
     /** null si la unidad se puede prestar; si no, el motivo para mostrar. */
     private function motivoNoPrestable(array $u) {

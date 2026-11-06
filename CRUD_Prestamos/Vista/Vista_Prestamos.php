@@ -1,6 +1,4 @@
 <?php
-/**
- */
 $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
 ?>
 <style>
@@ -21,24 +19,24 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
 </style>
 
 <?php if ($esAdminPrestamos): ?>
-<!-- ======================================================================
+<!-- =
      MODAL: GESTIÓN DE PRÉSTAMOS (ADMINISTRADOR)
-     ====================================================================== -->
+     = -->
 <div class="modal-overlay" id="modalGestionPrestamos">
     <div class="modal-content">
         <div class="modal-header">
-            <h3>Gestión de Préstamos</h3>
+            <h3 id="tituloGestionPrestamos">Gestión de Préstamos</h3>
             <button class="modal-close" onclick="cerrarModal('modalGestionPrestamos')">&times;</button>
         </div>
         <div class="filtros-estado" id="filtrosPrestamos"></div>
         <div class="table-responsive">
-            <button type="button" class="btn-modal btn-crear" onclick="adminAbrirModalNuevoPrestamo()">
+            <button type="button" class="btn-modal btn-crear" id="btnNuevoPrestamoAdmin" onclick="adminAbrirModalNuevoPrestamo()">
     + Nuevo Préstamo
 </button>
             <table class="tabla-modal">
                 
                 <thead>
-                    <tr><th>#</th><th>Estado</th><th>Cliente</th><th>Pedido</th><th>Especialidad</th><th>Horas</th><th>Solicitado</th><th>Acciones</th></tr>
+                    <tr><th>#</th><th>Estado</th><th>Tipo de pedido</th><th>Cliente</th><th>Pedido</th><th>Horas</th><th>Solicitado</th><th>Acciones</th></tr>
                 </thead>
                 <tbody id="bodyTablaPrestamos"></tbody>
                 
@@ -105,29 +103,18 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
     </div>
 </div>
 <?php else: ?>
-<!-- ======================================================================
+<!-- =
      MODAL: MIS PRÉSTAMOS (CLIENTE)
-     ====================================================================== -->
+     = -->
 <div class="modal-overlay" id="modalMisPrestamos">
     <div class="modal-content" style="max-width:1050px;">
         <div class="modal-header">
-            <h3>Mis préstamos y reservas</h3>
+            <h3>Mis solicitudes</h3>
             <button class="modal-close" onclick="cerrarModal('modalMisPrestamos')">&times;</button>
         </div>
         <div class="table-responsive">
             <table class="tabla-modal">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Estado</th>
-                        <th>Pedido</th>
-                        <th>Especialidad</th>
-                        <th>Solicitado</th>
-                        <th>Entregado / Inicio</th>
-                        <th>Devuelto</th>
-                        <th>Acción / Detalle</th>
-                    </tr>
-                </thead>
+                <thead><tr><th>#</th><th>Estado</th><th>Tipo de pedido</th><th>Pedido</th><th>Solicitado</th><th>Entregado</th><th>Devuelto</th><th></th></tr></thead>
                 <tbody id="bodyMisPrestamos"></tbody>
             </table>
         </div>
@@ -166,6 +153,12 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
     }
     
     function fecha(f) { return f ? esc(String(f).slice(0, 16).replace('T', ' ')) : '—'; }
+    /* Columna «Pedido»: en las reservas que todavía no empezaron se agrega el día y el horario. */
+    function pedidoFila(p) {
+        const franja = (p.es_reserva && p.reserva_fecha && p.estado !== 'ACTIVO')
+            ? `<br><small>Reserva: ${esc(p.reserva_fecha)} ${esc(String(p.hora_inicio).slice(0, 5))}–${esc(String(p.hora_fin).slice(0, 5))}</small>` : '';
+        return esc(p.pedido || '—') + franja;
+    }
 
     /**
      * fetch + JSON. Si el servidor rechaza, muestra el mensaje y la lista de errores
@@ -196,13 +189,17 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
     }
 
 <?php if ($esAdminPrestamos): ?>
-    /* =====================================================================
+    /* 
        ADMINISTRADOR
-       ===================================================================== */
+        */
     let filtroPrestamos = 'PENDIENTE';
     let filasPrestamos = {};   // id -> fila de la lista (para las reservas en uso)
+    let incluirReservasPrestamos = false;   // «Ver Solicitudes» también lista las reservas
 
-    async function abrirModalGestionPrestamos(estado) {
+    async function abrirModalGestionPrestamos(estado, conReservas) {
+        incluirReservasPrestamos = !!conReservas;
+        document.getElementById('tituloGestionPrestamos').textContent = conReservas ? 'Solicitudes' : 'Gestión de Préstamos';
+        document.getElementById('btnNuevoPrestamoAdmin').style.display = conReservas ? 'none' : '';
         if (estado !== undefined) filtroPrestamos = estado;
         document.getElementById('modalGestionPrestamos').classList.add('active');
         await cargarPrestamos();
@@ -214,7 +211,7 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
             `<button class="btn-modal ${e === filtroPrestamos ? 'activo' : ''}" onclick="filtroPrestamos='${e}'; cargarPrestamos()">${e ? esc(ETIQUETA_ESTADO[e]) : 'Todos'}</button>`
         ).join('');
 
-        const r = await pedirJSON(`${RUTA_CONTROLADOR_PRESTAMOS}?action=listar&estado=${encodeURIComponent(filtroPrestamos)}`);
+        const r = await pedirJSON(`${RUTA_CONTROLADOR_PRESTAMOS}?action=listar&estado=${encodeURIComponent(filtroPrestamos)}${incluirReservasPrestamos ? '&incluir_reservas=1' : ''}`);
         const tbody = document.getElementById('bodyTablaPrestamos');
         if (!r) return;
         filasPrestamos = {};
@@ -227,15 +224,32 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
             <tr>
                 <td>${p.id_solicitud}</td>
                 <td>${chipFila(p)}</td>
+                <td>${p.es_reserva ? 'Reserva' : 'Préstamo'}</td>
                 <td>${esc(p.cliente)}<br><small>${esc(p.ci_cliente)}</small></td>
-                <td>${esc(p.pedido || '—')}</td>
-                <td>${esc(p.materia || '—')}</td>
+                <td>${pedidoFila(p)}</td>
                 <td>${esc(p.horas_solicitadas || '—')}</td>
                 <td>${fecha(p.fecha_solicitud)}</td>
                 <td style="white-space:nowrap;">${p.es_reserva
-                    ? `<button class="btn-modal btn-editar" onclick="abrirReservaEnUso(${p.id_solicitud})">Finalizar reserva</button>`
+                    ? (p.estado === 'PENDIENTE'
+                        ? `<button class="btn-modal btn-crear" onclick="aprobarReservaPendiente(${p.id_solicitud})">Aprobar</button><button class="btn-modal btn-eliminar" onclick="rechazarReservaPendiente(${p.id_solicitud})">Rechazar</button>`
+                        : p.estado === 'ACTIVO' ? `<button class="btn-modal btn-editar" onclick="abrirReservaEnUso(${p.id_solicitud})">Finalizar reserva</button>` : '')
                     : `<button class="btn-modal btn-editar" onclick="abrirDetallePrestamo(${p.id_solicitud})">${accionPrincipal(p.estado)}</button>${botonEditarPrestamo(p)}`}</td>
             </tr>`).join('');
+    }
+
+    /* Reservas pendientes que aparecen en «Ver Solicitudes»: se aprueban o rechazan con la misma acción del módulo de Reservas. */
+    async function aprobarReservaPendiente(id) {
+        const r = await resPost({ action: 'aprobar', id_solicitud: id });
+        if (r && r.ok) { if (window.avisar) window.avisar('Reserva aprobada', { tipo: 'ok' }); }
+        else if (r) resAvisoError(r.json);
+        cargarPrestamos();
+    }
+    async function rechazarReservaPendiente(id) {
+        const motivo = window.pedirTexto ? await window.pedirTexto('Motivo del rechazo:') : prompt('Motivo del rechazo:');
+        if (!motivo) return;
+        const r = await resPost({ action: 'rechazar', id_solicitud: id, motivo });
+        if (r && !r.ok) resAvisoError(r.json);
+        cargarPrestamos();
     }
 
     function accionPrincipal(estado) {
@@ -332,10 +346,6 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
                     <div class="series-grid">${opciones || '<i>No hay unidades disponibles.</i>'}</div></div>`;
         }).join('');
         return `<h4>Entrega</h4>${lineas}
-            <div class="form-group">
-                <label>O escaneá / escribí las series (una por línea o separadas por coma):</label>
-                <textarea id="seriesEscaneadas" rows="2" placeholder="CEIB-0003, CEIB-0004"></textarea>
-            </div>
             <div style="display:flex; gap:10px;">
                 <button class="btn-modal btn-crear" onclick="entregarPrestamo(${p.id_solicitud})">Confirmar entrega</button>
                 ${botonEditarPrestamo(p)}
@@ -369,9 +379,9 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
             </div>`;
     }
 
-/* =====================================================================
+/* 
        ACCIONES DE UN PRÉSTAMO
-       ===================================================================== */
+        */
     async function aprobarPrestamo(id) {
         // Muestra tu modal personalizado y espera la respuesta (true o false)
         const acepto = await confirmar(`¿Aprobar el préstamo #${id}?`);
@@ -411,14 +421,15 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
     }
 
     async function entregarPrestamo(id) {
-        const marcadas = [...document.querySelectorAll('.serie-entrega:checked')].map(c => c.value);
-        const escritas = document.getElementById('seriesEscaneadas').value.split(/[\s,;]+/).filter(Boolean);
-        const series = [...new Set([...marcadas, ...escritas.map(s => s.toUpperCase())])];
-        if (await postJSON(`${RUTA_CONTROLADOR_PRESTAMOS}?action=entregar`, { id_solicitud: id, series })) {
-            alert('Entrega registrada: las unidades quedaron en estado «Prestado».');
-            refrescarPrestamo(id);
-        }
+    const marcadas = [...document.querySelectorAll('.serie-entrega:checked')].map(c => c.value);
+    const campo = document.getElementById('seriesEscaneadas');
+    const escritas = campo ? campo.value.split(/[\s,;]+/).filter(Boolean) : [];
+    const series = [...new Set([...marcadas, ...escritas.map(s => s.toUpperCase())])];
+    if (await postJSON(`${RUTA_CONTROLADOR_PRESTAMOS}?action=entregar`, { id_solicitud: id, series })) {
+        alert('Entrega registrada: las unidades quedaron en estado «Prestado».');
+        refrescarPrestamo(id);
     }
+}
     async function devolverPrestamo(id) {
         const items = [...document.querySelectorAll('#bodyDevolucion tr')]
             .filter(tr => tr.querySelector('.dev-sel').checked)
@@ -565,9 +576,9 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
     }
 
 <?php else: ?>
-    /* =====================================================================
+    /* 
        CLIENTE
-       ===================================================================== */
+        */
     const carritoPrestamo = {};   // nombre -> cantidad
 
     /* Si el cliente ya tiene un préstamo APROBADO o ACTIVO (entregado), no puede pedir otro.
@@ -677,6 +688,13 @@ $esAdminPrestamos = (($_SESSION['Rol'] ?? '') === 'ADMINISTRADOR');
                     <td>${columnaAccionDetalle}</td>
                 </tr>`;
         }).join('') : '<tr><td colspan="8" style="text-align:center;">Todavía no hiciste solicitudes.</td></tr>';
+    }
+
+    async function cancelarMiReserva(id) {
+        if (!confirm(`¿Cancelar la reserva #${id}?`)) return;
+        const r = await resPost({ action: 'cancelar', id_solicitud: id });
+        if (r && !r.ok) resAvisoError(r.json);
+        abrirModalMisPrestamos();
     }
 
     async function cancelarMiPrestamo(id) {
